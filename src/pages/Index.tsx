@@ -45,10 +45,10 @@ const Index = () => {
               <span className="glow-text text-primary">PLANKTON</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-2">
-              The Autonomous Web4 Trading Protocol
+              The Autonomous Protocol
             </p>
             <p className="text-sm text-muted-foreground/70 max-w-lg mb-8">
-              AI-powered on-chain research, autonomous trading agents, and decentralized governance — all on Solana.
+              All on Solana.
             </p>
             <div className="flex gap-3">
               <motion.button
