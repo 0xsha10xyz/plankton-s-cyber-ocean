@@ -34,7 +34,7 @@ const AITerminal = () => {
       return () => clearTimeout(timeout);
     } else {
       const timeout = setTimeout(() => {
-        setLines((prev) => [...prev.slice(-15), msg]);
+        setLines((prev) => [...prev.slice(-499), msg]);
         setCurrentLine("");
         setCharIndex(0);
         setLineIndex((i) => i + 1);
@@ -44,7 +44,7 @@ const AITerminal = () => {
   }, [charIndex, lineIndex]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [lines, currentLine]);
 
   const getColor = (line: string) => {
@@ -64,7 +64,11 @@ const AITerminal = () => {
           <span className="text-xs text-accent font-mono">LIVE</span>
         </div>
       </div>
-      <div ref={scrollRef} className="p-4 h-64 overflow-y-auto font-mono text-xs leading-relaxed">
+      <div
+        ref={scrollRef}
+        className="p-4 h-64 overflow-y-auto overflow-x-hidden font-mono text-xs leading-relaxed scroll-smooth"
+        style={{ scrollBehavior: "smooth" }}
+      >
         {lines.map((line, i) => (
           <div key={i} className={`${getColor(line)} opacity-60`}>
             {line}

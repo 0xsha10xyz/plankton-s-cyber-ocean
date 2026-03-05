@@ -8,7 +8,7 @@ const statusColors: Record<AIStatus, { eye: string; glow: string }> = {
   risk: { eye: "hsl(0, 80%, 55%)", glow: "0 0 20px hsl(0 80% 55% / 0.6)" },
 };
 
-const PlanktonLogo = ({ status = "researching", size = 48 }: { status?: AIStatus; size?: number }) => {
+const PlanktonLogo = ({ status = "researching", size = 48, noPulse }: { status?: AIStatus; size?: number; noPulse?: boolean }) => {
   const { eye, glow } = statusColors[status];
 
   return (
@@ -17,8 +17,8 @@ const PlanktonLogo = ({ status = "researching", size = 48 }: { status?: AIStatus
       height={size}
       viewBox="0 0 64 64"
       fill="none"
-      animate={{ scale: [1, 1.05, 1] }}
-      transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      animate={noPulse ? {} : { scale: [1, 1.05, 1] }}
+      transition={noPulse ? {} : { duration: 2, repeat: Infinity, ease: "easeInOut" }}
     >
       {/* Body */}
       <motion.ellipse

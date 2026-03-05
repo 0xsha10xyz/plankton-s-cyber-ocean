@@ -1,73 +1,62 @@
-# Welcome to your Lovable project
+# Plankton's Cyber Ocean
 
-## Project info
+Monorepo: **frontend** (Vite + React) and **backend** (Express + TypeScript API).
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Structure
 
-## How can I edit this code?
+- **`frontend/`** – Vite + React + TypeScript + shadcn/ui + Tailwind
+- **`backend/`** – Express API (health, research, subscription, agent)
 
-There are several ways of editing your application.
+## Quick start
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+From the repo root:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+This runs the frontend at **http://localhost:8080**.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Run the backend as well (optional):
 
-**Use GitHub Codespaces**
+```sh
+npm run dev:backend
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Backend runs at **http://localhost:3000**. Use `frontend/.env` with `VITE_API_URL=http://localhost:3000` to call it from the app.
 
-## What technologies are used for this project?
+## Scripts (from root)
 
-This project is built with:
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start frontend (port 8080) |
+| `npm run dev:backend` | Start backend API (port 3000) |
+| `npm run dev:all` | Start frontend and backend |
+| `npm run build` | Build frontend |
+| `npm run build:backend` | Build backend |
+| `npm run preview` | Preview frontend build |
+| `npm run lint` | Lint all workspaces |
+| `npm run test` | Run frontend tests |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Backend API
 
-## How can I deploy this project?
+- **Health:** `GET /api/health`, `/api/health/live`, `/api/health/ready`
+- **Research:** `GET /api/research/feeds`, `GET /api/research/lookup?symbol=`, `GET /api/research/screener` (query: `limit`, `sort`, `minVolume`, `minMarketCap`, `minChange24h`, `maxChange24h`)
+- **Subscription:** `GET /api/subscription/tiers`, `GET /api/subscription/tiers/:id`, `GET /api/subscription/me?wallet=` (tier by wallet)
+- **Agent:** `GET /api/agent/status`, `GET /api/agent/config`
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+See `backend/README.md` for setup and env vars.
 
-## Can I connect a custom domain to my Lovable project?
+## Tech
 
-Yes, you can!
+- **Frontend:** Vite, React 18, TypeScript, shadcn/ui, Tailwind, Solana wallet adapter
+- **Backend:** Node.js, Express, TypeScript
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Documentation
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+User-facing documentation is available in the app: use **Docs** on the page and click **Open documentation**. That opens a readable doc (HTML) that users can also **print to PDF** from their browser.
+
+- **In-app / PDF:** `frontend/public/plankton-documentation.html` (served at `/plankton-documentation.html`). No environment variables or secrets are included; a link to the project repository is included for source code and updates only.
+- **Source (for maintainers):** `docs/plankton-documentation.md`. Keep `.env` and any secrets out of all docs for user security.
+- **API recommendations (for integration):** `docs/api-recommendations.md` — which external APIs to use for autonomous agent trading, research, AI chat, Command Center, and supporting features.

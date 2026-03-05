@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plankton's Cyber Ocean — Documentation</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 720px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 1.75rem; margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+    h2 { font-size: 1.25rem; margin-top: 28px; }
+    h3 { font-size: 1.1rem; margin-top: 20px; }
+    p { margin: 8px 0; }
+    ul, ol { margin: 8px 0; padding-left: 24px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 0.95rem; }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+    th { background: #f5f5f5; }
+    code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
+    pre { background: #f5f5f5; padding: 12px; border-radius: 6px; overflow-x: auto; }
+    pre code { background: none; padding: 0; }
+    hr { border: none; border-top: 1px solid #eee; margin: 24px 0; }
+    .print-note { background: #f0f7ff; border: 1px solid #b3d9ff; padding: 12px; border-radius: 6px; margin-bottom: 24px; font-size: 0.95rem; }
+    .security-note { font-weight: 600; }
+    @media print {
+      body { padding: 16px; }
+      .print-note { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-note">You can save this page as a PDF: use <strong>Print</strong> (Ctrl+P or Cmd+P) and choose <strong>Save as PDF</strong> or <strong>Print to PDF</strong>.</div>
+
+  <h1>Plankton's Cyber Ocean — Documentation</h1>
+  <p>This document describes the Plankton app: how to run it, what the frontend and backend do, and how to use the API. For source code and future updates, see the project repository (link at the end). <span class="security-note">Configuration uses environment files; never share or commit these files to protect security.</span></p>
+
+  <hr />
+  <h2>1. Getting started</h2>
+  <h3>Prerequisites</h3>
+  <p>Node.js 18+ and npm (or yarn/pnpm).</p>
+  <h3>Setup</h3>
+  <p>From the project root: <code>npm install</code></p>
+  <p>This installs dependencies for the frontend and backend.</p>
+  <h3>Run the app</h3>
+  <table>
+    <tr><th>Command</th><th>What it does</th></tr>
+    <tr><td><code>npm run dev</code></td><td>Starts the frontend at http://localhost:8080</td></tr>
+    <tr><td><code>npm run dev:backend</code></td><td>Starts the backend API at http://localhost:3000</td></tr>
+    <tr><td><code>npm run dev:all</code></td><td>Starts both frontend and backend</td></tr>
+  </table>
+  <h3>Project structure</h3>
+  <p><strong>frontend/</strong> — Vite + React app (UI, wallet, account, AI chat).</p>
+  <p><strong>backend/</strong> — Express + TypeScript API (health, research, subscription, agent).</p>
+  <p><strong>docs/</strong> — Documentation source files.</p>
+  <p>Configuration is done via environment files in the frontend and backend. These files are not included in the documentation for security. Do not share or commit them.</p>
+  <h3>Build</h3>
+  <p><strong>Frontend:</strong> <code>npm run build</code> (from root). <strong>Backend:</strong> <code>npm run build:backend</code>. Output: <code>frontend/dist/</code> and <code>backend/dist/</code>.</p>
+
+  <hr />
+  <h2>2. Frontend</h2>
+  <p>The Plankton frontend is a single-page app (Vite + React + TypeScript) with wallet connection, account management, and an AI agent chat.</p>
+  <h3>Tech stack</h3>
+  <p>Vite, React 18, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion, React Router, Solana wallet adapter (Phantom, Solflare).</p>
+  <h3>Main features</h3>
+  <p><strong>Navigation</strong> — Fixed header with logo; links to Dashboard, Research, Screener, $PATTIES Governance, Docs, Subscription; Connect Wallet / connected state; Account (when connected); mobile menu.</p>
+  <p><strong>Connect wallet</strong> — "Connect Wallet" opens a modal with supported wallets. After a successful connection, the modal closes automatically. When connected, the header shows a truncated address and a dropdown with Account and Disconnect.</p>
+  <p><strong>Account (when connected)</strong> — "Account" opens a sidebar with: avatar (upload, stored per wallet); username (edit and save); SOL balance; connected wallet address; Disconnect.</p>
+  <p><strong>Autonomous Agent Protocols</strong> — Command Center: AITerminal (scrolling logs) and AutoPilot card ("Autonomous Agent Protocols", "Auto Pilot - Your Agent Partner"). When connected: toggle, P/L, risk slider, and accordions: How to set it up, How it works, Benefits.</p>
+  <p><strong>AI Agent Chat (when connected)</strong> — Floating button (bot icon) at bottom-right opens the chat. Topics: portfolio, risk, market research, autonomous agent, $PATTIES.</p>
+  <p><strong>Other sections</strong> — Dashboard, Research & Screening, $PATTIES Tokenomics, Subscription Tiers, Roadmap, Docs.</p>
+
+  <hr />
+  <h2>3. Backend API</h2>
+  <p>Express + TypeScript server. Default base URL: http://localhost:3000. CORS allows the frontend origin.</p>
+  <h3>Endpoints</h3>
+  <p><strong>Health:</strong> <code>GET /api/health</code>, <code>/api/health/live</code>, <code>/api/health/ready</code>.</p>
+  <p><strong>Research:</strong> <code>GET /api/research/feeds</code>, <code>/api/research/screener</code>.</p>
+  <p><strong>Subscription:</strong> <code>GET /api/subscription/tiers</code>, <code>/api/subscription/tiers/:id</code>.</p>
+  <p><strong>Agent:</strong> <code>GET /api/agent/status</code>, <code>/api/agent/config</code>.</p>
+  <p>All responses are JSON except live health (plain text). Server port and environment-specific settings are configured via environment files; not documented here for security.</p>
+
+  <hr />
+  <h2>4. Integration (frontend and API)</h2>
+  <p>Set the API base URL in the frontend configuration (see the project repository). Use it in <code>fetch()</code> calls to the endpoints above. You can replace mock data in components with API data. CORS for other origins is configured in the server.</p>
+
+  <hr />
+  <h2>5. Source code and updates</h2>
+  <p>For source code, issue tracking, and the latest documentation and configuration options (without exposing secrets), visit the project repository:</p>
+  <p><strong>GitHub:</strong> <a href="https://github.com/your-org/plankton-s-cyber-ocean">https://github.com/your-org/plankton-s-cyber-ocean</a></p>
+  <p>Use the repository only for development and updates. Do not store or share environment files or secrets there. Keep all environment configuration private for user and project security.</p>
+
+  <hr />
+  <p><em>Plankton's Cyber Ocean — Documentation. Environment files and secrets are excluded for security.</em></p>
+</body>
+</html>

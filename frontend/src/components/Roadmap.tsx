@@ -1,26 +1,47 @@
 import { motion } from "framer-motion";
-import { Search, Brain, Bot, Vote } from "lucide-react";
+import { Sparkles, Layers, Code2, Users, Megaphone, Bot } from "lucide-react";
 
 const phases = [
   {
+    phase: "Phase 0",
+    title: "Narrative",
+    description: "Plankton The Autonomous Protocol — All on Solana.",
+    icon: Sparkles,
+    status: "LIVE",
+  },
+  {
     phase: "Phase 1",
-    title: "Research Engine",
-    description: "AI-powered on-chain research, whale tracking, and token screening tools.",
-    icon: Search,
+    title: "Foundation",
+    description: "Core infrastructure deployment.",
+    icon: Layers,
     status: "SOON",
   },
   {
     phase: "Phase 2",
-    title: "Web4 Auto-Pilot",
-    description: "Autonomous trading agent with customizable risk profiles and real-time execution.",
-    icon: Bot,
+    title: "Development",
+    description: "Protocol architecture design, MVP, Fair Launch, Security audits.",
+    icon: Code2,
     status: "SOON",
   },
   {
     phase: "Phase 3",
-    title: "Governance & DAO",
-    description: "$PATTIES holders vote on agent strategies, fee structures, and protocol upgrades.",
-    icon: Vote,
+    title: "Pre-Launch",
+    description: "Community building, Agent onboarding program.",
+    icon: Users,
+    status: "SOON",
+  },
+  {
+    phase: "Phase 4",
+    title: "Expansion",
+    description: "Marketing, partnerships.",
+    icon: Megaphone,
+    status: "SOON",
+  },
+  {
+    phase: "Phase 5",
+    title: "Full-Launch",
+    description: "AI Agent Autonomous.",
+    icon: Bot,
     status: "SOON",
   },
 ];
@@ -37,7 +58,7 @@ const Roadmap = () => {
             key={p.phase}
             initial={{ opacity: 0, x: i % 2 === 0 ? -30 : 30 }}
             whileInView={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.15 }}
+            transition={{ delay: i * 0.1 }}
             viewport={{ once: true }}
             className={`relative flex items-start gap-6 ${
               i % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
@@ -47,7 +68,7 @@ const Roadmap = () => {
             <div className="absolute left-6 md:left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-primary glow-border z-10" />
 
             <div className={`ml-14 md:ml-0 md:w-1/2 ${i % 2 === 0 ? "md:pr-12 md:text-right" : "md:pl-12"}`}>
-              <div className={`glass-card rounded-xl p-5 inline-block text-left`}>
+              <div className="glass-card rounded-xl p-5 inline-block text-left w-full md:max-w-md">
                 <div className="flex items-center gap-2 mb-2">
                   <p.icon size={16} className="text-primary" />
                   <span className="text-xs font-mono text-primary">{p.phase}</span>

@@ -57,35 +57,63 @@ const TokenSection = () => {
           90% of all subscription fees paid in $PATTIES are permanently burned, reducing supply forever.
         </p>
 
-        {/* Fire animation */}
-        <div className="relative h-32 flex items-end justify-center">
-          {[...Array(5)].map((_, i) => (
+        {/* Fire animation - dramatic burn */}
+        <div className="relative h-40 flex items-end justify-center">
+          {/* Glow layer */}
+          <motion.div
+            className="absolute inset-0 rounded-full blur-2xl"
+            style={{
+              background: "radial-gradient(ellipse 80% 60% at 50% 100%, hsl(0, 100%, 50%), transparent 70%)",
+              bottom: -20,
+              left: "10%",
+              right: "10%",
+              opacity: 0.6,
+            }}
+            animate={{ opacity: [0.4, 0.8, 0.4] }}
+            transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {[...Array(8)].map((_, i) => (
             <motion.div
               key={i}
               className="absolute rounded-full"
               style={{
-                width: 20 + i * 15,
-                height: 40 + i * 20,
-                background: `radial-gradient(ellipse at bottom, hsl(${15 + i * 8}, 90%, 55%), transparent)`,
+                width: 24 + i * 18,
+                height: 50 + i * 24,
+                background: `radial-gradient(ellipse at bottom, hsl(${8 + i * 4}, 100%, ${45 + i * 5}%), transparent 70%)`,
                 bottom: 0,
-                left: `${30 + i * 8}%`,
-                opacity: 0.4 + i * 0.1,
+                left: `${22 + i * 6}%`,
+                opacity: 0.5 + i * 0.06,
               }}
               animate={{
-                y: [0, -15 - i * 5, 0],
-                scaleX: [1, 1.1, 1],
-                opacity: [0.4 + i * 0.1, 0.7, 0.4 + i * 0.1],
+                y: [0, -25 - i * 8, -8 - i * 3, 0],
+                scaleX: [1, 1.25 + i * 0.05, 1.15, 1],
+                scaleY: [1, 1.2, 1.1, 1],
+                opacity: [0.5 + i * 0.06, 0.95, 0.7, 0.5 + i * 0.06],
               }}
               transition={{
-                duration: 1 + i * 0.3,
+                duration: 0.9 + i * 0.2,
                 repeat: Infinity,
                 ease: "easeInOut",
-                delay: i * 0.15,
+                delay: i * 0.12,
               }}
             />
           ))}
-          <div className="relative z-10 text-center">
-            <span className="text-3xl font-bold font-mono text-destructive glow-text">90%</span>
+          <motion.div
+            className="absolute z-10"
+            style={{ bottom: 8 }}
+            animate={{ scale: [1, 1.05, 1], opacity: [0.9, 1, 0.9] }}
+            transition={{ duration: 0.5, repeat: Infinity }}
+          >
+            <Flame size={32} className="text-destructive drop-shadow-[0_0_8px_hsl(var(--destructive))]" />
+          </motion.div>
+          <div className="relative z-20 text-center">
+            <motion.span
+              className="text-4xl font-bold font-mono text-destructive drop-shadow-[0_0_12px_hsl(var(--destructive)/0.8)]"
+              animate={{ textShadow: ["0 0 12px hsl(var(--destructive)/0.6)", "0 0 24px hsl(var(--destructive))", "0 0 12px hsl(var(--destructive)/0.6)"] }}
+              transition={{ duration: 1.2, repeat: Infinity }}
+            >
+              90%
+            </motion.span>
             <p className="text-xs text-muted-foreground mt-1">Tokens Burned</p>
           </div>
         </div>
