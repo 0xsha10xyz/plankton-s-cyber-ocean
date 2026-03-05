@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Sparkles, Layers, Code2, Users, Megaphone, Bot } from "lucide-react";
+import { Sparkles, Layers, Code2, Users, Megaphone, Vote, Bot } from "lucide-react";
 
 const phases = [
   {
@@ -39,8 +39,15 @@ const phases = [
   },
   {
     phase: "Phase 5",
+    title: "Governance",
+    description: "$PATTIES Utility.",
+    icon: Vote,
+    status: "SOON",
+  },
+  {
+    phase: "Phase 6",
     title: "Full-Launch",
-    description: "AI Agent Autonomous.",
+    description: "The Autonomous Protocol.",
     icon: Bot,
     status: "SOON",
   },

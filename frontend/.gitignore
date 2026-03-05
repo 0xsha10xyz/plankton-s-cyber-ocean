@@ -1,0 +1,15 @@
+# Dependencies and build
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment and secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# Optional: uncomment if you ever generate or store keys in frontend (do not do this for user wallets)
+# *.pem
+# wallet.json
+# *mnemonic*

@@ -2,6 +2,11 @@
 node_modules
 dist
 
-# Env (keep .env.example)
+# Environment and secrets (never commit — keep .env.example only)
 .env
-.env.local
+.env.*
+!.env.example
+*.pem
+*secret*
+*credentials*
+

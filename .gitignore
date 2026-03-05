@@ -12,6 +12,21 @@ dist
 dist-ssr
 *.local
 
+# Environment and secrets (never commit — wallet and API safety)
+.env
+.env.*
+!.env.example
+!frontend/.env.example
+!backend/.env.example
+*.pem
+*.key
+*secret*
+*credentials*
+wallet.json
+keystore*
+mnemonic*
+*.keystore
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

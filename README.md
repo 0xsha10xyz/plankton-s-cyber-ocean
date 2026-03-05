@@ -53,6 +53,15 @@ See `backend/README.md` for setup and env vars.
 - **Frontend:** Vite, React 18, TypeScript, shadcn/ui, Tailwind, Solana wallet adapter
 - **Backend:** Node.js, Express, TypeScript
 
+## Security
+
+**Never commit confidential files.** The repo is set up so that:
+
+- **Wallet safety:** The app uses the Solana Wallet Adapter; your private keys stay in your wallet (e.g. Phantom, Solflare). We never see or store them.
+- **Secrets stay local:** All `.env` files (and similar) are ignored by Git. Use `frontend/.env.example` and `backend/.env.example` as templates; copy to `.env` and fill in only on your machine. Do not commit `.env` or any file containing API keys, RPC URLs with keys, or wallet keys.
+
+See **[SECURITY.md](SECURITY.md)** for details and what must never be pushed to GitHub.
+
 ## Documentation
 
 User-facing documentation is available in the app: use **Docs** on the page and click **Open documentation**. That opens a readable doc (HTML) that users can also **print to PDF** from their browser.
