@@ -14,7 +14,7 @@ const phases = [
     title: "Foundation",
     description: "Core infrastructure deployment.",
     icon: Layers,
-    status: "SOON",
+    status: "LIVE",
   },
   {
     phase: "Phase 2",
