@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,72 @@ import { useAccount } from "@/contexts/AccountContext";
 import { User, Loader2, Camera, Coins } from "lucide-react";
 import { formatAssetAmount, getTokenSymbol } from "@/lib/assets";
 
-const LAMPORTS_PER_SOL = 1e9;
+/** Fallback RPCs when the app's connection fails (e.g. CORS or rate limit). Tried in order. */
+const FALLBACK_RPCS = [
+  "https://rpc.ankr.com/solana",
+  "https://solana.publicnode.com",
+];
+
+/** Try primary connection, then each fallback RPC in order until one succeeds */
+async function fetchBalance(connection: Connection, publicKey: PublicKey): Promise<number> {
+  try {
+    return await connection.getBalance(publicKey);
+  } catch {
+    for (const rpc of FALLBACK_RPCS) {
+      try {
+        return await new Connection(rpc).getBalance(publicKey);
+      } catch {
+        continue;
+      }
+    }
+    throw new Error("All RPCs failed");
+  }
+}
 
 /** SPL Token program ID (mainnet) */
 const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 
 type TokenAsset = { mint: string; decimals: number; rawAmount: string };
+
+/** Try primary connection, then each fallback RPC in order until one succeeds */
+async function fetchTokenAccounts(
+  connection: Connection,
+  publicKey: PublicKey
+): Promise<TokenAsset[]> {
+  const parse = (value: { account: { data: unknown } }[]) =>
+    value
+      .map(({ account }) => {
+        const data = account.data;
+        if (typeof data !== "object" || data === null || !("parsed" in data)) return null;
+        const parsed = (data as { parsed: { info: { mint: string; tokenAmount: { amount: string; decimals: number } } } }).parsed;
+        const info = parsed?.info;
+        if (!info?.tokenAmount) return null;
+        const { amount, decimals } = info.tokenAmount;
+        if (amount === "0") return null;
+        return { mint: info.mint, decimals, rawAmount: amount };
+      })
+      .filter((a): a is TokenAsset => a !== null);
+
+  const tryFetch = async (conn: Connection) => {
+    const { value } = await conn.getParsedTokenAccountsByOwner(publicKey, {
+      programId: TOKEN_PROGRAM_ID,
+    });
+    return parse(value);
+  };
+
+  try {
+    return await tryFetch(connection);
+  } catch {
+    for (const rpc of FALLBACK_RPCS) {
+      try {
+        return await tryFetch(new Connection(rpc));
+      } catch {
+        continue;
+      }
+    }
+    throw new Error("All RPCs failed");
+  }
+}
 
 type AccountSidebarProps = {
   open: boolean;
@@ -55,8 +115,7 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
     setBalanceLoading(true);
     setAssetsLoading(true);
 
-    connection
-      .getBalance(publicKey)
+    fetchBalance(connection, publicKey)
       .then((lamports) => {
         if (!cancelled) {
           setBalanceLamports(lamports);
@@ -73,24 +132,9 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
         if (!cancelled) setBalanceLoading(false);
       });
 
-    connection
-      .getParsedTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID })
-      .then(({ value }) => {
-        if (cancelled) return;
-        const assets: TokenAsset[] = value
-          .map(({ account }) => {
-            const data = account.data;
-            if (typeof data !== "object" || data === null || "parsed" in data === false)
-              return null;
-            const parsed = (data as { parsed: { info: { mint: string; tokenAmount: { amount: string; decimals: number } } } }).parsed;
-            const info = parsed?.info;
-            if (!info?.tokenAmount) return null;
-            const { amount, decimals } = info.tokenAmount;
-            if (amount === "0") return null;
-            return { mint: info.mint, decimals, rawAmount: amount };
-          })
-          .filter((a): a is TokenAsset => a !== null);
-        setTokenAssets(assets);
+    fetchTokenAccounts(connection, publicKey)
+      .then((assets) => {
+        if (!cancelled) setTokenAssets(assets);
       })
       .catch(() => {
         if (!cancelled) setTokenAssets([]);
@@ -112,8 +156,7 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
     setBalanceLoading(true);
     setAssetsLoading(true);
 
-    connection
-      .getBalance(publicKey)
+    fetchBalance(connection, publicKey)
       .then((lamports) => {
         setBalanceLamports(lamports);
         setBalanceError(false);
@@ -124,24 +167,8 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
       })
       .finally(() => setBalanceLoading(false));
 
-    connection
-      .getParsedTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID })
-      .then(({ value }) => {
-        const assets: TokenAsset[] = value
-          .map(({ account }) => {
-            const data = account.data;
-            if (typeof data !== "object" || data === null || "parsed" in data === false)
-              return null;
-            const parsed = (data as { parsed: { info: { mint: string; tokenAmount: { amount: string; decimals: number } } } }).parsed;
-            const info = parsed?.info;
-            if (!info?.tokenAmount) return null;
-            const { amount, decimals } = info.tokenAmount;
-            if (amount === "0") return null;
-            return { mint: info.mint, decimals, rawAmount: amount };
-          })
-          .filter((a): a is TokenAsset => a !== null);
-        setTokenAssets(assets);
-      })
+    fetchTokenAccounts(connection, publicKey)
+      .then((assets) => setTokenAssets(assets))
       .catch(() => setTokenAssets([]))
       .finally(() => setAssetsLoading(false));
   }, [publicKey, connection]);
