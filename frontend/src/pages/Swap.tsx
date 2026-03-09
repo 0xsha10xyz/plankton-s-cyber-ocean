@@ -7,6 +7,7 @@ import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { TradingChart } from "@/components/TradingChart";
+import { TotalUsersStat } from "@/components/TotalUsersStat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWalletModal } from "@/contexts/WalletModalContext";
@@ -149,6 +150,9 @@ export default function Swap() {
         >
           Swap
         </motion.h1>
+        <div className="flex flex-wrap items-center gap-4 mb-8">
+          <TotalUsersStat variant="strip" />
+        </div>
         <p className="text-muted-foreground text-sm mb-8 max-w-2xl">
           Trade manually with the chart and swap form. When the autonomous protocol is live, you’ll be able to let the agent execute for you.
         </p>

@@ -55,10 +55,11 @@ const Footer = () => {
         </div>
 
         <div className="text-center mt-8">
-          <p className="text-xs text-muted-foreground flex items-center justify-center gap-1.5">
-            <Users size={14} className="text-primary/70" />
-            <strong className="text-foreground">{userCount.toLocaleString()}</strong> wallet{userCount !== 1 ? "s" : ""} connected
-          </p>
+          <div className="inline-flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/20 px-4 py-2 mb-4">
+            <Users size={18} className="text-primary shrink-0" />
+            <span className="text-sm font-medium text-muted-foreground">Total Users</span>
+            <span className="text-lg font-bold tabular-nums text-foreground">{userCount.toLocaleString()}</span>
+          </div>
           <p className="text-xs text-muted-foreground mt-2">
             All links — <span className="text-primary/70">Coming Soon</span>
           </p>
