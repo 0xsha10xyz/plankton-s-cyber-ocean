@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Sparkles, Layers, Code2, Users, Megaphone, Vote, Bot } from "lucide-react";
+import { Sparkles, Layers, Code2, Users, Shield, Coins, Megaphone, Vote, Bot } from "lucide-react";
 
 const phases = [
   {
@@ -19,34 +19,48 @@ const phases = [
   {
     phase: "Phase 2",
     title: "Development",
-    description: "Protocol architecture design, MVP, Fair Launch, Security audits.",
+    description: "Protocol architecture design.",
     icon: Code2,
     status: "SOON",
   },
   {
     phase: "Phase 3",
-    title: "Pre-Launch",
-    description: "Community building, Agent onboarding program.",
+    title: "Pre Launch",
+    description: "MVP, Community building, Agent onboarding program.",
     icon: Users,
     status: "SOON",
   },
   {
     phase: "Phase 4",
-    title: "Expansion",
-    description: "Marketing, partnerships.",
-    icon: Megaphone,
+    title: "Security",
+    description: "Security audits.",
+    icon: Shield,
     status: "SOON",
   },
   {
     phase: "Phase 5",
+    title: "Token Launch",
+    description: "$PATTIES deployment.",
+    icon: Coins,
+    status: "SOON",
+  },
+  {
+    phase: "Phase 6",
+    title: "Expansion",
+    description: "Marketing & partnerships.",
+    icon: Megaphone,
+    status: "SOON",
+  },
+  {
+    phase: "Phase 7",
     title: "Governance",
     description: "$PATTIES Utility.",
     icon: Vote,
     status: "SOON",
   },
   {
-    phase: "Phase 6",
-    title: "Full-Launch",
+    phase: "Phase 8",
+    title: "Full Launch",
     description: "The Autonomous Protocol.",
     icon: Bot,
     status: "SOON",
