@@ -13,8 +13,7 @@ These steps are **manual**: create or edit `.env` files and fill in the required
 
 2. **Create a `.env` file in the backend folder** (if you don’t have one):
    - Open folder: `plankton-s-cyber-ocean/backend/`
-   - Copy `.env.example` and rename it to `.env`
-   - Or create a new file named `.env`
+   - Create a new file named `.env` (there is no `.env.example` in the repo; use the block below)
 
 3. **Add to backend `.env`:**
    ```env
@@ -77,10 +76,13 @@ These steps are **manual**: create or edit `.env` files and fill in the required
 **Option A — Backend on a separate host (Render/Railway/etc.):**  
 So that production (e.g. **https://planktonomous.vercel.app**) can use Total Users, real-time chart, research, and swap with real data:
 
+**Option A — Backend on a separate host (Render/Railway/etc.):**  
+So that production (e.g. **https://planktonomous.vercel.app**) can use Total Users, real-time chart, research, and swap with real data:
+
 1. **Deploy the backend** to a service like Railway, Render, or Fly.io. Set environment variables there:
    - `CORS_ORIGIN` = **`http://localhost:8080,https://planktonomous.vercel.app`** (comma-separated for multiple origins).
    - `BIRDEYE_API_KEY` = your Birdeye API key (for OHLCV chart).
-   - Other vars as in backend `.env.example`.
+   - Other vars as needed: `PORT`, `NODE_ENV`, etc.
 
 2. **In Vercel (Project → Settings → Environment Variables)** add:
    - **Name:** `VITE_API_URL`  

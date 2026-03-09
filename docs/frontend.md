@@ -41,7 +41,7 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 - **Account sidebar** includes:
   - **Avatar** — Upload image (stored per wallet in `localStorage`).
   - **Username** — Edit and save (stored per wallet).
-  - **SOL balance** — Fetched from Solana RPC.
+  - **Assets** — SOL and all SPL token balances for the connected wallet. Amounts use full decimal precision (smallest unit visible) so even tiny balances are readable. Known symbols (SOL, USDC, USDT) are shown by name; other mints show a truncated address.
   - **Connected wallet** — Full address.
   - **Disconnect** — Disconnects and closes the sidebar.
 - Profile is keyed by wallet address (`plankton_account_<address>` in `localStorage`).
@@ -86,7 +86,8 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 | `src/contexts/AccountContext.tsx` | Profile (username, avatar) per wallet |
 | `src/components/Header.tsx` | Nav, wallet button, Account trigger |
 | `src/components/WalletModal.tsx` | Connect wallet modal; auto-closes when connected |
-| `src/components/AccountSidebar.tsx` | Account sheet (balance, username, avatar) |
+| `src/components/AccountSidebar.tsx` | Account sheet (Assets: SOL + SPL tokens, username, avatar) |
+| `src/lib/assets.ts` | Asset formatting (full decimal precision), token symbols |
 | `src/components/AgentChat.tsx` | AI agent chat sheet |
 | `src/components/AutoPilot.tsx` | Autonomous Agent card |
 | `src/components/TotalUsersStat.tsx` | Total Users display (hero, strip, default) |

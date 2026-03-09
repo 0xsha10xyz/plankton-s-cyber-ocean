@@ -117,8 +117,9 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 | `PORT` | Server port | `3000` |
 | `NODE_ENV` | `development` or `production` | — |
 | `CORS_ORIGIN` | Allowed origin for CORS | `http://localhost:8080` |
+| `BIRDEYE_API_KEY` | Birdeye API key for Swap chart OHLCV | Optional; chart uses sample data if unset |
 
-Copy `backend/.env.example` to `backend/.env` and edit as needed. Optional: `BIRDEYE_API_KEY` for real OHLCV on the Swap chart.
+Create `backend/.env` and add variables as needed. For full setup (Birdeye, production), see **[Configuration](./CONFIGURATION.md)**.
 
 ## Running the server
 

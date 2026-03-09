@@ -4,7 +4,7 @@ How to use the Plankton backend API from the frontend.
 
 ## Configure API base URL
 
-In `frontend/.env` (create from `frontend/.env.example`):
+Create or edit `frontend/.env` (you can copy `frontend/.env.example` if it exists, or create a new file). See **[Configuration](./CONFIGURATION.md)** for full env options.
 
 ```env
 VITE_API_URL=http://localhost:3000

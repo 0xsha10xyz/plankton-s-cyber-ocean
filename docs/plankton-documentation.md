@@ -35,7 +35,7 @@ This installs dependencies for the frontend and backend.
 - **backend/** — Express + TypeScript API (health, research, subscription, agent).
 - **docs/** — Documentation source files.
 
-Configuration is done via environment files in the frontend and backend. These files are not included in the documentation for security. Do not share or commit them.
+Configuration is done via environment files in the frontend and backend. See **docs/CONFIGURATION.md** in the repository for step-by-step setup (Birdeye, RPC, production). These files are not included in the documentation for security. Do not share or commit them.
 
 ### Build
 
@@ -62,7 +62,7 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 **Connect wallet** — "Connect Wallet" opens a modal with supported wallets (e.g. Phantom, Solflare). After a successful connection, the modal closes automatically. When connected, the header shows a truncated address and a dropdown with Account and Disconnect.
 
-**Account (when connected)** — "Account" opens a sidebar (from the left) with: avatar (upload, stored per wallet); username (edit and save); SOL balance (from Solana RPC); connected wallet address; Disconnect. Profile data is stored per wallet in the browser.
+**Account (when connected)** — "Account" opens a sidebar (from the left) with: avatar (upload, stored per wallet); username (edit and save); **Assets** — SOL and all SPL token balances with full decimal precision (smallest amounts visible); connected wallet address; Disconnect. Profile data is stored per wallet in the browser.
 
 **Autonomous Agent Protocols** — In the Command Center: AITerminal (scrolling logs) and the AutoPilot card. The card shows "Autonomous Agent Protocols" and "Auto Pilot - Your Agent Partner." When not connected, it shows a message and "Connect Wallet." When connected, it shows a toggle, P/L (24h, Total), risk slider, and accordions: How to set it up, How it works, Benefits.
 

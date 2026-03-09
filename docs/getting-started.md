@@ -47,13 +47,16 @@ plankton-s-cyber-ocean/
 
 ## Environment (optional)
 
+For full configuration (Birdeye chart, RPC, production deployment), see **[Configuration](./CONFIGURATION.md)**.
+
 - **Frontend** (`frontend/.env`):  
-  - `VITE_API_URL` — Backend base URL (e.g. `http://localhost:3000`) for API calls  
-  - `VITE_SOLANA_RPC_URL` — Custom Solana RPC URL (default: mainnet public RPC)
+  - `VITE_API_URL` — Backend base URL (e.g. `http://localhost:3000`) when backend is on another host  
+  - `VITE_SOLANA_RPC_URL` — Custom Solana RPC URL (default: Ankr mainnet)
 
 - **Backend** (`backend/.env`):  
   - `PORT` — Server port (default `3000`)  
-  - `CORS_ORIGIN` — Allowed origin for CORS (default `http://localhost:8080`)
+  - `CORS_ORIGIN` — Allowed origin for CORS (default `http://localhost:8080`)  
+  - `BIRDEYE_API_KEY` — For real-time Swap chart (optional)
 
 ## Build
 
