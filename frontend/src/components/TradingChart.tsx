@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { BarChart3 } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { getApiBase } from "@/lib/api";
 
 type TimeRange = "1H" | "4H" | "1D" | "1W";
 
@@ -36,12 +37,51 @@ const chartConfig = {
 
 export interface TradingChartProps {
   pairLabel?: string;
+  /** Token mint for OHLCV (e.g. SOL mint for SOL/USDC). When set, chart uses real data from API. */
+  inputMint?: string;
   className?: string;
 }
 
-export function TradingChart({ pairLabel = "SOL/USDC", className }: TradingChartProps) {
+export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: TradingChartProps) {
   const [range, setRange] = useState<TimeRange>("1D");
-  const data = useSamplePriceData(pairLabel, range);
+  const sampleData = useSamplePriceData(pairLabel, range);
+  const [realData, setRealData] = useState<{ time: string; price: number }[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!inputMint?.trim()) {
+      setRealData(null);
+      return;
+    }
+    const base = getApiBase();
+    if (!base) {
+      setRealData(null);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    fetch(`${base}/api/market/ohlcv?mint=${encodeURIComponent(inputMint)}&range=${range}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled) return;
+        const arr = Array.isArray(json?.data) ? json.data : [];
+        setRealData(arr.length > 0 ? arr : null);
+      })
+      .catch(() => {
+        if (!cancelled) setRealData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [inputMint, range]);
+
+  const data = (realData && realData.length > 0) ? realData : sampleData;
+  const safeData = data.map((d) => ({
+    time: d.time ?? "",
+    price: Number(d.price) || 0,
+  })).filter((d) => d.time !== "" && Number.isFinite(d.price));
 
   return (
     <div className={className}>
@@ -49,6 +89,11 @@ export function TradingChart({ pairLabel = "SOL/USDC", className }: TradingChart
         <div className="flex items-center gap-2">
           <BarChart3 size={18} className="text-primary" />
           <h3 className="text-sm font-semibold text-foreground">{pairLabel}</h3>
+          {inputMint && (realData && realData.length > 0 ? (
+            <span className="text-xs text-muted-foreground">Live</span>
+          ) : loading ? (
+            <span className="text-xs text-muted-foreground">Loading…</span>
+          ) : null)}
         </div>
         <div className="flex gap-1">
           {(["1H", "4H", "1D", "1W"] as const).map((r) => (
@@ -70,7 +115,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", className }: TradingChart
         </div>
       </div>
       <ChartContainer config={chartConfig} className="h-[260px] w-full">
-        <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+        <AreaChart data={safeData.length > 0 ? safeData : [{ time: "-", price: 0 }]} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
           <defs>
             <linearGradient id="fillPrice" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--color-price)" stopOpacity={0.4} />

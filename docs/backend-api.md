@@ -99,6 +99,17 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 
 ---
 
+### Market (chart OHLCV)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/market/ohlcv` | OHLCV data for chart. Query: `mint` (token address), `range` = `1H` \| `4H` \| `1D` \| `1W`. Proxies Birdeye; requires `BIRDEYE_API_KEY`. Returns `{ data: [] }` if key missing or error. |
+
+**Example:** `GET /api/market/ohlcv?mint=So11111111111111111111111111111111111111112&range=1D`  
+**Response:** `{ "data": [ { "time": "10:00 AM", "price": 245.12 }, ... ] }`
+
+---
+
 ## Environment variables
 
 | Variable | Description | Default |
@@ -107,7 +118,7 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 | `NODE_ENV` | `development` or `production` | — |
 | `CORS_ORIGIN` | Allowed origin for CORS | `http://localhost:8080` |
 
-Copy `backend/.env.example` to `backend/.env` and edit as needed.
+Copy `backend/.env.example` to `backend/.env` and edit as needed. Optional: `BIRDEYE_API_KEY` for real OHLCV on the Swap chart.
 
 ## Running the server
 

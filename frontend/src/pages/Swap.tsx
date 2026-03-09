@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { VersionedTransaction } from "@solana/web3.js";
+import { VersionedTransaction, PublicKey } from "@solana/web3.js";
 import { ArrowDownLeft, Loader2, Wallet } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
@@ -46,6 +46,44 @@ export default function Swap() {
   const [swapLoading, setSwapLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txSuccess, setTxSuccess] = useState<string | null>(null);
+
+  const [solBalance, setSolBalance] = useState<number>(0);
+  const [tokenBalances, setTokenBalances] = useState<Record<string, number>>({});
+  const [balanceRefresh, setBalanceRefresh] = useState(0);
+
+  useEffect(() => {
+    if (!connected || !publicKey) {
+      setSolBalance(0);
+      setTokenBalances({});
+      return;
+    }
+    let cancelled = false;
+    connection.getBalance(publicKey).then((lamports) => {
+      if (!cancelled) setSolBalance(lamports / 1e9);
+    }).catch(() => { if (!cancelled) setSolBalance(0); });
+
+    const fetchTokenBalance = (mint: string, decimals: number) => {
+      connection.getTokenAccountsByOwner(publicKey, { mint: new PublicKey(mint) })
+        .then(({ value }) => {
+          if (cancelled || value.length === 0) return;
+          connection.getTokenAccountBalance(value[0].pubkey)
+            .then(({ value: v }) => {
+              if (!cancelled && v) setTokenBalances((prev) => ({ ...prev, [mint]: Number(v.uiAmount ?? 0) }));
+            })
+            .catch(() => {});
+        })
+        .catch(() => {});
+    };
+    fetchTokenBalance(COMMON_MINTS.USDC, 6);
+    fetchTokenBalance(COMMON_MINTS.USDT, 6);
+
+    return () => { cancelled = true; };
+  }, [connected, publicKey, connection, balanceRefresh]);
+
+  const getBalanceForToken = (token: typeof TOKEN_OPTIONS[0]) => {
+    if (token.symbol === "SOL") return solBalance;
+    return tokenBalances[token.mint] ?? 0;
+  };
 
   const pairLabel = `${inputToken.symbol}/${outputToken.symbol}`;
 
@@ -101,7 +139,7 @@ export default function Swap() {
       setTxSuccess(sig);
       setQuote(null);
       setAmount("");
-    } catch (e) {
+      setBalanceRefresh((c) => c + 1);
       const msg = e instanceof Error ? e.message : "Swap failed. Try again.";
       setError(msg);
     } finally {
@@ -160,7 +198,7 @@ export default function Swap() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Chart */}
           <div className="lg:col-span-2 glass-card rounded-xl p-6">
-            <TradingChart pairLabel={pairLabel} />
+            <TradingChart pairLabel={pairLabel} inputMint={inputToken.mint} />
           </div>
 
           {/* Swap form */}
@@ -183,15 +221,27 @@ export default function Swap() {
                       <option key={t.mint} value={t.symbol}>{t.symbol}</option>
                     ))}
                   </select>
-                  <Input
-                    type="number"
-                    placeholder="0.0"
-                    min="0"
-                    step="any"
-                    value={amount}
-                    onChange={(e) => { setAmount(e.target.value); setQuote(null); }}
-                    className="flex-1 bg-secondary/50 border-border"
-                  />
+                  <div className="flex-1 space-y-1">
+                    <Input
+                      type="number"
+                      placeholder="0.0"
+                      min="0"
+                      step="any"
+                      value={amount}
+                      onChange={(e) => { setAmount(e.target.value); setQuote(null); }}
+                      className="w-full bg-secondary/50 border-border"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Balance: {getBalanceForToken(inputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })} {inputToken.symbol}
+                      <button
+                        type="button"
+                        onClick={() => setAmount(String(getBalanceForToken(inputToken)))}
+                        className="ml-2 text-primary hover:underline"
+                      >
+                        Max
+                      </button>
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -220,12 +270,17 @@ export default function Swap() {
                       <option key={t.mint} value={t.symbol}>{t.symbol}</option>
                     ))}
                   </select>
-                  <Input
-                    readOnly
-                    placeholder="0.0"
-                    value={quote ? (Number(quote.outAmount) / 10 ** outputToken.decimals).toFixed(6) : ""}
-                    className="flex-1 bg-secondary/30 border-border text-muted-foreground"
-                  />
+                  <div className="flex-1 space-y-1">
+                    <Input
+                      readOnly
+                      placeholder="0.0"
+                      value={quote ? (Number(quote.outAmount) / 10 ** outputToken.decimals).toFixed(6) : ""}
+                      className="w-full bg-secondary/30 border-border text-muted-foreground"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Balance: {getBalanceForToken(outputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })} {outputToken.symbol}
+                    </p>
+                  </div>
                 </div>
               </div>
 

@@ -38,10 +38,14 @@ export default function ResearchTools() {
   const runLookup = async () => {
     const s = symbol.trim();
     if (!s || !canDoResearchLookup) return;
+    const base = getApiBase();
+    if (!base) {
+      setLookupResult({ found: false, symbol: s, message: "API not configured. Set VITE_API_URL for production." });
+      return;
+    }
     setLoading(true);
     setLookupResult(null);
     try {
-      const base = getApiBase();
       const res = await fetch(`${base}/api/research/lookup?symbol=${encodeURIComponent(s)}`);
       let data: { found: boolean; symbol: string; price?: number; change24h?: number; volume?: string; marketCap?: string; message?: string };
       try {
@@ -64,9 +68,14 @@ export default function ResearchTools() {
   };
 
   const refreshFeed = async () => {
+    const base = getApiBase();
+    if (!base) {
+      setFeeds([]);
+      setFeedLoading(false);
+      return;
+    }
     setFeedLoading(true);
     try {
-      const base = getApiBase();
       const res = await fetch(`${base}/api/research/feeds`);
       if (!res.ok) {
         setFeeds([]);

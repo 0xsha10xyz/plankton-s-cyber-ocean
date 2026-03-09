@@ -70,6 +70,8 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 **Swap** — The **Swap** link in the header opens the Swap page. There you get a trading chart (time ranges 1H, 4H, 1D, 1W) for the selected pair and a manual swap form. Connect your wallet, choose From/To tokens (SOL, USDC, USDT), enter an amount, click **Get quote** (powered by Jupiter on Solana), then **Swap** to execute. Success links to the transaction on Solscan. This gives users a way to trade manually until the autonomous agent is fully live.
 
+**Real data for Swap:** Quote and execution use **Jupiter** (live). Chart OHLCV uses **Birdeye** when the backend has `BIRDEYE_API_KEY` set; otherwise the chart shows sample data. Wallet balances (SOL and token) come from the Solana RPC. For reliable swap execution in production, set `VITE_SOLANA_RPC_URL` to a dedicated RPC (e.g. Helius, QuickNode).
+
 **Other sections** — Dashboard (hero with Total Users card), stats strip (Total Users), Research & Screening (feeds and screener), $PATTIES Tokenomics (token info and burn dashboard), Subscription Tiers (Free, Pro, Autonomous), Roadmap (Phase 0–8), and this Docs section. Footer shows Total Users and social links (X/Twitter: Planktonomus).
 
 ### Theming
@@ -117,6 +119,10 @@ The server allows requests from the frontend origin (e.g. http://localhost:8080 
 
 - `GET /api/stats/users` — Returns `{ count }`: number of unique wallets that have connected to the app. Used to display Total Users on the frontend.
 - `POST /api/stats/connect` — Body: `{ wallet: "<address>" }`. Registers a wallet (idempotent). Returns `{ count, isNew }`. The frontend calls this when a user connects their wallet so the count updates immediately.
+
+**Market (chart OHLCV)**
+
+- `GET /api/market/ohlcv?mint=<token_mint>&range=1H|4H|1D|1W` — Returns `{ data: [ { time, price }, ... ] }` from Birdeye. Requires `BIRDEYE_API_KEY` in backend env; if missing or request fails, returns `{ data: [] }` and the frontend uses sample data.
 
 All responses are JSON unless noted (e.g. live health is plain text).
 

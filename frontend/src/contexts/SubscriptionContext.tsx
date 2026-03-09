@@ -90,6 +90,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     setResearchUsed(getStoredResearchCount(wallet));
     setTierOverrideState(getStoredTierOverride(wallet));
     const base = getApiBase();
+    if (!base) {
+      setApiTier("free");
+      return;
+    }
     fetch(`${base}/api/subscription/me?wallet=${encodeURIComponent(wallet)}`)
       .then((r) => {
         if (!r.ok) return null;

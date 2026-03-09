@@ -26,6 +26,7 @@ export function StatsProvider({ children }: { children: ReactNode }) {
   const fetchCount = useCallback(async () => {
     try {
       const base = getApiBase();
+      if (!base) return;
       const res = await fetch(`${base}/api/stats/users`);
       if (!mounted.current) return;
       if (res.ok) {
@@ -41,6 +42,7 @@ export function StatsProvider({ children }: { children: ReactNode }) {
     if (!wallet.trim()) return;
     try {
       const base = getApiBase();
+      if (!base) return;
       const res = await fetch(`${base}/api/stats/connect`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

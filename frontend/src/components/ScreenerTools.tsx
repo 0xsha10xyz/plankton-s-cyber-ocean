@@ -63,6 +63,11 @@ export default function ScreenerTools() {
     setError(null);
     try {
       const base = getApiBase();
+      if (!base) {
+        setError("API not configured. Set VITE_API_URL for production.");
+        setLoading(false);
+        return;
+      }
       const params = new URLSearchParams();
       params.set("limit", String(maxResults));
       if (canSort) params.set("sort", sort);
