@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install && npm run build && mv frontend/dist dist",
+  "buildCommand": "npm install && npm run build && if [ -d frontend/dist ]; then cp -r frontend/dist .; fi",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
