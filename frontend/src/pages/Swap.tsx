@@ -140,6 +140,7 @@ export default function Swap() {
       setQuote(null);
       setAmount("");
       setBalanceRefresh((c) => c + 1);
+    } catch (e) {
       const msg = e instanceof Error ? e.message : "Swap failed. Try again.";
       setError(msg);
     } finally {

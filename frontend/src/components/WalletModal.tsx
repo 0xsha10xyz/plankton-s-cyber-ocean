@@ -38,11 +38,19 @@ const WalletModal = ({
       if (isInstalled) {
         try {
           select(wallet.adapter.name);
+          await new Promise((r) => setTimeout(r, 100));
           await connect();
           closeWalletModal();
           onClose();
-        } catch (err) {
-          console.error("Wallet connect error:", err);
+        } catch (err: unknown) {
+          const msg = err && typeof (err as Error).message === "string" ? (err as Error).message : "";
+          if (msg.includes("WalletNotSelected") || msg.includes("Wallet not selected")) {
+            select(wallet.adapter.name);
+            await connect().catch(() => {});
+          }
+          if (!msg.includes("User rejected")) {
+            console.error("Wallet connect error:", err);
+          }
         }
       } else if (wallet.adapter.url) {
         window.open(wallet.adapter.url, "_blank", "noopener,noreferrer");

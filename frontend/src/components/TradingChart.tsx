@@ -78,10 +78,20 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
   }, [inputMint, range]);
 
   const data = (realData && realData.length > 0) ? realData : sampleData;
-  const safeData = data.map((d) => ({
-    time: d.time ?? "",
-    price: Number(d.price) || 0,
-  })).filter((d) => d.time !== "" && Number.isFinite(d.price));
+  const safeData = data
+    .map((d) => ({
+      time: String(d?.time ?? ""),
+      price: Number(d?.price) ?? 0,
+    }))
+    .filter((d) => d.time !== "" && Number.isFinite(d.price) && d.price >= 0);
+
+  // At least 2 points so Recharts never gets undefined y2
+  const chartData =
+    safeData.length >= 2
+      ? safeData
+      : safeData.length === 1
+        ? [safeData[0], { ...safeData[0], time: safeData[0].time + " " }]
+        : [{ time: "-", price: 0 }];
 
   return (
     <div className={className}>
@@ -115,7 +125,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
         </div>
       </div>
       <ChartContainer config={chartConfig} className="h-[260px] w-full">
-        <AreaChart data={safeData.length > 0 ? safeData : [{ time: "-", price: 0 }]} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+        <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
           <defs>
             <linearGradient id="fillPrice" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--color-price)" stopOpacity={0.4} />
@@ -123,7 +133,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
             </linearGradient>
           </defs>
           <XAxis dataKey="time" tickLine={false} axisLine={false} />
-          <YAxis domain={["auto", "auto"]} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v.toFixed(4)}`} />
+          <YAxis domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} tickFormatter={(v) => `$${Number(v).toFixed(4)}`} />
           <ChartTooltip content={<ChartTooltipContent indicator="line" formatter={(v) => `$${Number(v).toFixed(4)}`} />} />
           <Area type="monotone" dataKey="price" stroke="var(--color-price)" fill="url(#fillPrice)" strokeWidth={2} />
         </AreaChart>

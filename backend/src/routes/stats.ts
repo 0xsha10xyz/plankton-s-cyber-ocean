@@ -65,3 +65,8 @@ statsRouter.post("/connect", async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to record connection" });
   }
 });
+
+/** Allow CORS preflight for POST /connect */
+statsRouter.options("/connect", (_req: Request, res: Response) => {
+  res.status(204).end();
+});
