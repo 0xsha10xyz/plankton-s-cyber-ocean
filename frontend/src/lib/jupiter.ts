@@ -26,6 +26,7 @@ export interface JupiterQuoteResponse {
   outAmount: string;
   otherAmountThreshold: string;
   swapMode: string;
+  slippageBps?: number;
   priceImpactPct: string;
   routePlan: Array<{ swapInfo: unknown; percent: number }>;
   contextSlot?: number;
@@ -71,17 +72,25 @@ export async function getSwapTransaction(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      quoteResponse: params.quoteResponse,
+      quoteResponse: {
+        ...params.quoteResponse,
+        slippageBps: params.quoteResponse.slippageBps ?? 50,
+      },
       userPublicKey: params.userPublicKey,
       wrapAndUnwrapSol: params.wrapAndUnwrapSol ?? true,
+      dynamicComputeUnitLimit: true,
     }),
   });
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const text = await res.text();
-    console.warn("Jupiter swap build error:", res.status, text);
+    const msg = typeof data?.error === "string" ? data.error : data?.message ?? "Swap build failed";
+    console.warn("Jupiter swap build error:", res.status, msg);
     return null;
   }
-  const data = await res.json();
+  if (!data?.swapTransaction || typeof data.lastValidBlockHeight !== "number") {
+    console.warn("Jupiter swap invalid response:", data);
+    return null;
+  }
   return data as JupiterSwapResponse;
 }
 

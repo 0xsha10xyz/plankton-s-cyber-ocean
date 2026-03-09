@@ -89,6 +89,15 @@ export default function Swap() {
     return tokenBalances[token.mint] ?? 0;
   };
 
+  /** Max spendable: for SOL leave ~0.005 for tx fees; for SPL use full balance */
+  const getMaxAmount = (token: typeof TOKEN_OPTIONS[0]) => {
+    const balance = getBalanceForToken(token);
+    if (token.symbol === "SOL") return Math.max(0, balance - 0.005);
+    return balance;
+  };
+
+  const hasInsufficientBalance = amount.trim() !== "" && Number.isFinite(parseFloat(amount)) && parseFloat(amount) > getBalanceForToken(inputToken);
+
   const pairLabel = `${inputToken.symbol}/${outputToken.symbol}`;
 
   const fetchQuote = useCallback(async () => {
@@ -96,6 +105,13 @@ export default function Swap() {
     if (rawAmount === "0") {
       setQuote(null);
       setError("Enter an amount");
+      return;
+    }
+    const balance = getBalanceForToken(inputToken);
+    const amountNum = parseFloat(amount);
+    if (Number.isFinite(amountNum) && amountNum > balance) {
+      setQuote(null);
+      setError("Insufficient balance");
       return;
     }
     setError(null);
@@ -130,7 +146,7 @@ export default function Swap() {
         wrapAndUnwrapSol: true,
       });
       if (!swapRes?.swapTransaction) {
-        setError("Failed to build swap. Quote may have expired.");
+        setError("Failed to build swap. Quote may have expired — try Get quote again.");
         return;
       }
       const txBuf = base64ToUint8Array(swapRes.swapTransaction);
@@ -138,12 +154,21 @@ export default function Swap() {
       const signed = await signTransaction(tx);
       const sig = await connection.sendRawTransaction(signed.serialize(), {
         skipPreflight: false,
-        maxRetries: 3,
+        maxRetries: 5,
+        preflightCommitment: "confirmed",
       });
       setTxSuccess(sig);
       setQuote(null);
       setAmount("");
       setBalanceRefresh((c) => c + 1);
+      try {
+        await Promise.race([
+          connection.confirmTransaction(sig, "confirmed"),
+          new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 60_000)),
+        ]);
+      } catch {
+        // Tx was sent; confirmation timeout is non-fatal
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Swap failed. Try again.";
       setError(msg);
@@ -240,12 +265,15 @@ export default function Swap() {
                       Balance: {getBalanceForToken(inputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })} {inputToken.symbol}
                       <button
                         type="button"
-                        onClick={() => setAmount(String(getBalanceForToken(inputToken)))}
+                        onClick={() => setAmount(String(getMaxAmount(inputToken)))}
                         className="ml-2 text-primary hover:underline"
                       >
                         Max
                       </button>
                     </p>
+                    {hasInsufficientBalance && (
+                      <p className="text-xs text-destructive">Amount exceeds balance</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -314,7 +342,7 @@ export default function Swap() {
                 <Button
                   variant="secondary"
                   onClick={fetchQuote}
-                  disabled={quoteLoading || !amount.trim()}
+                  disabled={quoteLoading || !amount.trim() || hasInsufficientBalance}
                   className="flex-1 gap-2"
                 >
                   {quoteLoading ? <Loader2 size={16} className="animate-spin" /> : null}
