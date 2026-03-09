@@ -22,7 +22,7 @@ const DiscordIcon = () => (
 );
 
 const socials = [
-  { name: "X (Twitter)", icon: XIcon, href: "#" },
+  { name: "X (Twitter)", icon: XIcon, href: "https://x.com/Planktonomus" },
   { name: "Telegram", icon: TelegramIcon, href: "#" },
   { name: "Discord", icon: DiscordIcon, href: "#" },
 ];
@@ -43,6 +43,8 @@ const Footer = () => {
               <motion.a
                 key={s.name}
                 href={s.href}
+                target={s.href.startsWith("http") ? "_blank" : undefined}
+                rel={s.href.startsWith("http") ? "noopener noreferrer" : undefined}
                 whileHover={{ scale: 1.15, y: -2 }}
                 whileTap={{ scale: 0.9 }}
                 className="w-10 h-10 rounded-lg bg-secondary/50 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors"
