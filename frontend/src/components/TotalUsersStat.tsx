@@ -26,7 +26,6 @@ export function TotalUsersStat({
         <span className="text-3xl md:text-4xl font-bold tabular-nums text-primary glow-text">
           {userCount.toLocaleString()}
         </span>
-        <span className="text-xs text-muted-foreground">wallets connected</span>
       </motion.div>
     );
   }
