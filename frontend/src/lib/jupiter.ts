@@ -1,10 +1,22 @@
 /**
- * Jupiter v6 API client for Solana swaps.
- * Quote API is keyless; use for manual swap UX until autonomous agent is ready.
- * @see docs/api-recommendations.md
+ * Jupiter API client for Solana swaps.
+ * Tries backend proxy first (no CORS), then multiple public base URLs.
  */
 
-const JUPITER_QUOTE_API = "https://quote-api.jup.ag/v6";
+import { getApiBase } from "./api.js";
+
+/** Public Jupiter base URLs; backend proxy is prepended when API is configured. */
+const JUPITER_PUBLIC_BASES = [
+  "https://quote-api.jup.ag/v6",
+  "https://lite-api.jup.ag/swap/v1",
+  "https://api.jup.ag/swap/v1",
+];
+
+function getJupiterBases(): string[] {
+  const api = getApiBase();
+  const proxy = api ? `${api.replace(/\/$/, "")}/api/jupiter` : "";
+  return proxy ? [proxy, ...JUPITER_PUBLIC_BASES] : JUPITER_PUBLIC_BASES;
+}
 
 export const COMMON_MINTS: Record<string, string> = {
   SOL: "So11111111111111111111111111111111111111112",
@@ -15,7 +27,7 @@ export const COMMON_MINTS: Record<string, string> = {
 export interface JupiterQuoteParams {
   inputMint: string;
   outputMint: string;
-  amount: string; // raw lamports/smallest unit
+  amount: string; // raw lamports/smallest unit (integer string)
   slippageBps?: number; // default 50 = 0.5%
 }
 
@@ -45,53 +57,64 @@ export interface JupiterSwapResponse {
   prioritizationFeeLamports?: number;
 }
 
-/** Get a swap quote from Jupiter (no API key required). */
+/** Get a swap quote; tries each base URL until one succeeds. */
 export async function getQuote(params: JupiterQuoteParams): Promise<JupiterQuoteResponse | null> {
   const { inputMint, outputMint, amount, slippageBps = 50 } = params;
-  const url = new URL(`${JUPITER_QUOTE_API}/quote`);
-  url.searchParams.set("inputMint", inputMint);
-  url.searchParams.set("outputMint", outputMint);
-  url.searchParams.set("amount", amount);
-  url.searchParams.set("slippageBps", String(slippageBps));
+  const raw = String(amount).trim();
+  if (!raw || raw === "0") return null;
 
-  const res = await fetch(url.toString());
-  if (!res.ok) {
-    const text = await res.text();
-    console.warn("Jupiter quote error:", res.status, text);
-    return null;
+  for (const base of getJupiterBases()) {
+    try {
+      const url = new URL(`${base}/quote`);
+      url.searchParams.set("inputMint", inputMint);
+      url.searchParams.set("outputMint", outputMint);
+      url.searchParams.set("amount", raw);
+      url.searchParams.set("slippageBps", String(slippageBps));
+
+      const res = await fetch(url.toString());
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data && typeof data.outAmount === "string" && data.inputMint && data.outputMint) {
+        return data as JupiterQuoteResponse;
+      }
+    } catch {
+      continue;
+    }
   }
-  const data = await res.json();
-  return data as JupiterQuoteResponse;
+  return null;
 }
 
-/** Get serialized swap transaction (base64) to sign and send. */
+/** Get serialized swap transaction (base64); tries each base URL until one succeeds. */
 export async function getSwapTransaction(
   params: JupiterSwapParams
 ): Promise<JupiterSwapResponse | null> {
-  const res = await fetch(`${JUPITER_QUOTE_API}/swap`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      quoteResponse: {
-        ...params.quoteResponse,
-        slippageBps: params.quoteResponse.slippageBps ?? 50,
-      },
-      userPublicKey: params.userPublicKey,
-      wrapAndUnwrapSol: params.wrapAndUnwrapSol ?? true,
-      dynamicComputeUnitLimit: true,
-    }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg = typeof data?.error === "string" ? data.error : data?.message ?? "Swap build failed";
-    console.warn("Jupiter swap build error:", res.status, msg);
-    return null;
+  const body = {
+    quoteResponse: {
+      ...params.quoteResponse,
+      slippageBps: params.quoteResponse.slippageBps ?? 50,
+    },
+    userPublicKey: params.userPublicKey,
+    wrapAndUnwrapSol: params.wrapAndUnwrapSol ?? true,
+    dynamicComputeUnitLimit: true,
+  };
+
+  for (const base of getJupiterBases()) {
+    try {
+      const res = await fetch(`${base}/swap`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) continue;
+      if (data?.swapTransaction && typeof data.lastValidBlockHeight === "number") {
+        return data as JupiterSwapResponse;
+      }
+    } catch {
+      continue;
+    }
   }
-  if (!data?.swapTransaction || typeof data.lastValidBlockHeight !== "number") {
-    console.warn("Jupiter swap invalid response:", data);
-    return null;
-  }
-  return data as JupiterSwapResponse;
+  return null;
 }
 
 /** Convert human amount to raw amount (e.g. SOL 1 -> lamports). decimals = token decimals (SOL = 9, USDC = 6). */

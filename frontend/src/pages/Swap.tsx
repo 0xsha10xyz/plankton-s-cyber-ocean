@@ -124,8 +124,8 @@ export default function Swap() {
         amount: rawAmount,
         slippageBps,
       });
-      setQuote(q);
-      if (!q) setError("No route found. Try a different pair or amount.");
+      setQuote(q ?? null);
+      if (!q) setError("Could not get quote. Check connection and try again.");
     } catch (e) {
       setError("Failed to get quote. Try again.");
       setQuote(null);
@@ -307,7 +307,15 @@ export default function Swap() {
                     <Input
                       readOnly
                       placeholder="0.0"
-                      value={quote ? (Number(quote.outAmount) / 10 ** outputToken.decimals).toFixed(6) : ""}
+                      value={
+                        quote && quote.outAmount != null
+                          ? (() => {
+                              const n = Number(quote.outAmount) / 10 ** outputToken.decimals;
+                              const s = Number.isFinite(n) ? n.toFixed(6).replace(/\.?0+$/, "") : "";
+                              return s || "0";
+                            })()
+                          : ""
+                      }
                       className="w-full bg-secondary/30 border-border text-muted-foreground"
                     />
                     <p className="text-xs text-muted-foreground">
