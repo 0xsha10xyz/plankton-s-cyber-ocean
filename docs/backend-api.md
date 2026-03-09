@@ -1,6 +1,6 @@
 # Backend API reference
 
-The Plankton backend is an Express + TypeScript server that provides REST endpoints for health, research, subscription, and agent data.
+The Plankton backend is an Express + TypeScript server that provides REST endpoints for health, research, subscription, agent, and stats (user count).
 
 ## Base URL
 
@@ -81,6 +81,21 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 
 **Example:** `GET /api/agent/config`  
 **Response:** `{ "riskLevels": ["conservative", "mid", "aggressive"], "defaultRisk": "mid" }`
+
+---
+
+### Stats (user count)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/stats/users` | Returns total unique wallets that have connected |
+| POST | `/api/stats/connect` | Registers a wallet (idempotent); call when user connects |
+
+**Example:** `GET /api/stats/users`  
+**Response:** `{ "count": 42 }`
+
+**Example:** `POST /api/stats/connect` with body `{ "wallet": "<base58-address>" }`  
+**Response:** `{ "count": 43, "isNew": true }` (or `isNew: false` if already registered)
 
 ---
 

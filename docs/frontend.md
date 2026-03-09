@@ -18,18 +18,24 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 ### 1. Navigation
 
-- **Header** (fixed): Logo, nav links (Dashboard, Research, Screener, $PATTIES Governance, Docs, Subscription), Connect Wallet / connected state, Account (when connected), mobile menu.
-- **Nav links** scroll to sections on the same page; **Docs** scrolls to the Docs section.
-- **Scroll spy** highlights the current section in the header.
+- **Header** (fixed): Logo, nav links (Dashboard, **Swap**, Research, Screener, $PATTIES Governance, Subscription, Roadmap, Docs), Connect Wallet / connected state, Account (when connected), mobile menu.
+- **Swap** opens the dedicated Swap page (`/swap`). Other nav links scroll to sections on the same page.
+- **Scroll spy** highlights the current section in the header (on the home page).
 
-### 2. Connect wallet
+### 2. Total Users
+
+- The app displays a **Total Users** count (unique wallets that have connected).
+- Shown in the hero (prominent card), in a stats strip below the hero, in the footer, and on the Swap page.
+- When a user connects their wallet, the frontend calls `POST /api/stats/connect`; the count updates immediately and is polled periodically for all visitors.
+
+### 3. Connect wallet
 
 - **Connect Wallet** opens a modal with supported wallets (Phantom, Solflare).
 - After a successful connection, the modal closes automatically.
 - When connected: header shows truncated address and a dropdown with **Account** and **Disconnect**.
 - Wallet state is from `@solana/wallet-adapter-react`; modal state from `WalletModalContext`.
 
-### 3. Account (when connected)
+### 4. Account (when connected)
 
 - **Account** in the header or dropdown opens the **Account sidebar** (sheet from the left).
 - **Account sidebar** includes:
@@ -40,7 +46,7 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
   - **Disconnect** — Disconnects and closes the sidebar.
 - Profile is keyed by wallet address (`plankton_account_<address>` in `localStorage`).
 
-### 4. Autonomous Agent Protocols
+### 5. Autonomous Agent Protocols
 
 - **Command Center** section: **AITerminal** (scrolling logs) and **AutoPilot** (Autonomous Agent card).
 - **AutoPilot** card:
@@ -48,7 +54,7 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
   - When **not** connected: message and “Connect Wallet” button.
   - When **connected**: toggle, P/L (24h, Total), risk slider, and accordions: **How to set it up**, **How it works**, **Benefits**.
 
-### 5. AI Agent Chat (when connected)
+### 6. AI Agent Chat (when connected)
 
 - **Floating button** (bot icon) at bottom-right opens **AI Agent Chat** (sheet from the right).
 - **Chat** includes:
@@ -58,14 +64,17 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
   - Mock AI replies based on keywords (portfolio, risk, market, agent, PATTIES, help, etc.).
 - Only visible when the wallet is connected.
 
-### 6. Other sections
+### 7. Swap
 
-- **Dashboard** — Hero and intro.
-- **Research & Screening** — ResearchFeed (whale, launches, volume) and ChartPlaceholder (screener).
-- **$PATTIES Tokenomics** — TokenSection (token info + Burn dashboard).
-- **Subscription Tiers** — PricingSection (Free, Pro, Autonomous).
-- **Roadmap** — Roadmap component.
-- **Docs** — In-app docs section (overview and links to repo `docs/`).
+- **Swap** link in the header opens the **Swap** page (`/swap`).
+- **Trading chart** — Time ranges 1H, 4H, 1D, 1W for the selected pair (e.g. SOL/USDC).
+- **Manual swap form** — From/To token select (SOL, USDC, USDT), amount input, **Get quote** (Jupiter API), then **Swap** to execute. Success link to Solscan.
+- Requires wallet connection. Provides manual trading until the autonomous agent is fully live.
+
+### 8. Other sections
+
+- **Dashboard** — Hero, Total Users card, stats strip, Research & Screening (feeds, screener), $PATTIES Tokenomics, Subscription Tiers, **Roadmap** (Phase 0–8: Narrative, Foundation, Development LIVE; Pre Launch, Security, Token Launch, Expansion, Governance, Full Launch SOON), Docs.
+- **Footer** — Total Users, social links (X: Planktonomus), copyright.
 
 ## Key files
 
@@ -80,6 +89,10 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 | `src/components/AccountSidebar.tsx` | Account sheet (balance, username, avatar) |
 | `src/components/AgentChat.tsx` | AI agent chat sheet |
 | `src/components/AutoPilot.tsx` | Autonomous Agent card |
+| `src/components/TotalUsersStat.tsx` | Total Users display (hero, strip, default) |
+| `src/contexts/StatsContext.tsx` | User count fetch, poll, register wallet on connect |
+| `src/pages/Swap.tsx` | Swap page (chart + Jupiter swap form) |
+| `src/lib/jupiter.ts` | Jupiter v6 quote and swap API client |
 | `src/pages/Index.tsx` | Main page, sections, AI chat FAB when connected |
 
 ## Theming

@@ -56,7 +56,9 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 ### Main features
 
-**Navigation** — Fixed header with logo; links to Dashboard, Research, Screener, $PATTIES Governance, Docs, Subscription; Connect Wallet / connected state; Account (when connected); mobile menu. Clicking a link scrolls to that section.
+**Navigation** — Fixed header with logo; links to Dashboard, **Swap**, Research, Screener, $PATTIES Governance, Subscription, Roadmap, Docs; Connect Wallet / connected state; Account (when connected); mobile menu. Dashboard and other section links scroll to content; Swap opens the dedicated swap page.
+
+**Total Users** — The app displays a **Total Users** count (unique wallets that have connected). It appears in the hero as a prominent card, in a stats strip below the hero, in the footer, and on the Swap page. The count updates when you connect your wallet and refreshes periodically for all visitors.
 
 **Connect wallet** — "Connect Wallet" opens a modal with supported wallets (e.g. Phantom, Solflare). After a successful connection, the modal closes automatically. When connected, the header shows a truncated address and a dropdown with Account and Disconnect.
 
@@ -66,7 +68,9 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 **AI Agent Chat (when connected)** — A floating button (bot icon) at the bottom-right opens the AI Agent Chat panel (from the right). You can send messages and receive replies. Topics include portfolio, risk, market research, the autonomous agent, and $PATTIES. Only visible when the wallet is connected.
 
-**Other sections** — Dashboard (hero), Research & Screening (feeds and screener), $PATTIES Tokenomics (token info and burn dashboard), Subscription Tiers (Free, Pro, Autonomous), Roadmap, and this Docs section.
+**Swap** — The **Swap** link in the header opens the Swap page. There you get a trading chart (time ranges 1H, 4H, 1D, 1W) for the selected pair and a manual swap form. Connect your wallet, choose From/To tokens (SOL, USDC, USDT), enter an amount, click **Get quote** (powered by Jupiter on Solana), then **Swap** to execute. Success links to the transaction on Solscan. This gives users a way to trade manually until the autonomous agent is fully live.
+
+**Other sections** — Dashboard (hero with Total Users card), stats strip (Total Users), Research & Screening (feeds and screener), $PATTIES Tokenomics (token info and burn dashboard), Subscription Tiers (Free, Pro, Autonomous), Roadmap (Phase 0–8), and this Docs section. Footer shows Total Users and social links (X/Twitter: Planktonomus).
 
 ### Theming
 
@@ -109,6 +113,11 @@ The server allows requests from the frontend origin (e.g. http://localhost:8080 
 - `GET /api/agent/status` — Agent status: active, risk level, profit 24h, total PnL, message.
 - `GET /api/agent/config` — Risk levels and default risk.
 
+**Stats (user count)**
+
+- `GET /api/stats/users` — Returns `{ count }`: number of unique wallets that have connected to the app. Used to display Total Users on the frontend.
+- `POST /api/stats/connect` — Body: `{ wallet: "<address>" }`. Registers a wallet (idempotent). Returns `{ count, isNew }`. The frontend calls this when a user connects their wallet so the count updates immediately.
+
 All responses are JSON unless noted (e.g. live health is plain text).
 
 ### Running the server
@@ -133,12 +142,32 @@ The backend allows the frontend origin in CORS. For other origins or deployment,
 
 ---
 
-## 5. Source code and updates
+## 5. Roadmap
+
+The protocol roadmap is shown on the app and summarized here:
+
+| Phase | Title | Description | Status |
+|-------|--------|-------------|--------|
+| 0 | Narrative | Plankton The Autonomous Protocol — All on Solana. | LIVE |
+| 1 | Foundation | Core infrastructure deployment. | LIVE |
+| 2 | Development | Protocol architecture design. | LIVE |
+| 3 | Pre Launch | MVP, Community building, Agent onboarding program. | SOON |
+| 4 | Security | Security audits. | SOON |
+| 5 | Token Launch | $PATTIES deployment. | SOON |
+| 6 | Expansion | Marketing & partnerships. | SOON |
+| 7 | Governance | $PATTIES Utility. | SOON |
+| 8 | Full Launch | The Autonomous Protocol. | SOON |
+
+---
+
+## 6. Source code and updates
 
 For source code, issue tracking, and the latest documentation and configuration options (without exposing secrets), visit the project repository:
 
-**GitHub (or your repo URL):**  
-https://github.com/your-org/plankton-s-cyber-ocean
+**GitHub:**  
+https://github.com/0xsha10xyz/plankton-s-cyber-ocean
+
+**Social:** X (Twitter) — https://x.com/Planktonomus
 
 Use the repository only for development and updates. Do not store or share environment files or secrets there. Keep all environment configuration private for user and project security.
 
