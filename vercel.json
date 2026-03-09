@@ -1,6 +1,6 @@
 {
-  "buildCommand": "npm install && npm run build",
-  "outputDirectory": "frontend/dist",
+  "buildCommand": "npm install && npm run build && mv frontend/dist dist",
+  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
   ]
