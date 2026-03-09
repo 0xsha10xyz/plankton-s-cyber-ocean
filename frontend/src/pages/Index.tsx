@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { useWallet } from "@solana/wallet-adapter-react";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
@@ -48,7 +49,7 @@ const Index = () => {
             className="flex flex-col items-center"
           >
             <HeroPlankton />
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap justify-center">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -57,6 +58,15 @@ const Index = () => {
               >
                 Launch App
               </motion.button>
+              <Link to="/swap">
+                <motion.span
+                  className="inline-block px-6 py-3 rounded-lg bg-secondary/50 text-foreground border border-border/50 hover:border-primary/30 transition-all font-semibold"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Swap
+                </motion.span>
+              </Link>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
