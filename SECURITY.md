@@ -1,25 +1,25 @@
-# Keamanan & data rahasia
+# Security & sensitive data
 
-## Yang **tidak boleh** di-commit / di-push ke GitHub
+## What **must not** be committed or pushed to GitHub
 
-- **File `.env`** (backend, frontend, root) — berisi API key (Birdeye, RPC) dan CORS. Sudah masuk `.gitignore`.
-- **`backend/data/`** — menyimpan daftar wallet yang connect (Total Users). Folder ini di-ignore; data hanya di server atau in-memory (Vercel).
-- **File kunci/rahasia lain**: `*.pem`, `*.key`, `*secret*`, `*credentials*`, `wallet.json`, `keystore*`, `mnemonic*` — semua sudah di `.gitignore`.
+- **`.env` files** (backend, frontend, root) — contain API keys (Birdeye, RPC) and CORS. They are in `.gitignore`.
+- **`backend/data/`** — stores the list of connected wallets (Total Users). This folder is ignored; data stays on the server or in memory (Vercel).
+- **Other secret/key files:** `*.pem`, `*.key`, `*secret*`, `*credentials*`, `wallet.json`, `keystore*`, `mnemonic*` — all are in `.gitignore`.
 
-## Data user & wallet
+## User & wallet data
 
-- **Connect wallet**: Hanya terjadi di browser (Wallet Adapter). Private key **tidak pernah** dikirim ke backend atau disimpan di server.
-- **Total Users**: Backend hanya menyimpan **alamat wallet** (public) di `backend/data/connected-wallets.json` (local) atau in-memory (Vercel). File/folder tersebut **tidak** di-push ke Git.
-- **Preferensi (tier, profile)**: Disimpan di **localStorage** browser saja, tidak dikirim ke repo.
+- **Connect wallet:** Happens only in the browser (Wallet Adapter). Private keys are **never** sent to the backend or stored on the server.
+- **Total Users:** The backend only stores **wallet addresses** (public) in `backend/data/connected-wallets.json` (local) or in memory (Vercel). That file/folder is **not** pushed to Git.
+- **Preferences (tier, profile):** Stored in the browser **localStorage** only; not sent to the repo.
 
-## Yang **boleh** di repo
+## What **may** be in the repo
 
-- **`.env.example`** — template tanpa nilai rahasia, hanya nama variabel. Aman untuk di-commit.
+- **`.env.example`** — template with no real values, only variable names. Safe to commit.
 
-## Cek sebelum push
+## Check before pushing
 
 ```bash
 git status
 ```
 
-Pastikan tidak ada `.env`, `backend/data`, atau file rahasia yang ter-list. Jika ada, jangan `git add` file tersebut; pastikan sudah tercakup di `.gitignore`.
+Make sure no `.env`, `backend/data`, or other secret files are listed. If they are, do not `git add` them; ensure they are covered by `.gitignore`.

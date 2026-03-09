@@ -170,7 +170,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
           ) : loading ? (
             <span className="text-xs text-muted-foreground">Loading…</span>
           ) : (
-            <span className="text-xs text-muted-foreground" title="Backend BIRDEYE_API_KEY or CoinGecko fallback for SOL">Sample</span>
+            <span className="text-xs text-muted-foreground" title="Set BIRDEYE_API_KEY on backend or use CoinGecko fallback for SOL">Sample</span>
           ))}
         </div>
         <div className="flex gap-1">

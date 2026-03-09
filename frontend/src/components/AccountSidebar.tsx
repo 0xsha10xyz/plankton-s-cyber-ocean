@@ -1,14 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAccount } from "@/contexts/AccountContext";
-import { User, Wallet, Loader2, Camera } from "lucide-react";
+import { User, Loader2, Camera, Coins } from "lucide-react";
+import { formatAssetAmount, getTokenSymbol } from "@/lib/assets";
 
 const LAMPORTS_PER_SOL = 1e9;
+
+/** SPL Token program ID (mainnet) */
+const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+
+type TokenAsset = { mint: string; decimals: number; rawAmount: string };
 
 type AccountSidebarProps = {
   open: boolean;
@@ -20,6 +26,8 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
   const { profile, setUsername, setAvatarUrl, loadProfileForWallet } = useAccount();
   const [balanceLamports, setBalanceLamports] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [tokenAssets, setTokenAssets] = useState<TokenAsset[]>([]);
+  const [assetsLoading, setAssetsLoading] = useState(false);
   const [usernameInput, setUsernameInput] = useState("");
   const [savingUsername, setSavingUsername] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,6 +53,7 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
     if (!open || !publicKey) return;
     let cancelled = false;
     setBalanceLoading(true);
+    setAssetsLoading(true);
     const connection = new Connection(endpoint);
     connection
       .getBalance(publicKey)
@@ -57,6 +66,33 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
       .finally(() => {
         if (!cancelled) setBalanceLoading(false);
       });
+
+    connection
+      .getParsedTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID })
+      .then(({ value }) => {
+        if (cancelled) return;
+        const assets: TokenAsset[] = value
+          .map(({ account }) => {
+            const data = account.data;
+            if (typeof data !== "object" || data === null || "parsed" in data === false)
+              return null;
+            const parsed = (data as { parsed: { info: { mint: string; tokenAmount: { amount: string; decimals: number } } } }).parsed;
+            const info = parsed?.info;
+            if (!info?.tokenAmount) return null;
+            const { amount, decimals } = info.tokenAmount;
+            if (amount === "0") return null;
+            return { mint: info.mint, decimals, rawAmount: amount };
+          })
+          .filter((a): a is TokenAsset => a !== null);
+        setTokenAssets(assets);
+      })
+      .catch(() => {
+        if (!cancelled) setTokenAssets([]);
+      })
+      .finally(() => {
+        if (!cancelled) setAssetsLoading(false);
+      });
+
     return () => {
       cancelled = true;
     };
@@ -78,7 +114,8 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
   };
 
   const balanceSol =
-    balanceLamports != null ? (balanceLamports / LAMPORTS_PER_SOL).toFixed(4) : null;
+    balanceLamports != null ? formatAssetAmount(String(balanceLamports), 9) : null;
+  const loadingAssets = balanceLoading || assetsLoading;
 
   const initials = profile?.username?.trim()
     ? profile.username.slice(0, 2).toUpperCase()
@@ -148,21 +185,43 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
             </div>
           </div>
 
-          {/* Balance */}
-          <div className="rounded-lg border border-border/50 bg-secondary/30 p-4 space-y-1">
+          {/* Assets (SOL + SPL tokens) */}
+          <div className="rounded-lg border border-border/50 bg-secondary/30 p-4 space-y-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Wallet size={16} />
-              <span>SOL Balance</span>
+              <Coins size={16} />
+              <span>Assets</span>
             </div>
-            {balanceLoading ? (
-              <div className="flex items-center gap-2 text-lg font-mono">
-                <Loader2 size={18} className="animate-spin" />
+            {loadingAssets ? (
+              <div className="flex items-center gap-2 text-sm font-mono text-muted-foreground">
+                <Loader2 size={16} className="animate-spin" />
                 Loading…
               </div>
-            ) : balanceSol != null ? (
-              <p className="text-xl font-bold font-mono text-foreground">{balanceSol} SOL</p>
             ) : (
-              <p className="text-sm text-muted-foreground">Unable to load balance</p>
+              <div className="space-y-2">
+                {/* SOL */}
+                <div className="flex items-center justify-between gap-2 py-1.5 border-b border-border/30 last:border-0">
+                  <span className="text-sm font-medium text-foreground">SOL</span>
+                  <span className="text-sm font-mono text-foreground tabular-nums" title={`${balanceSol ?? "—"} SOL`}>
+                    {balanceSol != null ? `${balanceSol} SOL` : "—"}
+                  </span>
+                </div>
+                {/* SPL tokens */}
+                {tokenAssets.map(({ mint, decimals, rawAmount }) => (
+                  <div
+                    key={mint}
+                    className="flex items-center justify-between gap-2 py-1.5 border-b border-border/30 last:border-0"
+                    title={mint}
+                  >
+                    <span className="text-sm font-medium text-foreground">{getTokenSymbol(mint)}</span>
+                    <span className="text-sm font-mono text-foreground tabular-nums">
+                      {formatAssetAmount(rawAmount, decimals)}
+                    </span>
+                  </div>
+                ))}
+                {!loadingAssets && tokenAssets.length === 0 && balanceSol != null && (
+                  <p className="text-xs text-muted-foreground py-1">SOL only (no other tokens)</p>
+                )}
+              </div>
             )}
           </div>
 

@@ -1,6 +1,6 @@
 /**
- * Vercel Serverless: semua /api/* di-handle oleh Express backend.
- * Backend harus sudah di-build (npm run build:backend) sebelum deploy.
+ * Vercel Serverless: all /api/* requests are handled by the Express backend.
+ * Backend must be built (npm run build:backend) before deploy.
  */
 // @ts-ignore - backend dist is ESM
 import { app } from "../backend/dist/index.js";
