@@ -18,6 +18,7 @@ import {
   toRawAmount,
   type JupiterQuoteResponse,
 } from "@/lib/jupiter";
+import { fetchBalance, fetchTokenAccountBalance } from "@/lib/solana-rpc";
 
 const TOKEN_OPTIONS = [
   { symbol: "SOL", mint: COMMON_MINTS.SOL, decimals: 9 },
@@ -58,24 +59,27 @@ export default function Swap() {
       return;
     }
     let cancelled = false;
-    connection.getBalance(publicKey).then((lamports) => {
-      if (!cancelled) setSolBalance(lamports / 1e9);
-    }).catch(() => { if (!cancelled) setSolBalance(0); });
 
-    const fetchTokenBalance = (mint: string, decimals: number) => {
-      connection.getTokenAccountsByOwner(publicKey, { mint: new PublicKey(mint) })
-        .then(({ value }) => {
-          if (cancelled || value.length === 0) return;
-          connection.getTokenAccountBalance(value[0].pubkey)
-            .then(({ value: v }) => {
-              if (!cancelled && v) setTokenBalances((prev) => ({ ...prev, [mint]: Number(v.uiAmount ?? 0) }));
-            })
-            .catch(() => {});
-        })
-        .catch(() => {});
-    };
-    fetchTokenBalance(COMMON_MINTS.USDC, 6);
-    fetchTokenBalance(COMMON_MINTS.USDT, 6);
+    fetchBalance(connection, publicKey)
+      .then((lamports) => {
+        if (!cancelled) setSolBalance(lamports / 1e9);
+      })
+      .catch(() => {
+        if (!cancelled) setSolBalance(0);
+      });
+
+    Promise.all([
+      fetchTokenAccountBalance(connection, publicKey, COMMON_MINTS.USDC),
+      fetchTokenAccountBalance(connection, publicKey, COMMON_MINTS.USDT),
+    ]).then(([usdc, usdt]) => {
+      if (!cancelled) {
+        setTokenBalances((prev) => ({
+          ...prev,
+          [COMMON_MINTS.USDC]: usdc,
+          [COMMON_MINTS.USDT]: usdt,
+        }));
+      }
+    });
 
     return () => { cancelled = true; };
   }, [connected, publicKey, connection, balanceRefresh]);
