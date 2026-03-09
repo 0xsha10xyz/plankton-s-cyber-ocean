@@ -15,6 +15,9 @@ backend/data
 
 # Environment and secrets (never commit — wallet and API safety)
 .env
+.env.local
+.env.development
+.env.production
 .env.*
 !.env.example
 !frontend/.env.example
@@ -27,6 +30,11 @@ wallet.json
 keystore*
 mnemonic*
 *.keystore
+
+# User/data that must not be in git
+backend/data
+backend/data/*
+**/connected-wallets.json
 
 # Editor directories and files
 .vscode/*
