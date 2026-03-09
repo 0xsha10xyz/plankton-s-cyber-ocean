@@ -161,6 +161,8 @@ export default function Swap() {
       setQuote(null);
       setAmount("");
       setBalanceRefresh((c) => c + 1);
+      // Refetch again after confirmation so assets show the new balance (chain can lag)
+      setTimeout(() => setBalanceRefresh((c) => c + 1), 3000);
       try {
         await Promise.race([
           connection.confirmTransaction(sig, "confirmed"),

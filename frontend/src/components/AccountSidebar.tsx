@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAccount } from "@/contexts/AccountContext";
-import { User, Loader2, Camera, Coins } from "lucide-react";
+import { User, Loader2, Camera, Coins, RefreshCw } from "lucide-react";
 import { formatAssetAmount, getTokenSymbol } from "@/lib/assets";
 
 /** Fallback RPCs when the app's connection fails (e.g. CORS or rate limit). Tried in order. */
@@ -262,9 +262,22 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
 
           {/* Assets (SOL + SPL tokens) */}
           <div className="rounded-lg border border-border/50 bg-secondary/30 p-4 space-y-3">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Coins size={16} />
-              <span>Assets</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Coins size={16} />
+                <span>Assets</span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                onClick={retryAssets}
+                disabled={loadingAssets}
+              >
+                <RefreshCw size={14} className={loadingAssets ? "animate-spin" : undefined} />
+                Refresh
+              </Button>
             </div>
             {loadingAssets ? (
               <div className="flex items-center gap-2 text-sm font-mono text-muted-foreground">
