@@ -16,5 +16,8 @@
   "workspaces": [
     "frontend",
     "backend"
-  ]
+  ],
+  "overrides": {
+    "rimraf": "^5.0.5"
+  }
 }
