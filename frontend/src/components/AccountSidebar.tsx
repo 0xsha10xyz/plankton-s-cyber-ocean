@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,9 +23,11 @@ type AccountSidebarProps = {
 
 export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
   const { publicKey, disconnect } = useWallet();
+  const { connection } = useConnection();
   const { profile, setUsername, setAvatarUrl, loadProfileForWallet } = useAccount();
   const [balanceLamports, setBalanceLamports] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceError, setBalanceError] = useState(false);
   const [tokenAssets, setTokenAssets] = useState<TokenAsset[]>([]);
   const [assetsLoading, setAssetsLoading] = useState(false);
   const [usernameInput, setUsernameInput] = useState("");
@@ -33,9 +35,6 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const address = publicKey?.toBase58() ?? "";
-  const endpoint =
-    (typeof import.meta.env !== "undefined" && import.meta.env.VITE_SOLANA_RPC_URL) ||
-    "https://api.mainnet-beta.solana.com";
 
   useEffect(() => {
     if (open && address) {
@@ -52,16 +51,23 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
   useEffect(() => {
     if (!open || !publicKey) return;
     let cancelled = false;
+    setBalanceError(false);
     setBalanceLoading(true);
     setAssetsLoading(true);
-    const connection = new Connection(endpoint);
+
     connection
       .getBalance(publicKey)
       .then((lamports) => {
-        if (!cancelled) setBalanceLamports(lamports);
+        if (!cancelled) {
+          setBalanceLamports(lamports);
+          setBalanceError(false);
+        }
       })
       .catch(() => {
-        if (!cancelled) setBalanceLamports(null);
+        if (!cancelled) {
+          setBalanceLamports(null);
+          setBalanceError(true);
+        }
       })
       .finally(() => {
         if (!cancelled) setBalanceLoading(false);
@@ -96,7 +102,49 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
     return () => {
       cancelled = true;
     };
-  }, [open, publicKey, endpoint]);
+  }, [open, publicKey, connection]);
+
+  const retryAssets = useCallback(() => {
+    if (!publicKey) return;
+    setBalanceError(false);
+    setBalanceLamports(null);
+    setTokenAssets([]);
+    setBalanceLoading(true);
+    setAssetsLoading(true);
+
+    connection
+      .getBalance(publicKey)
+      .then((lamports) => {
+        setBalanceLamports(lamports);
+        setBalanceError(false);
+      })
+      .catch(() => {
+        setBalanceLamports(null);
+        setBalanceError(true);
+      })
+      .finally(() => setBalanceLoading(false));
+
+    connection
+      .getParsedTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID })
+      .then(({ value }) => {
+        const assets: TokenAsset[] = value
+          .map(({ account }) => {
+            const data = account.data;
+            if (typeof data !== "object" || data === null || "parsed" in data === false)
+              return null;
+            const parsed = (data as { parsed: { info: { mint: string; tokenAmount: { amount: string; decimals: number } } } }).parsed;
+            const info = parsed?.info;
+            if (!info?.tokenAmount) return null;
+            const { amount, decimals } = info.tokenAmount;
+            if (amount === "0") return null;
+            return { mint: info.mint, decimals, rawAmount: amount };
+          })
+          .filter((a): a is TokenAsset => a !== null);
+        setTokenAssets(assets);
+      })
+      .catch(() => setTokenAssets([]))
+      .finally(() => setAssetsLoading(false));
+  }, [publicKey, connection]);
 
   const handleSaveUsername = () => {
     setSavingUsername(true);
@@ -201,9 +249,20 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
                 {/* SOL */}
                 <div className="flex items-center justify-between gap-2 py-1.5 border-b border-border/30 last:border-0">
                   <span className="text-sm font-medium text-foreground">SOL</span>
-                  <span className="text-sm font-mono text-foreground tabular-nums" title={`${balanceSol ?? "—"} SOL`}>
-                    {balanceSol != null ? `${balanceSol} SOL` : "—"}
-                  </span>
+                  {balanceSol != null ? (
+                    <span className="text-sm font-mono text-foreground tabular-nums" title={`${balanceSol} SOL`}>
+                      {balanceSol} SOL
+                    </span>
+                  ) : balanceError ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-destructive">Unable to load</span>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={retryAssets}>
+                        Retry
+                      </Button>
+                    </div>
+                  ) : (
+                    <span className="text-sm font-mono text-muted-foreground">—</span>
+                  )}
                 </div>
                 {/* SPL tokens */}
                 {tokenAssets.map(({ mint, decimals, rawAmount }) => (
