@@ -48,10 +48,15 @@ marketRouter.get("/ohlcv", async (req: Request, res: Response) => {
     const url = `${BIRDEYE_API}/defi/ohlcv?address=${encodeURIComponent(mint)}&type=${rangeToType(rangeParam)}&time_from=${timeFrom}&time_to=${timeTo}&currency=usd`;
 
     const resp = await fetch(url, {
-      headers: { "X-API-KEY": apiKey },
+      headers: {
+        "X-API-KEY": apiKey,
+        "x-chain": "solana",
+      },
     });
 
     if (!resp.ok) {
+      const errBody = await resp.text();
+      console.warn("Birdeye OHLCV error:", resp.status, errBody.slice(0, 200));
       res.json({ data: [] });
       return;
     }
@@ -71,7 +76,8 @@ marketRouter.get("/ohlcv", async (req: Request, res: Response) => {
     }));
 
     res.json({ data });
-  } catch {
+  } catch (e) {
+    console.warn("Birdeye OHLCV exception:", e);
     res.json({ data: [] });
   }
 });

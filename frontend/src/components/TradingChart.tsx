@@ -5,9 +5,44 @@ import { BarChart3 } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { getApiBase } from "@/lib/api";
 
+const SOL_MINT = "So11111111111111111111111111111111111111112";
+const COINGECKO_SOLANA_ID = "solana";
+
 type TimeRange = "1H" | "4H" | "1D" | "1W";
 
-/** Generate sample price series for demo. Replace with Birdeye OHLCV when API is wired. */
+/** Fetch SOL/USD from CoinGecko (no API key). Fallback when backend returns no OHLCV. */
+async function fetchCoinGeckoOHLCV(range: TimeRange): Promise<{ time: string; price: number }[]> {
+  const days = range === "1H" ? 1 : range === "4H" ? 2 : range === "1D" ? 7 : 14;
+  const url = `https://api.coingecko.com/api/v3/coins/${COINGECKO_SOLANA_ID}/market_chart?vs_currency=usd&days=${days}`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const json = await res.json();
+  const prices = json?.prices as [number, number][] | undefined;
+  if (!Array.isArray(prices) || prices.length < 2) return [];
+  const step = Math.max(1, Math.floor(prices.length / (range === "1H" ? 24 : range === "4H" ? 24 : range === "1D" ? 30 : 14)));
+  const data: { time: string; price: number }[] = [];
+  for (let i = 0; i < prices.length; i += step) {
+    const [ts, p] = prices[i];
+    const d = new Date(ts);
+    data.push({
+      time: range === "1W"
+        ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+        : d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+      price: Number(p),
+    });
+  }
+  if (data.length < 2 && prices.length >= 2) {
+    data.push({
+      time: range === "1W"
+        ? new Date(prices[prices.length - 1][0]).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+        : new Date(prices[prices.length - 1][0]).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+      price: prices[prices.length - 1][1],
+    });
+  }
+  return data;
+}
+
+/** Generate sample price series for demo. */
 function useSamplePriceData(pairLabel: string, range: TimeRange): { time: string; price: number }[] {
   return useMemo(() => {
     const points = range === "1H" ? 24 : range === "4H" ? 24 : range === "1D" ? 30 : 14;
@@ -46,38 +81,69 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
   const [range, setRange] = useState<TimeRange>("1D");
   const sampleData = useSamplePriceData(pairLabel, range);
   const [realData, setRealData] = useState<{ time: string; price: number }[] | null>(null);
+  const [dataSource, setDataSource] = useState<"live" | "coingecko" | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!inputMint?.trim()) {
       setRealData(null);
+      setDataSource(null);
       return;
     }
     const base = getApiBase();
-    if (!base) {
-      setRealData(null);
-      setLoading(false);
-      return;
-    }
+    const isSol = inputMint.trim() === SOL_MINT;
     let cancelled = false;
     setLoading(true);
-    fetch(`${base}/api/market/ohlcv?mint=${encodeURIComponent(inputMint)}&range=${range}`)
-      .then((res) => res.json())
-      .then((json) => {
+    setRealData(null);
+    setDataSource(null);
+
+    const tryBackend = () =>
+      base
+        ? fetch(`${base}/api/market/ohlcv?mint=${encodeURIComponent(inputMint.trim())}&range=${range}`)
+            .then((res) => res.json())
+            .then((json) => {
+              if (cancelled) return;
+              const arr = Array.isArray(json?.data) ? json.data : [];
+              if (arr.length > 0) {
+                setRealData(arr);
+                setDataSource("live");
+                return true;
+              }
+              return false;
+            })
+            .catch(() => false)
+        : Promise.resolve(false);
+
+    const tryCoinGecko = (): Promise<boolean> => {
+      if (!isSol) return Promise.resolve(false);
+      return fetchCoinGeckoOHLCV(range)
+        .then((arr) => {
+          if (cancelled) return false;
+          if (arr.length >= 2) {
+            setRealData(arr);
+            setDataSource("coingecko");
+            return true;
+          }
+          return false;
+        })
+        .catch(() => false);
+    };
+
+    tryBackend()
+      .then((ok) => {
         if (cancelled) return;
-        const arr = Array.isArray(json?.data) ? json.data : [];
-        setRealData(arr.length > 0 ? arr : null);
-      })
-      .catch(() => {
-        if (!cancelled) setRealData(null);
+        if (ok) return;
+        return tryCoinGecko();
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => { cancelled = true; };
   }, [inputMint, range]);
 
   const data = (realData && realData.length > 0) ? realData : sampleData;
+  const isLive = dataSource === "live" || dataSource === "coingecko";
   const safeData = data
     .map((d) => ({
       time: String(d?.time ?? ""),
@@ -99,12 +165,12 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
         <div className="flex items-center gap-2">
           <BarChart3 size={18} className="text-primary" />
           <h3 className="text-sm font-semibold text-foreground">{pairLabel}</h3>
-          {inputMint && (realData && realData.length > 0 ? (
+          {inputMint && (isLive ? (
             <span className="text-xs text-muted-foreground">Live</span>
           ) : loading ? (
             <span className="text-xs text-muted-foreground">Loading…</span>
           ) : (
-            <span className="text-xs text-muted-foreground" title="Set BIRDEYE_API_KEY on backend for live data">Sample</span>
+            <span className="text-xs text-muted-foreground" title="Backend BIRDEYE_API_KEY or CoinGecko fallback for SOL">Sample</span>
           ))}
         </div>
         <div className="flex gap-1">
@@ -135,8 +201,8 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
             </linearGradient>
           </defs>
           <XAxis dataKey="time" tickLine={false} axisLine={false} />
-          <YAxis domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} tickFormatter={(v) => `$${Number(v).toFixed(4)}`} />
-          <ChartTooltip content={<ChartTooltipContent indicator="line" formatter={(v) => `$${Number(v).toFixed(4)}`} />} />
+          <YAxis domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} tickFormatter={(v) => `$${Number(v) >= 1 ? Number(v).toFixed(2) : Number(v).toFixed(4)}`} />
+          <ChartTooltip content={<ChartTooltipContent indicator="line" formatter={(v) => `$${Number(v) >= 1 ? Number(v).toFixed(2) : Number(v).toFixed(4)}`} />} />
           <Area type="monotone" dataKey="price" stroke="var(--color-price)" fill="url(#fillPrice)" strokeWidth={2} />
         </AreaChart>
       </ChartContainer>
