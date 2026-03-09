@@ -39,26 +39,27 @@ export async function sendRawTransactionWithFallback(
   throw new Error(msg || "RPC rejected the transaction. Try again or use a different RPC.");
 }
 
-/** Try primary connection, then each fallback RPC in order until one succeeds. Returns lamports. */
+/** Try fallback RPCs first (reliable when primary has 403), then primary. Returns lamports. */
 export async function fetchBalance(
   connection: Connection,
   publicKey: PublicKey
 ): Promise<number> {
-  try {
-    return await connection.getBalance(publicKey);
-  } catch {
-    for (const rpc of FALLBACK_RPCS) {
-      try {
-        return await new Connection(rpc).getBalance(publicKey);
-      } catch {
-        continue;
-      }
+  const tryRpcs = [
+    ...FALLBACK_RPCS.map((rpc) => () => new Connection(rpc).getBalance(publicKey)),
+    () => connection.getBalance(publicKey),
+  ];
+  let lastErr: unknown;
+  for (const fn of tryRpcs) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
     }
-    throw new Error("All RPCs failed");
   }
+  throw lastErr instanceof Error ? lastErr : new Error("All RPCs failed");
 }
 
-/** Fetch human-readable balance for a single SPL token mint. Returns 0 if no account or error. */
+/** Try fallback RPCs first, then primary. Returns 0 if no account or all fail. */
 export async function fetchTokenAccountBalance(
   connection: Connection,
   publicKey: PublicKey,
@@ -73,16 +74,16 @@ export async function fetchTokenAccountBalance(
     return Number(v?.uiAmount ?? 0);
   };
 
-  try {
-    return await tryFetch(connection);
-  } catch {
-    for (const rpc of FALLBACK_RPCS) {
-      try {
-        return await tryFetch(new Connection(rpc));
-      } catch {
-        continue;
-      }
+  const rpcs = [
+    ...FALLBACK_RPCS.map((r) => new Connection(r)),
+    connection,
+  ];
+  for (const conn of rpcs) {
+    try {
+      return await tryFetch(conn);
+    } catch {
+      continue;
     }
-    return 0;
   }
+  return 0;
 }

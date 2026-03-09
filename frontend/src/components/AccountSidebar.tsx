@@ -17,18 +17,19 @@ const FALLBACK_RPCS = [
 
 /** Try primary connection, then each fallback RPC in order until one succeeds */
 async function fetchBalance(connection: Connection, publicKey: PublicKey): Promise<number> {
-  try {
-    return await connection.getBalance(publicKey);
-  } catch {
-    for (const rpc of FALLBACK_RPCS) {
-      try {
-        return await new Connection(rpc).getBalance(publicKey);
-      } catch {
-        continue;
-      }
+  const tryRpcs = [
+    () => connection.getBalance(publicKey),
+    ...FALLBACK_RPCS.map((rpc) => () => new Connection(rpc).getBalance(publicKey)),
+  ];
+  let lastErr: unknown;
+  for (const fn of tryRpcs) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
     }
-    throw new Error("All RPCs failed");
   }
+  throw lastErr instanceof Error ? lastErr : new Error("All RPCs failed");
 }
 
 /** SPL Token program ID (mainnet) */
@@ -36,13 +37,13 @@ const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ
 
 type TokenAsset = { mint: string; decimals: number; rawAmount: string };
 
-/** Try primary connection, then each fallback RPC in order until one succeeds */
+/** Try fallback RPCs first (they often work when primary has 403), then primary. Include all token accounts including 0 balance. */
 async function fetchTokenAccounts(
   connection: Connection,
   publicKey: PublicKey
 ): Promise<TokenAsset[]> {
-  const parse = (value: { account: { data: unknown } }[]) =>
-    value
+  const parse = (value: { account: { data: unknown } }[]): TokenAsset[] =>
+    (value || [])
       .map(({ account }) => {
         const data = account.data;
         if (typeof data !== "object" || data === null || !("parsed" in data)) return null;
@@ -50,7 +51,6 @@ async function fetchTokenAccounts(
         const info = parsed?.info;
         if (!info?.tokenAmount) return null;
         const { amount, decimals } = info.tokenAmount;
-        if (amount === "0") return null;
         return { mint: info.mint, decimals, rawAmount: amount };
       })
       .filter((a): a is TokenAsset => a !== null);
@@ -62,18 +62,20 @@ async function fetchTokenAccounts(
     return parse(value);
   };
 
-  try {
-    return await tryFetch(connection);
-  } catch {
-    for (const rpc of FALLBACK_RPCS) {
-      try {
-        return await tryFetch(new Connection(rpc));
-      } catch {
-        continue;
-      }
+  const rpcs: Connection[] = [
+    ...FALLBACK_RPCS.map((r) => new Connection(r)),
+    connection,
+  ];
+  let lastErr: unknown;
+  for (const conn of rpcs) {
+    try {
+      return await tryFetch(conn);
+    } catch (e) {
+      lastErr = e;
+      continue;
     }
-    throw new Error("All RPCs failed");
   }
+  throw lastErr instanceof Error ? lastErr : new Error("All RPCs failed");
 }
 
 type AccountSidebarProps = {
