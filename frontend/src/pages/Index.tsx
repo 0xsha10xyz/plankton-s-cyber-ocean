@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -34,6 +34,14 @@ const Section = ({ title, id, children }: { title: string; id: string; children:
 const Index = () => {
   const { connected } = useWallet();
   const [agentChatOpen, setAgentChatOpen] = useState(false);
+
+  useEffect(() => {
+    const hash = window.location.hash.replace(/^#/, "");
+    if (hash) {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, []);
 
   return (
     <div className="relative min-h-screen">

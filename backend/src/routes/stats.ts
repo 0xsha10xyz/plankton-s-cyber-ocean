@@ -6,14 +6,20 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "..", "data");
 const WALLETS_FILE = join(DATA_DIR, "connected-wallets.json");
+const isVercel = process.env.VERCEL === "1";
 
 type WalletData = { wallets: string[] };
 
+/** In-memory store for serverless (Vercel has read-only fs). Persists only for warm instances. */
+const memoryWallets = new Set<string>();
+
 async function ensureDataDir(): Promise<void> {
+  if (isVercel) return;
   await mkdir(DATA_DIR, { recursive: true });
 }
 
 async function loadWallets(): Promise<Set<string>> {
+  if (isVercel) return new Set(memoryWallets);
   try {
     const raw = await readFile(WALLETS_FILE, "utf-8");
     const data = JSON.parse(raw) as WalletData;
@@ -24,6 +30,11 @@ async function loadWallets(): Promise<Set<string>> {
 }
 
 async function saveWallets(wallets: Set<string>): Promise<void> {
+  if (isVercel) {
+    memoryWallets.clear();
+    wallets.forEach((w) => memoryWallets.add(w));
+    return;
+  }
   await ensureDataDir();
   await writeFile(
     WALLETS_FILE,

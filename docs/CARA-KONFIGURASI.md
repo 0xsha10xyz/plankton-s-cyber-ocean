@@ -90,11 +90,14 @@ Agar situs production (mis. **https://planktonomous.vercel.app**) bisa pakai Tot
 Tanpa ini, frontend production tidak memanggil backend (tidak ada error CORS), tapi Total Users/chart/research pakai data sample atau kosong sampai backend production dan env di atas di-set.
 
 **Opsi B — Semua di Vercel (frontend + API satu project):**  
-Backend sudah bisa jalan sebagai Vercel Serverless (folder `api/`). Deploy seperti biasa dari root repo; build akan jalankan `build:backend` lalu build frontend. Di **Vercel → Project → Settings → Environment Variables** set:
-- `BIRDEYE_API_KEY` = API key Birdeye (untuk chart OHLCV).
-- `CORS_ORIGIN` = `https://planktonomous.vercel.app` (atau biarkan default).
+Backend jalan sebagai Vercel Serverless (folder `api/`). Deploy dari root repo. Di **Vercel → Settings → Environment Variables** set:
+- `BIRDEYE_API_KEY` = API key Birdeye (agar chart tampil **Live**; tanpa ini chart pakai **Sample**).
+- `CORS_ORIGIN` = `https://planktonomous.vercel.app` (opsional).
 
-**Jangan set** `VITE_API_URL` — frontend akan pakai same origin (`/api/*`) otomatis.
+**Total Users:** Di Vercel, angka disimpan in-memory (bisa reset saat cold start). Connect wallet akan menaikkan count.
+**RPC:** Default pakai Ankr. Untuk swap lebih stabil, set `VITE_SOLANA_RPC_URL` (Helius/QuickNode).
+
+**Jangan set** `VITE_API_URL` — frontend pakai same origin (`/api/*`).
 
 ---
 
@@ -102,10 +105,10 @@ Backend sudah bisa jalan sebagai Vercel Serverless (folder `api/`). Deploy seper
 
 | File | Variabel | Wajib? | Isi |
 |------|----------|--------|-----|
-| `backend/.env` | `BIRDEYE_API_KEY` | Untuk chart real | API key dari birdeye.so |
-| `frontend/.env` | `VITE_SOLANA_RPC_URL` | Opsional | URL RPC (Helius/QuickNode) |
-| `frontend/.env` | `VITE_API_URL` | **Wajib di production** (frontend Vercel) | URL backend production (mis. https://xxx.railway.app) |
-| Backend (production) | `CORS_ORIGIN` | **Wajib** | `http://localhost:8080,https://planktonomous.vercel.app` |
+| `backend/.env` | `BIRDEYE_API_KEY` | Untuk chart **Live** | API key dari birdeye.so |
+| `frontend/.env` | `VITE_SOLANA_RPC_URL` | Opsional (swap lebih stabil) | URL RPC (Helius/QuickNode). Default: Ankr |
+| `frontend/.env` | `VITE_API_URL` | Hanya jika backend di host lain | URL backend. Kosongkan jika pakai Opsi B (semua di Vercel) |
+| Backend (production) | `CORS_ORIGIN` | Jika backend terpisah | `http://localhost:8080,https://planktonomous.vercel.app` |
 
 **Penting:** File `.env` jangan di-commit ke Git (sudah ada di `.gitignore`). Jangan share isi `.env` ke orang lain.
 

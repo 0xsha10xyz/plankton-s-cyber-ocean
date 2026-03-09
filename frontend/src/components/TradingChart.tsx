@@ -103,7 +103,9 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
             <span className="text-xs text-muted-foreground">Live</span>
           ) : loading ? (
             <span className="text-xs text-muted-foreground">Loading…</span>
-          ) : null)}
+          ) : (
+            <span className="text-xs text-muted-foreground" title="Set BIRDEYE_API_KEY on backend for live data">Sample</span>
+          ))}
         </div>
         <div className="flex gap-1">
           {(["1H", "4H", "1D", "1W"] as const).map((r) => (

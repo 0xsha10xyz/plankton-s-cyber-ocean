@@ -62,6 +62,11 @@ const Header = () => {
     return () => window.removeEventListener("scroll", updateActiveSection);
   }, [updateActiveSection]);
 
+  useEffect(() => {
+    setShowDisconnect(false);
+    setMobileOpen(false);
+  }, [pathname]);
+
   const handleNavClick = (item: (typeof NAV_CONFIG)[number]) => {
     if (item.path) {
       // Route link handled by Link
@@ -117,6 +122,21 @@ const Header = () => {
                     className={cn(
                       "px-3 py-2 text-sm transition-colors rounded-md hover:bg-secondary/50",
                       active ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary"
+                    )}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              }
+              if (pathname !== "/") {
+                return (
+                  <Link
+                    key={sectionId}
+                    to={`/#${sectionId}`}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "px-3 py-2 text-sm transition-colors rounded-md hover:bg-secondary/50",
+                      "text-muted-foreground hover:text-primary"
                     )}
                   >
                     {item.label}
@@ -253,6 +273,18 @@ const Header = () => {
                           "px-3 py-2 text-sm transition-colors text-left rounded-md hover:bg-secondary/50",
                           active ? "text-primary font-semibold bg-secondary/30" : "text-muted-foreground hover:text-primary"
                         )}
+                      >
+                        {item.label}
+                      </Link>
+                    );
+                  }
+                  if (pathname !== "/") {
+                    return (
+                      <Link
+                        key={sectionId}
+                        to={`/#${sectionId}`}
+                        onClick={() => setMobileOpen(false)}
+                        className="px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary/50 text-left rounded-md"
                       >
                         {item.label}
                       </Link>
