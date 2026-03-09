@@ -4,6 +4,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 export const FALLBACK_RPCS = [
   "https://rpc.ankr.com/solana",
   "https://solana.publicnode.com",
+  "https://api.mainnet-beta.solana.com",
 ];
 
 /** Send raw transaction; try primary connection then fallback RPCs on failure (e.g. 403 API key restricted). */

@@ -13,13 +13,14 @@ import { formatAssetAmount, getTokenSymbol } from "@/lib/assets";
 const FALLBACK_RPCS = [
   "https://rpc.ankr.com/solana",
   "https://solana.publicnode.com",
+  "https://api.mainnet-beta.solana.com",
 ];
 
-/** Try primary connection, then each fallback RPC in order until one succeeds */
+/** Try fallback RPCs first, then primary connection. */
 async function fetchBalance(connection: Connection, publicKey: PublicKey): Promise<number> {
   const tryRpcs = [
-    () => connection.getBalance(publicKey),
     ...FALLBACK_RPCS.map((rpc) => () => new Connection(rpc).getBalance(publicKey)),
+    () => connection.getBalance(publicKey),
   ];
   let lastErr: unknown;
   for (const fn of tryRpcs) {
@@ -32,44 +33,62 @@ async function fetchBalance(connection: Connection, publicKey: PublicKey): Promi
   throw lastErr instanceof Error ? lastErr : new Error("All RPCs failed");
 }
 
-/** SPL Token program ID (mainnet) */
+/** SPL Token program IDs (mainnet) — fetch from both to get all tokens. */
 const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+const TOKEN_2022_PROGRAM_ID = new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
 
 type TokenAsset = { mint: string; decimals: number; rawAmount: string };
 
-/** Try fallback RPCs first (they often work when primary has 403), then primary. Include all token accounts including 0 balance. */
+function parseTokenAccountList(value: { account: { data: unknown } }[] | undefined): TokenAsset[] {
+  if (!Array.isArray(value)) return [];
+  const out: TokenAsset[] = [];
+  const seen = new Set<string>();
+  for (const { account } of value) {
+    const data = account?.data;
+    if (typeof data !== "object" || data === null || !("parsed" in data)) continue;
+    const parsed = (data as { parsed?: { info?: { mint?: string; tokenAmount?: { amount?: string; decimals?: number; uiAmountString?: string } } } }).parsed;
+    const info = parsed?.info;
+    const tokenAmount = info?.tokenAmount;
+    if (!info?.mint || !tokenAmount) continue;
+    const mint = String(info.mint);
+    if (seen.has(mint)) continue;
+    seen.add(mint);
+    const decimals = Number(tokenAmount.decimals) || 0;
+    let rawAmount = tokenAmount.amount;
+    if (rawAmount == null && tokenAmount.uiAmountString != null) {
+      const n = parseFloat(tokenAmount.uiAmountString);
+      rawAmount = Number.isFinite(n) ? Math.floor(n * 10 ** decimals).toString() : "0";
+    }
+    out.push({ mint, decimals, rawAmount: String(rawAmount ?? "0") });
+  }
+  return out;
+}
+
+/** Try fallback RPCs first. Fetch from both Token and Token-2022 programs; include all token accounts. */
 async function fetchTokenAccounts(
   connection: Connection,
   publicKey: PublicKey
 ): Promise<TokenAsset[]> {
-  const parse = (value: { account: { data: unknown } }[]): TokenAsset[] =>
-    (value || [])
-      .map(({ account }) => {
-        const data = account.data;
-        if (typeof data !== "object" || data === null || !("parsed" in data)) return null;
-        const parsed = (data as { parsed: { info: { mint: string; tokenAmount: { amount: string; decimals: number } } } }).parsed;
-        const info = parsed?.info;
-        if (!info?.tokenAmount) return null;
-        const { amount, decimals } = info.tokenAmount;
-        return { mint: info.mint, decimals, rawAmount: amount };
-      })
-      .filter((a): a is TokenAsset => a !== null);
-
-  const tryFetch = async (conn: Connection) => {
-    const { value } = await conn.getParsedTokenAccountsByOwner(publicKey, {
-      programId: TOKEN_PROGRAM_ID,
-    });
-    return parse(value);
-  };
-
   const rpcs: Connection[] = [
     ...FALLBACK_RPCS.map((r) => new Connection(r)),
     connection,
   ];
+  const programs = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
   let lastErr: unknown;
   for (const conn of rpcs) {
     try {
-      return await tryFetch(conn);
+      const all: TokenAsset[] = [];
+      const byMint = new Map<string, TokenAsset>();
+      for (const programId of programs) {
+        const { value } = await conn.getParsedTokenAccountsByOwner(publicKey, { programId });
+        for (const asset of parseTokenAccountList(value)) {
+          if (!byMint.has(asset.mint)) {
+            byMint.set(asset.mint, asset);
+            all.push(asset);
+          }
+        }
+      }
+      return all;
     } catch (e) {
       lastErr = e;
       continue;
