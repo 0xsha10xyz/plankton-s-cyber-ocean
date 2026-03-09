@@ -18,7 +18,7 @@ import {
   toRawAmount,
   type JupiterQuoteResponse,
 } from "@/lib/jupiter";
-import { fetchBalance, fetchTokenAccountBalance } from "@/lib/solana-rpc";
+import { fetchBalance, fetchTokenAccountBalance, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 
 const TOKEN_OPTIONS = [
   { symbol: "SOL", mint: COMMON_MINTS.SOL, decimals: 9 },
@@ -152,7 +152,7 @@ export default function Swap() {
       const txBuf = base64ToUint8Array(swapRes.swapTransaction);
       const tx = VersionedTransaction.deserialize(txBuf);
       const signed = await signTransaction(tx);
-      const sig = await connection.sendRawTransaction(signed.serialize(), {
+      const sig = await sendRawTransactionWithFallback(connection, signed.serialize(), {
         skipPreflight: false,
         maxRetries: 5,
         preflightCommitment: "confirmed",
