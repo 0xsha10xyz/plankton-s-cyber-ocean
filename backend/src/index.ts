@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { healthRouter } from "./routes/health.js";
+import { statsRouter } from "./routes/stats.js";
 import { researchRouter } from "./routes/research.js";
 import { subscriptionRouter } from "./routes/subscription.js";
 import { agentRouter } from "./routes/agent.js";
@@ -18,6 +19,7 @@ app.use(
 app.use(express.json());
 
 app.use("/api/health", healthRouter);
+app.use("/api/stats", statsRouter);
 app.use("/api/research", researchRouter);
 app.use("/api/subscription", subscriptionRouter);
 app.use("/api/agent", agentRouter);

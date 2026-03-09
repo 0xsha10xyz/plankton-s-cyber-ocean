@@ -5,6 +5,7 @@ import { VersionedTransaction } from "@solana/web3.js";
 import { ArrowDownLeft, Loader2, Wallet } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { TradingChart } from "@/components/TradingChart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -268,6 +269,7 @@ export default function Swap() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

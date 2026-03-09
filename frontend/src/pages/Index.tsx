@@ -14,7 +14,8 @@ import PricingSection from "@/components/PricingSection";
 import Roadmap from "@/components/Roadmap";
 import Footer from "@/components/Footer";
 import { AgentChat } from "@/components/AgentChat";
-import { Bot } from "lucide-react";
+import { useStats } from "@/contexts/StatsContext";
+import { Bot, Users } from "lucide-react";
 
 const Section = ({ title, id, children }: { title: string; id: string; children: React.ReactNode }) => (
   <section id={id} className="mb-20 scroll-mt-24">
@@ -32,6 +33,7 @@ const Section = ({ title, id, children }: { title: string; id: string; children:
 
 const Index = () => {
   const { connected } = useWallet();
+  const { userCount } = useStats();
   const [agentChatOpen, setAgentChatOpen] = useState(false);
 
   return (
@@ -49,6 +51,18 @@ const Index = () => {
             className="flex flex-col items-center"
           >
             <HeroPlankton />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="flex items-center justify-center gap-2 text-muted-foreground text-sm mb-6"
+            >
+              <Users size={18} className="text-primary/80" />
+              <span>
+                <strong className="text-foreground font-semibold">{userCount.toLocaleString()}</strong>
+                {" "}wallet{userCount !== 1 ? "s" : ""} connected
+              </span>
+            </motion.div>
             <div className="flex gap-3 flex-wrap justify-center">
               <motion.button
                 whileHover={{ scale: 1.05 }}

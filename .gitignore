@@ -11,6 +11,7 @@ node_modules
 dist
 dist-ssr
 *.local
+backend/data
 
 # Environment and secrets (never commit — wallet and API safety)
 .env
