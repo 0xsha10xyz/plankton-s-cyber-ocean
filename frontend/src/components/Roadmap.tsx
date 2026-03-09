@@ -21,7 +21,7 @@ const phases = [
     title: "Development",
     description: "Protocol architecture design.",
     icon: Code2,
-    status: "SOON",
+    status: "LIVE",
   },
   {
     phase: "Phase 3",
