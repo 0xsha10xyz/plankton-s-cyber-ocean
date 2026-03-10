@@ -64,7 +64,12 @@ After adding variables, trigger a **Redeploy** (Deployments → ⋮ → Redeploy
   The frontend build must complete. Check the build log for errors in `npm run build --workspace=frontend`. Fix any frontend build errors and redeploy.
 
 - **404 on routes like /swap**  
-  The rewrite `"/(.*)" → "/index.html"` should send all non-file routes to the SPA. If you use a custom **Output Directory**, keep it as `dist` so it matches `vercel.json`.
+  The rewrite sends only non-`/api` paths to the SPA. Keep **Output Directory** as `dist`.
+
+- **404 on /api/health or /api/wallet/balances**  
+  1. **Root Directory:** Di Vercel → Project → **Settings** → **General** → **Root Directory** harus **kosong** atau **.** (repo root). Jika di-set ke `frontend` atau `dist`, folder `api/` tidak ikut deploy dan semua `/api/*` akan 404.  
+  2. Setelah ubah Root Directory, lakukan **Redeploy** (Deployments → ⋮ → Redeploy).  
+  3. Ada file eksplisit `api/health.ts` untuk GET `/api/health`; jika tetap 404, pastikan deploy memakai branch terbaru (mis. `main`) dan build sukses.
 
 - **405 on /api/stats/connect or /api/wallet/balances**  
   GET `/api/wallet/balances` is handled by a dedicated serverless function (`api/wallet/balances.ts`) and does not depend on Express. It should return 200 when SOLANA_RPC_URL or default RPCs work. For POST routes (e.g. stats/connect), set **CORS_ORIGIN** in Vercel to your production URL so preflight succeeds.
