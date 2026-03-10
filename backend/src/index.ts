@@ -15,14 +15,33 @@ const app = express();
 
 const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:8080,http://127.0.0.1:8080";
 const corsOrigins = corsOrigin.split(",").map((o) => o.trim()).filter(Boolean);
+const isVercel = process.env.VERCEL === "1";
 
 app.use(
   cors({
-    origin: corsOrigins.length > 1 ? corsOrigins : corsOrigins[0] || "http://localhost:8080",
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (corsOrigins.includes(origin)) return cb(null, true);
+      if (isVercel && /^https:\/\/[^.]+\.vercel\.app$/.test(origin)) return cb(null, true);
+      return cb(null, corsOrigins[0] ?? true);
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());
+
+// CORS preflight for all /api (fix 405 on live when browser sends OPTIONS)
+app.options("/api/*", (_req, res) => {
+  const origin = _req.headers.origin;
+  const allow = origin && (corsOrigins.includes(origin) || (isVercel && /^https:\/\//.test(origin))) ? origin : corsOrigins[0] || "*";
+  res.setHeader("Access-Control-Allow-Origin", allow);
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Max-Age", "86400");
+  res.status(204).end();
+});
 
 app.use("/api/health", healthRouter);
 app.use("/api/stats", statsRouter);

@@ -1,6 +1,11 @@
 {
   "buildCommand": "npm run build:backend && npm run build && npm run vercel-build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/[[...path]].ts": {
+      "includeFiles": "api/__backend/**"
+    }
+  },
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
