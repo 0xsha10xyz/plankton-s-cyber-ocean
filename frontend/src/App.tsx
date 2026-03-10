@@ -8,6 +8,7 @@ import { SolanaWalletProviders } from "@/contexts/WalletContext";
 import { StatsProvider, StatsWalletTracker } from "@/contexts/StatsContext";
 import { WalletModalProvider } from "@/contexts/WalletModalContext";
 import { AccountProvider } from "@/contexts/AccountContext";
+import { WalletBalancesProvider } from "@/contexts/WalletBalancesContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -22,6 +23,7 @@ const App = () => (
         <StatsProvider>
           <WalletModalProvider>
             <AccountProvider>
+            <WalletBalancesProvider>
             <SubscriptionProvider>
             <TooltipProvider>
             <Toaster />
@@ -36,6 +38,7 @@ const App = () => (
             </BrowserRouter>
             </TooltipProvider>
             </SubscriptionProvider>
+            </WalletBalancesProvider>
           </AccountProvider>
         </WalletModalProvider>
         </StatsProvider>

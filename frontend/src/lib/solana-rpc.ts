@@ -1,11 +1,18 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 
 /** Fallback RPCs when the app's connection fails or returns 403 (e.g. API key restricted). Tried in order. */
-export const FALLBACK_RPCS = [
-  "https://rpc.ankr.com/solana",
-  "https://solana.publicnode.com",
-  "https://api.mainnet-beta.solana.com",
-];
+function getFallbackRpcs(): string[] {
+  const env = typeof import.meta !== "undefined" && (import.meta as { env?: { VITE_SOLANA_RPC_URL?: string } }).env?.VITE_SOLANA_RPC_URL;
+  const url = typeof env === "string" && env.trim() ? env.trim() : null;
+  const list = [
+    "https://rpc.ankr.com/solana",
+    "https://solana.publicnode.com",
+    "https://api.mainnet-beta.solana.com",
+  ];
+  return url ? [url, ...list] : list;
+}
+
+export const FALLBACK_RPCS = getFallbackRpcs();
 
 /** Send raw transaction; try primary connection then fallback RPCs on failure (e.g. 403 API key restricted). */
 export async function sendRawTransactionWithFallback(
@@ -99,26 +106,51 @@ export async function fetchAllTokenBalances(
   connection: Connection,
   publicKey: PublicKey
 ): Promise<Record<string, number>> {
-  const rpcs = [...FALLBACK_RPCS.map((r) => new Connection(r)), connection];
+  const tokens = await fetchAllTokenBalancesAsTokens(connection, publicKey);
+  const byMint: Record<string, number> = {};
+  for (const t of tokens) {
+    const ui = Number(t.rawAmount) / 10 ** t.decimals;
+    byMint[t.mint] = (byMint[t.mint] ?? 0) + ui;
+  }
+  return byMint;
+}
+
+export type TokenBalanceItem = { mint: string; decimals: number; rawAmount: string };
+
+/** Fetch all SPL token balances with decimals and raw amount (for display). */
+export async function fetchAllTokenBalancesAsTokens(
+  connection: Connection,
+  publicKey: PublicKey
+): Promise<TokenBalanceItem[]> {
+  const rpcs = [...getFallbackRpcs().map((r) => new Connection(r)), connection];
   for (const conn of rpcs) {
     try {
-      const byMint: Record<string, number> = {};
+      const out: TokenBalanceItem[] = [];
+      const seen = new Set<string>();
       for (const programId of [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID]) {
         const { value } = await conn.getParsedTokenAccountsByOwner(publicKey, { programId });
         for (const item of value) {
-          const data = (item as { account?: { data?: unknown } }).account?.data as { parsed?: { info?: { mint?: string; tokenAmount?: { uiAmount?: number; uiAmountString?: string } } } } | undefined;
+          const data = (item as { account?: { data?: unknown } }).account?.data as {
+            parsed?: { info?: { mint?: string; tokenAmount?: { amount?: string; decimals?: number; uiAmount?: number; uiAmountString?: string } } };
+          } | undefined;
           const info = data?.parsed?.info;
           const mint = info?.mint;
           const tokenAmount = info?.tokenAmount;
-          if (!mint) continue;
-          const ui = tokenAmount?.uiAmount ?? (tokenAmount?.uiAmountString != null ? parseFloat(tokenAmount.uiAmountString) : NaN);
-          if (Number.isFinite(ui)) byMint[mint] = (byMint[mint] ?? 0) + ui;
+          if (!mint || seen.has(mint)) continue;
+          seen.add(mint);
+          const decimals = Number(tokenAmount?.decimals) ?? 0;
+          let rawAmount = tokenAmount?.amount;
+          if (rawAmount == null && tokenAmount?.uiAmount != null)
+            rawAmount = Math.floor(tokenAmount.uiAmount * 10 ** decimals).toString();
+          if (rawAmount == null && tokenAmount?.uiAmountString != null)
+            rawAmount = Math.floor(parseFloat(tokenAmount.uiAmountString) * 10 ** decimals).toString();
+          out.push({ mint, decimals, rawAmount: String(rawAmount ?? "0") });
         }
       }
-      return byMint;
+      return out;
     } catch {
       continue;
     }
   }
-  return {};
+  return [];
 }

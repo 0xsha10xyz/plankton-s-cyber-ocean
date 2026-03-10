@@ -44,7 +44,12 @@ After adding variables, trigger a **Redeploy** (Deployments → ⋮ → Redeploy
 
 - **Site URL:** e.g. `https://plankton-s-cyber-ocean.vercel.app` (or your project name).
 - **API:** `https://your-app.vercel.app/api/health`, `/api/wallet/balances`, etc. work on the same domain.
+- **Cek cepat:** Buka di browser:
+  - `https://planktonomous.vercel.app/api/health` → harus tampil `{"ok":true}`.
+  - `https://planktonomous.vercel.app/api/wallet/balances?wallet=ALAMAT_WALLET_ANDA` → harus tampil JSON `{ "sol": ..., "tokens": [...] }`. Jika error atau 500, cek **Vercel → Logs** (Function logs) dan pastikan **SOLANA_RPC_URL** sudah di-set.
 - **Token balances / Swap:** Work via `/api/wallet/balances` (server-side RPC). No need to set `VITE_API_URL`.
+- **Balances** are loaded by a **standalone serverless function** at `api/wallet/balances.ts` for GET `/api/wallet/balances`, so token balances work even if the full Express backend does not load. Set **SOLANA_RPC_URL** in Vercel for reliable RPC (public RPCs work from server).
+- **Optional:** Set **VITE_SOLANA_RPC_URL** in Vercel (same value as SOLANA_RPC_URL or a browser-allowed RPC) so the frontend fallback uses it when the API is slow or fails.
 
 ---
 
@@ -62,7 +67,7 @@ After adding variables, trigger a **Redeploy** (Deployments → ⋮ → Redeploy
   The rewrite `"/(.*)" → "/index.html"` should send all non-file routes to the SPA. If you use a custom **Output Directory**, keep it as `dist` so it matches `vercel.json`.
 
 - **405 on /api/stats/connect or /api/wallet/balances**  
-  Set **CORS_ORIGIN** in Vercel to your production URL (e.g. `https://planktonomous.vercel.app`). The API uses it to allow your frontend origin.
+  GET `/api/wallet/balances` is handled by a dedicated serverless function (`api/wallet/balances.ts`) and does not depend on Express. It should return 200 when SOLANA_RPC_URL or default RPCs work. For POST routes (e.g. stats/connect), set **CORS_ORIGIN** in Vercel to your production URL so preflight succeeds.
 
 ---
 

@@ -1,103 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { useState, useEffect, useRef } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAccount } from "@/contexts/AccountContext";
+import { useWalletBalances } from "@/contexts/WalletBalancesContext";
 import { User, Loader2, Camera, Coins, RefreshCw } from "lucide-react";
 import { formatAssetAmount, getTokenSymbol } from "@/lib/assets";
-import { getApiBase } from "@/lib/api";
-import { fetchWalletBalancesFromApi } from "@/lib/wallet-api";
-
-/** Fallback RPCs when the app's connection fails (e.g. CORS or rate limit). Tried in order. */
-const FALLBACK_RPCS = [
-  "https://rpc.ankr.com/solana",
-  "https://solana.publicnode.com",
-  "https://api.mainnet-beta.solana.com",
-];
-
-/** Try fallback RPCs first, then primary connection. */
-async function fetchBalance(connection: Connection, publicKey: PublicKey): Promise<number> {
-  const tryRpcs = [
-    ...FALLBACK_RPCS.map((rpc) => () => new Connection(rpc).getBalance(publicKey)),
-    () => connection.getBalance(publicKey),
-  ];
-  let lastErr: unknown;
-  for (const fn of tryRpcs) {
-    try {
-      return await fn();
-    } catch (e) {
-      lastErr = e;
-    }
-  }
-  throw lastErr instanceof Error ? lastErr : new Error("All RPCs failed");
-}
-
-/** SPL Token program IDs (mainnet) — fetch from both to get all tokens. */
-const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-const TOKEN_2022_PROGRAM_ID = new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
-
-type TokenAsset = { mint: string; decimals: number; rawAmount: string };
-
-function parseTokenAccountList(value: { account: { data: unknown } }[] | undefined): TokenAsset[] {
-  if (!Array.isArray(value)) return [];
-  const out: TokenAsset[] = [];
-  const seen = new Set<string>();
-  for (const { account } of value) {
-    const data = account?.data;
-    if (typeof data !== "object" || data === null || !("parsed" in data)) continue;
-    const parsed = (data as { parsed?: { info?: { mint?: string; tokenAmount?: { amount?: string; decimals?: number; uiAmountString?: string } } } }).parsed;
-    const info = parsed?.info;
-    const tokenAmount = info?.tokenAmount;
-    if (!info?.mint || !tokenAmount) continue;
-    const mint = String(info.mint);
-    if (seen.has(mint)) continue;
-    seen.add(mint);
-    const decimals = Number(tokenAmount.decimals) || 0;
-    let rawAmount = tokenAmount.amount;
-    if (rawAmount == null && tokenAmount.uiAmountString != null) {
-      const n = parseFloat(tokenAmount.uiAmountString);
-      rawAmount = Number.isFinite(n) ? Math.floor(n * 10 ** decimals).toString() : "0";
-    }
-    out.push({ mint, decimals, rawAmount: String(rawAmount ?? "0") });
-  }
-  return out;
-}
-
-/** Try fallback RPCs first. Fetch from both Token and Token-2022 programs; include all token accounts. */
-async function fetchTokenAccounts(
-  connection: Connection,
-  publicKey: PublicKey
-): Promise<TokenAsset[]> {
-  const rpcs: Connection[] = [
-    ...FALLBACK_RPCS.map((r) => new Connection(r)),
-    connection,
-  ];
-  const programs = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
-  let lastErr: unknown;
-  for (const conn of rpcs) {
-    try {
-      const all: TokenAsset[] = [];
-      const byMint = new Map<string, TokenAsset>();
-      for (const programId of programs) {
-        const { value } = await conn.getParsedTokenAccountsByOwner(publicKey, { programId });
-        for (const asset of parseTokenAccountList(value)) {
-          if (!byMint.has(asset.mint)) {
-            byMint.set(asset.mint, asset);
-            all.push(asset);
-          }
-        }
-      }
-      return all;
-    } catch (e) {
-      lastErr = e;
-      continue;
-    }
-  }
-  throw lastErr instanceof Error ? lastErr : new Error("All RPCs failed");
-}
 
 type AccountSidebarProps = {
   open: boolean;
@@ -106,13 +16,14 @@ type AccountSidebarProps = {
 
 export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
   const { publicKey, disconnect } = useWallet();
-  const { connection } = useConnection();
   const { profile, setUsername, setAvatarUrl, loadProfileForWallet } = useAccount();
-  const [balanceLamports, setBalanceLamports] = useState<number | null>(null);
-  const [balanceLoading, setBalanceLoading] = useState(false);
-  const [balanceError, setBalanceError] = useState(false);
-  const [tokenAssets, setTokenAssets] = useState<TokenAsset[]>([]);
-  const [assetsLoading, setAssetsLoading] = useState(false);
+  const {
+    solLamports,
+    tokens: tokenAssets,
+    loading: loadingAssets,
+    error: balanceError,
+    refetch: retryAssets,
+  } = useWalletBalances();
   const [usernameInput, setUsernameInput] = useState("");
   const [savingUsername, setSavingUsername] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -131,141 +42,6 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
     }
   }, [open, profile?.username]);
 
-  useEffect(() => {
-    if (!open || !publicKey) return;
-    const address = publicKey.toBase58();
-    let cancelled = false;
-    setBalanceError(false);
-    setBalanceLoading(true);
-    setAssetsLoading(true);
-
-    fetchWalletBalancesFromApi(getApiBase(), address)
-      .then((apiData) => {
-        if (cancelled) return;
-        if (apiData) {
-          setBalanceLamports(apiData.sol);
-          setTokenAssets(apiData.tokens);
-          setBalanceError(false);
-          setBalanceLoading(false);
-          setAssetsLoading(false);
-          return;
-        }
-        // Fallback: client-side RPC (same as localhost)
-        fetchBalance(connection, publicKey)
-          .then((lamports) => {
-            if (!cancelled) {
-              setBalanceLamports(lamports);
-              setBalanceError(false);
-            }
-          })
-          .catch(() => {
-            if (!cancelled) {
-              setBalanceLamports(null);
-              setBalanceError(true);
-            }
-          })
-          .finally(() => {
-            if (!cancelled) setBalanceLoading(false);
-          });
-
-        fetchTokenAccounts(connection, publicKey)
-          .then((assets) => {
-            if (!cancelled) setTokenAssets(assets);
-          })
-          .catch(() => {
-            if (!cancelled) setTokenAssets([]);
-          })
-          .finally(() => {
-            if (!cancelled) setAssetsLoading(false);
-          });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        fetchBalance(connection, publicKey)
-          .then((lamports) => {
-            if (!cancelled) {
-              setBalanceLamports(lamports);
-              setBalanceError(false);
-            }
-          })
-          .catch(() => {
-            if (!cancelled) {
-              setBalanceLamports(null);
-              setBalanceError(true);
-            }
-          })
-          .finally(() => {
-            if (!cancelled) setBalanceLoading(false);
-          });
-        fetchTokenAccounts(connection, publicKey)
-          .then((assets) => {
-            if (!cancelled) setTokenAssets(assets);
-          })
-          .catch(() => {
-            if (!cancelled) setTokenAssets([]);
-          })
-          .finally(() => {
-            if (!cancelled) setAssetsLoading(false);
-          });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, publicKey, connection]);
-
-  const retryAssets = useCallback(() => {
-    if (!publicKey) return;
-    const address = publicKey.toBase58();
-    setBalanceError(false);
-    setBalanceLamports(null);
-    setTokenAssets([]);
-    setBalanceLoading(true);
-    setAssetsLoading(true);
-
-    fetchWalletBalancesFromApi(getApiBase(), address)
-      .then((apiData) => {
-        if (apiData) {
-          setBalanceLamports(apiData.sol);
-          setTokenAssets(apiData.tokens);
-          setBalanceError(false);
-          setBalanceLoading(false);
-          setAssetsLoading(false);
-          return;
-        }
-        fetchBalance(connection, publicKey)
-          .then((lamports) => {
-            setBalanceLamports(lamports);
-            setBalanceError(false);
-          })
-          .catch(() => {
-            setBalanceLamports(null);
-            setBalanceError(true);
-          })
-          .finally(() => setBalanceLoading(false));
-        fetchTokenAccounts(connection, publicKey)
-          .then((assets) => setTokenAssets(assets))
-          .catch(() => setTokenAssets([]))
-          .finally(() => setAssetsLoading(false));
-      })
-      .catch(() => {
-        fetchBalance(connection, publicKey)
-          .then((lamports) => {
-            setBalanceLamports(lamports);
-            setBalanceError(false);
-          })
-          .catch(() => {
-            setBalanceLamports(null);
-            setBalanceError(true);
-          })
-          .finally(() => setBalanceLoading(false));
-        fetchTokenAccounts(connection, publicKey)
-          .then((assets) => setTokenAssets(assets))
-          .catch(() => setTokenAssets([]))
-          .finally(() => setAssetsLoading(false));
-      });
-  }, [publicKey, connection]);
-
   const handleSaveUsername = () => {
     setSavingUsername(true);
     setUsername(usernameInput.trim());
@@ -282,8 +58,7 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
   };
 
   const balanceSol =
-    balanceLamports != null ? formatAssetAmount(String(balanceLamports), 9) : null;
-  const loadingAssets = balanceLoading || assetsLoading;
+    solLamports != null ? formatAssetAmount(String(solLamports), 9) : null;
 
   const initials = profile?.username?.trim()
     ? profile.username.slice(0, 2).toUpperCase()

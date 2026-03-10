@@ -18,9 +18,8 @@ import {
   toRawAmount,
   type JupiterQuoteResponse,
 } from "@/lib/jupiter";
-import { fetchBalance, fetchAllTokenBalances, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
-import { getApiBase } from "@/lib/api";
-import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
+import { sendRawTransactionWithFallback } from "@/lib/solana-rpc";
+import { useWalletBalances } from "@/contexts/WalletBalancesContext";
 
 const TOKEN_OPTIONS = [
   { symbol: "SOL", mint: COMMON_MINTS.SOL, decimals: 9 },
@@ -50,75 +49,14 @@ export default function Swap() {
   const [error, setError] = useState<string | null>(null);
   const [txSuccess, setTxSuccess] = useState<string | null>(null);
 
-  const [solBalance, setSolBalance] = useState<number>(0);
-  const [tokenBalances, setTokenBalances] = useState<Record<string, number>>({});
-  const [balanceRefresh, setBalanceRefresh] = useState(0);
+  const {
+    solLamports,
+    tokenBalancesByMint,
+    refetch: refetchBalances,
+  } = useWalletBalances();
 
-  useEffect(() => {
-    if (!connected || !publicKey) {
-      setSolBalance(0);
-      setTokenBalances({});
-      return;
-    }
-    const address = publicKey.toBase58();
-    let cancelled = false;
-
-    function setFromApi(apiData: { sol: number; tokens: { mint: string; decimals: number; rawAmount: string }[] }) {
-      setSolBalance(apiData.sol / 1e9);
-      const byMint: Record<string, number> = {};
-      for (const t of apiData.tokens) {
-        byMint[t.mint] = rawToUiAmount(t.rawAmount, t.decimals);
-      }
-      setTokenBalances(byMint);
-    }
-
-    function setFromRpc(lamports: number, tokenMap: Record<string, number>) {
-      setSolBalance(lamports / 1e9);
-      setTokenBalances(tokenMap);
-    }
-
-    fetchWalletBalancesFromApi(getApiBase(), address)
-      .then((apiData) => {
-        if (cancelled) return;
-        if (apiData) {
-          setFromApi(apiData);
-          return;
-        }
-        fetchBalance(connection, publicKey)
-          .then((lamports) => {
-            if (cancelled) return;
-            fetchAllTokenBalances(connection, publicKey).then((byMint) => {
-              if (!cancelled) setFromRpc(lamports, byMint);
-            });
-          })
-          .catch(() => {
-            if (cancelled) return;
-            fetchAllTokenBalances(connection, publicKey).then((byMint) => {
-              if (!cancelled) setFromRpc(0, byMint);
-            });
-          });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        fetchBalance(connection, publicKey)
-          .then((lamports) => {
-            if (!cancelled) {
-              fetchAllTokenBalances(connection, publicKey).then((byMint) => {
-                if (!cancelled) setFromRpc(lamports, byMint);
-              });
-            }
-          })
-          .catch(() => {
-            if (!cancelled) {
-              fetchAllTokenBalances(connection, publicKey).then((byMint) => {
-                if (!cancelled) setFromRpc(0, byMint);
-              });
-            }
-          });
-      });
-
-    return () => { cancelled = true; };
-  }, [connected, publicKey, connection, balanceRefresh]);
+  const solBalance = solLamports != null ? solLamports / 1e9 : 0;
+  const tokenBalances = tokenBalancesByMint;
 
   const getBalanceForToken = (token: typeof TOKEN_OPTIONS[0]) => {
     if (token.symbol === "SOL") return solBalance;
@@ -196,9 +134,8 @@ export default function Swap() {
       setTxSuccess(sig);
       setQuote(null);
       setAmount("");
-      setBalanceRefresh((c) => c + 1);
-      // Refetch again after confirmation so assets show the new balance (chain can lag)
-      setTimeout(() => setBalanceRefresh((c) => c + 1), 3000);
+      refetchBalances();
+      setTimeout(() => refetchBalances(), 2500);
       try {
         await Promise.race([
           connection.confirmTransaction(sig, "confirmed"),
@@ -213,7 +150,7 @@ export default function Swap() {
     } finally {
       setSwapLoading(false);
     }
-  }, [quote, publicKey, signTransaction, connection]);
+  }, [quote, publicKey, signTransaction, connection, refetchBalances]);
 
   const switchTokens = () => {
     setInputToken(outputToken);
