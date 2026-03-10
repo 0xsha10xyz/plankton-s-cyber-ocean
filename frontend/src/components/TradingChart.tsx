@@ -151,13 +151,20 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
     }))
     .filter((d) => d.time !== "" && Number.isFinite(d.price) && d.price >= 0);
 
-  // At least 2 points so Recharts never gets undefined y2
+  const prices = safeData.map((d) => d.price);
+  const dataMin = prices.length ? Math.min(...prices) : 0;
+  const dataMax = prices.length ? Math.max(...prices) : 0;
+  const hasRange = dataMax > dataMin;
+  const yMin = hasRange ? dataMin : Math.min(0, dataMin) - 0.001;
+  const yMax = hasRange ? dataMax : Math.max(0.01, dataMax) + 0.001;
+
+  // At least 2 points with valid numbers so Recharts never gets undefined y2
   const chartData =
     safeData.length >= 2
       ? safeData
       : safeData.length === 1
-        ? [safeData[0], { ...safeData[0], time: safeData[0].time + " " }]
-        : [{ time: "-", price: 0 }];
+        ? [safeData[0], { ...safeData[0], time: safeData[0].time + " ", price: safeData[0].price }]
+        : [{ time: "-", price: 0 }, { time: "-", price: 0.01 }];
 
   return (
     <div className={className}>
@@ -201,7 +208,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
             </linearGradient>
           </defs>
           <XAxis dataKey="time" tickLine={false} axisLine={false} />
-          <YAxis domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} tickFormatter={(v) => `$${Number(v) >= 1 ? Number(v).toFixed(2) : Number(v).toFixed(4)}`} />
+          <YAxis domain={[yMin, yMax]} tickLine={false} axisLine={false} tickFormatter={(v) => `$${Number(v) >= 1 ? Number(v).toFixed(2) : Number(v).toFixed(4)}`} />
           <ChartTooltip content={<ChartTooltipContent indicator="line" formatter={(v) => `$${Number(v) >= 1 ? Number(v).toFixed(2) : Number(v).toFixed(4)}`} />} />
           <Area type="monotone" dataKey="price" stroke="var(--color-price)" fill="url(#fillPrice)" strokeWidth={2} />
         </AreaChart>

@@ -67,20 +67,25 @@ const PlanktonLogo = ({ status = "researching", size = 48, noPulse }: { status?:
       {/* Eye highlight */}
       <circle cx="34" cy="28" r="1" fill="white" opacity="0.8" />
       {/* Legs */}
-      {[-12, -6, 0, 6, 12].map((offset, i) => (
-        <motion.line
-          key={i}
-          x1={26 + (i < 3 ? 0 : 12)}
-          y1={44 + Math.abs(offset) * 0.3}
-          x2={i < 3 ? 16 + i * 2 : 48 - (4 - i) * 2}
-          y2={56 + Math.abs(offset) * 0.2}
-          stroke="hsl(180, 70%, 35%)"
-          strokeWidth="1.2"
-          strokeLinecap="round"
-          animate={{ y2: [56 + Math.abs(offset) * 0.2, 58 + Math.abs(offset) * 0.2, 56 + Math.abs(offset) * 0.2] }}
-          transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
-        />
-      ))}
+      {[-12, -6, 0, 6, 12].map((offset, i) => {
+        const y1 = 44 + Math.abs(offset) * 0.3;
+        const y2 = 56 + Math.abs(offset) * 0.2;
+        const x2 = i < 3 ? 16 + i * 2 : 48 - (4 - i) * 2;
+        return (
+          <motion.line
+            key={i}
+            x1={26 + (i < 3 ? 0 : 12)}
+            y1={y1}
+            x2={x2}
+            y2={y2}
+            stroke="hsl(180, 70%, 35%)"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            animate={{ opacity: [0.8, 1, 0.8] }}
+            transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+          />
+        );
+      })}
     </motion.svg>
   );
 };

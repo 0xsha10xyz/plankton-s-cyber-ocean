@@ -151,6 +151,8 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
           return;
         }
         if (isProductionApi()) {
+          setBalanceLamports(null);
+          setBalanceError(true);
           setBalanceLoading(false);
           setAssetsLoading(false);
           return;
@@ -187,6 +189,8 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
       .catch(() => {
         if (cancelled) return;
         if (isProductionApi()) {
+          setBalanceLamports(null);
+          setBalanceError(true);
           setBalanceLoading(false);
           setAssetsLoading(false);
           return;
@@ -244,6 +248,8 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
           return;
         }
         if (isProductionApi()) {
+          setBalanceLamports(null);
+          setBalanceError(true);
           setBalanceLoading(false);
           setAssetsLoading(false);
           return;
@@ -265,6 +271,8 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
       })
       .catch(() => {
         if (isProductionApi()) {
+          setBalanceLamports(null);
+          setBalanceError(true);
           setBalanceLoading(false);
           setAssetsLoading(false);
           return;
