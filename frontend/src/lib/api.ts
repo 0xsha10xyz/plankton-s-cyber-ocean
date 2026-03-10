@@ -16,3 +16,9 @@ export function getApiBase(): string {
   if (isProduction) return origin;
   return `http://${window.location.hostname}:3000`;
 }
+
+/** True when the app uses same-origin API (production). Avoid client-side RPC fallback to prevent 403. */
+export function isProductionApi(): boolean {
+  if (typeof window === "undefined") return false;
+  return getApiBase() === window.location.origin;
+}

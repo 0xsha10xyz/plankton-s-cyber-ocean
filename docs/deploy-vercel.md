@@ -31,7 +31,8 @@ In the Vercel project: **Settings** → **Environment Variables**. Add:
 | Name | Value | Notes |
 |------|--------|--------|
 | `BIRDEYE_API_KEY` | Your Birdeye API key | For real OHLCV chart on Swap. Optional. |
-| `CORS_ORIGIN` | `https://your-app.vercel.app` | Replace with your actual Vercel URL (e.g. `https://plankton-s-cyber-ocean.vercel.app`). Optional; helps if you use a custom domain later. |
+| `CORS_ORIGIN` | `https://planktonomous.vercel.app` | Replace with your actual Vercel URL. Lets the API allow your frontend origin. |
+| `SOLANA_RPC_URL` | `https://rpc.ankr.com/solana` or your RPC | Optional; used by `/api/wallet/balances` for token balances. |
 
 **Do not set** `VITE_API_URL`. In production the frontend uses the same origin, so `/api/*` is your backend.
 

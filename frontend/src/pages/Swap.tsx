@@ -19,7 +19,7 @@ import {
   type JupiterQuoteResponse,
 } from "@/lib/jupiter";
 import { fetchBalance, fetchAllTokenBalances, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
-import { getApiBase } from "@/lib/api";
+import { getApiBase, isProductionApi } from "@/lib/api";
 import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
 
 const TOKEN_OPTIONS = [
@@ -84,6 +84,7 @@ export default function Swap() {
           setFromApi(apiData);
           return;
         }
+        if (isProductionApi()) return;
         fetchBalance(connection, publicKey)
           .then((lamports) => {
             if (cancelled) return;
@@ -100,6 +101,7 @@ export default function Swap() {
       })
       .catch(() => {
         if (cancelled) return;
+        if (isProductionApi()) return;
         fetchBalance(connection, publicKey)
           .then((lamports) => {
             if (!cancelled) {
