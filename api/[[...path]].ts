@@ -1,15 +1,13 @@
 /**
- * Vercel Serverless: all /api/* requests are handled by the Express backend.
- * Backend must be built (npm run build:backend) before deploy.
- * Normalizes req.url so Express sees /api/... (Vercel sometimes strips the /api prefix).
+ * Vercel Serverless: all /api/* requests go to the Express backend.
+ * Backend is copied to api/__backend at build so Vercel bundles it.
+ * Uses dynamic import so ESM backend loads correctly.
  */
-// @ts-ignore - backend dist is ESM
-import { app } from "../backend/dist/index.js";
-
-export default function handler(req: import("http").IncomingMessage, res: import("http").ServerResponse) {
+export default async function handler(req: import("http").IncomingMessage, res: import("http").ServerResponse) {
   const url = req.url || "/";
   if (!url.startsWith("/api") && url.startsWith("/")) {
     (req as { url?: string }).url = "/api" + url;
   }
+  const { app } = await import("./__backend/index.js");
   return app(req, res);
 }

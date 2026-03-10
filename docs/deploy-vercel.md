@@ -1,6 +1,6 @@
 # Deploy to Vercel (frontend + API in one project)
 
-Your app runs on Vercel with the **frontend** (React) and **backend** (Express API) in a single project. The API is served as serverless functions under `/api/*`.
+Your app runs on Vercel with the **frontend** (React) and **backend** (Express API) in a single project. The API is served as serverless functions under `/api/*`. **Behavior is the same as localhost:** API-first for balances and stats, with client RPC fallback when the API is unavailable.
 
 ---
 
@@ -50,16 +50,19 @@ After adding variables, trigger a **Redeploy** (Deployments → ⋮ → Redeploy
 
 ## 5. If the build fails
 
-- **“Cannot find module '../backend/dist/index.js'”**  
-  The backend must build before the API handler is used. Ensure **Build Command** is exactly:
+- **“Cannot find module './__backend/index.js'” or module not found**  
+  The build copies the backend into `api/__backend` so the serverless handler can load it. Ensure **Build Command** is exactly:
   `npm run build:backend && npm run build && npm run vercel-build`
-  (no extra steps that might skip `build:backend`).
+  (so `backend/dist` is built first, then `vercel-build` copies it to `api/__backend`).
 
 - **“Missing frontend/dist”**  
   The frontend build must complete. Check the build log for errors in `npm run build --workspace=frontend`. Fix any frontend build errors and redeploy.
 
 - **404 on routes like /swap**  
   The rewrite `"/(.*)" → "/index.html"` should send all non-file routes to the SPA. If you use a custom **Output Directory**, keep it as `dist` so it matches `vercel.json`.
+
+- **405 on /api/stats/connect or /api/wallet/balances**  
+  Set **CORS_ORIGIN** in Vercel to your production URL (e.g. `https://planktonomous.vercel.app`). The API uses it to allow your frontend origin.
 
 ---
 

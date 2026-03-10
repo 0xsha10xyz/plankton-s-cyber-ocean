@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAccount } from "@/contexts/AccountContext";
 import { User, Loader2, Camera, Coins, RefreshCw } from "lucide-react";
 import { formatAssetAmount, getTokenSymbol } from "@/lib/assets";
-import { getApiBase, isProductionApi } from "@/lib/api";
+import { getApiBase } from "@/lib/api";
 import { fetchWalletBalancesFromApi } from "@/lib/wallet-api";
 
 /** Fallback RPCs when the app's connection fails (e.g. CORS or rate limit). Tried in order. */
@@ -150,14 +150,7 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
           setAssetsLoading(false);
           return;
         }
-        if (isProductionApi()) {
-          setBalanceLamports(null);
-          setBalanceError(true);
-          setBalanceLoading(false);
-          setAssetsLoading(false);
-          return;
-        }
-        // Fallback: client-side RPC
+        // Fallback: client-side RPC (same as localhost)
         fetchBalance(connection, publicKey)
           .then((lamports) => {
             if (!cancelled) {
@@ -188,13 +181,6 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
       })
       .catch(() => {
         if (cancelled) return;
-        if (isProductionApi()) {
-          setBalanceLamports(null);
-          setBalanceError(true);
-          setBalanceLoading(false);
-          setAssetsLoading(false);
-          return;
-        }
         fetchBalance(connection, publicKey)
           .then((lamports) => {
             if (!cancelled) {
@@ -247,13 +233,6 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
           setAssetsLoading(false);
           return;
         }
-        if (isProductionApi()) {
-          setBalanceLamports(null);
-          setBalanceError(true);
-          setBalanceLoading(false);
-          setAssetsLoading(false);
-          return;
-        }
         fetchBalance(connection, publicKey)
           .then((lamports) => {
             setBalanceLamports(lamports);
@@ -270,13 +249,6 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
           .finally(() => setAssetsLoading(false));
       })
       .catch(() => {
-        if (isProductionApi()) {
-          setBalanceLamports(null);
-          setBalanceError(true);
-          setBalanceLoading(false);
-          setAssetsLoading(false);
-          return;
-        }
         fetchBalance(connection, publicKey)
           .then((lamports) => {
             setBalanceLamports(lamports);

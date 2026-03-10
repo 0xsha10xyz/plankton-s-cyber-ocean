@@ -36,6 +36,9 @@ backend/data
 backend/data/*
 **/connected-wallets.json
 
+# Vercel build output (backend copied here at build time)
+api/__backend
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
