@@ -18,7 +18,7 @@ import {
   toRawAmount,
   type JupiterQuoteResponse,
 } from "@/lib/jupiter";
-import { fetchBalance, fetchTokenAccountBalance, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
+import { fetchBalance, fetchAllTokenBalances, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 import { getApiBase } from "@/lib/api";
 import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
 
@@ -63,60 +63,58 @@ export default function Swap() {
     const address = publicKey.toBase58();
     let cancelled = false;
 
+    function setFromApi(apiData: { sol: number; tokens: { mint: string; decimals: number; rawAmount: string }[] }) {
+      setSolBalance(apiData.sol / 1e9);
+      const byMint: Record<string, number> = {};
+      for (const t of apiData.tokens) {
+        byMint[t.mint] = rawToUiAmount(t.rawAmount, t.decimals);
+      }
+      setTokenBalances(byMint);
+    }
+
+    function setFromRpc(lamports: number, tokenMap: Record<string, number>) {
+      setSolBalance(lamports / 1e9);
+      setTokenBalances(tokenMap);
+    }
+
     fetchWalletBalancesFromApi(getApiBase(), address)
       .then((apiData) => {
         if (cancelled) return;
         if (apiData) {
-          setSolBalance(apiData.sol / 1e9);
-          const byMint: Record<string, number> = {};
-          for (const t of apiData.tokens) {
-            byMint[t.mint] = rawToUiAmount(t.rawAmount, t.decimals);
-          }
-          setTokenBalances(byMint);
+          setFromApi(apiData);
           return;
         }
         fetchBalance(connection, publicKey)
           .then((lamports) => {
-            if (!cancelled) setSolBalance(lamports / 1e9);
+            if (cancelled) return;
+            fetchAllTokenBalances(connection, publicKey).then((byMint) => {
+              if (!cancelled) setFromRpc(lamports, byMint);
+            });
           })
           .catch(() => {
-            if (!cancelled) setSolBalance(0);
+            if (cancelled) return;
+            fetchAllTokenBalances(connection, publicKey).then((byMint) => {
+              if (!cancelled) setFromRpc(0, byMint);
+            });
           });
-
-        Promise.all([
-          fetchTokenAccountBalance(connection, publicKey, COMMON_MINTS.USDC),
-          fetchTokenAccountBalance(connection, publicKey, COMMON_MINTS.USDT),
-        ]).then(([usdc, usdt]) => {
-          if (!cancelled) {
-            setTokenBalances((prev) => ({
-              ...prev,
-              [COMMON_MINTS.USDC]: usdc,
-              [COMMON_MINTS.USDT]: usdt,
-            }));
-          }
-        });
       })
       .catch(() => {
         if (cancelled) return;
         fetchBalance(connection, publicKey)
           .then((lamports) => {
-            if (!cancelled) setSolBalance(lamports / 1e9);
+            if (!cancelled) {
+              fetchAllTokenBalances(connection, publicKey).then((byMint) => {
+                if (!cancelled) setFromRpc(lamports, byMint);
+              });
+            }
           })
           .catch(() => {
-            if (!cancelled) setSolBalance(0);
+            if (!cancelled) {
+              fetchAllTokenBalances(connection, publicKey).then((byMint) => {
+                if (!cancelled) setFromRpc(0, byMint);
+              });
+            }
           });
-        Promise.all([
-          fetchTokenAccountBalance(connection, publicKey, COMMON_MINTS.USDC),
-          fetchTokenAccountBalance(connection, publicKey, COMMON_MINTS.USDT),
-        ]).then(([usdc, usdt]) => {
-          if (!cancelled) {
-            setTokenBalances((prev) => ({
-              ...prev,
-              [COMMON_MINTS.USDC]: usdc,
-              [COMMON_MINTS.USDT]: usdt,
-            }));
-          }
-        });
       });
 
     return () => { cancelled = true; };

@@ -72,7 +72,9 @@ export async function fetchTokenAccountBalance(
     });
     if (value.length === 0) return 0;
     const { value: v } = await conn.getTokenAccountBalance(value[0].pubkey);
-    return Number(v?.uiAmount ?? 0);
+    const amt = v as { uiAmount?: number | null; uiAmountString?: string | null } | undefined;
+    const num = amt?.uiAmount ?? (amt?.uiAmountString != null ? parseFloat(amt.uiAmountString) : NaN);
+    return Number.isFinite(num) ? num : 0;
   };
 
   const rpcs = [
@@ -87,4 +89,36 @@ export async function fetchTokenAccountBalance(
     }
   }
   return 0;
+}
+
+const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+const TOKEN_2022_PROGRAM_ID = new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
+
+/** Fetch all SPL token balances (Token + Token-2022) via fallback RPCs. Returns mint -> UI amount. */
+export async function fetchAllTokenBalances(
+  connection: Connection,
+  publicKey: PublicKey
+): Promise<Record<string, number>> {
+  const rpcs = [...FALLBACK_RPCS.map((r) => new Connection(r)), connection];
+  for (const conn of rpcs) {
+    try {
+      const byMint: Record<string, number> = {};
+      for (const programId of [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID]) {
+        const { value } = await conn.getParsedTokenAccountsByOwner(publicKey, { programId });
+        for (const item of value) {
+          const data = (item as { account?: { data?: unknown } }).account?.data as { parsed?: { info?: { mint?: string; tokenAmount?: { uiAmount?: number; uiAmountString?: string } } } } | undefined;
+          const info = data?.parsed?.info;
+          const mint = info?.mint;
+          const tokenAmount = info?.tokenAmount;
+          if (!mint) continue;
+          const ui = tokenAmount?.uiAmount ?? (tokenAmount?.uiAmountString != null ? parseFloat(tokenAmount.uiAmountString) : NaN);
+          if (Number.isFinite(ui)) byMint[mint] = (byMint[mint] ?? 0) + ui;
+        }
+      }
+      return byMint;
+    } catch {
+      continue;
+    }
+  }
+  return {};
 }

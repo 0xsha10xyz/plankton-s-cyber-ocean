@@ -48,6 +48,10 @@ Backend runs at **http://localhost:3000**. Use `frontend/.env` with `VITE_API_UR
 
 See `backend/README.md` for setup and env vars.
 
+## Deploy to Vercel
+
+To put the app live (frontend + API in one project), see **[docs/deploy-vercel.md](docs/deploy-vercel.md)**. Summary: import the repo in Vercel with **root directory** at the repo root, then deploy. Set `BIRDEYE_API_KEY` and optionally `CORS_ORIGIN` in Vercel environment variables. Do **not** set `VITE_API_URL` so the frontend uses the same origin for `/api/*`.
+
 ## Tech
 
 - **Frontend:** Vite, React 18, TypeScript, shadcn/ui, Tailwind, Solana wallet adapter

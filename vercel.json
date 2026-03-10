@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm install && npm run build:backend && npm run build && if [ -d frontend/dist ]; then cp -r frontend/dist .; fi",
+  "buildCommand": "npm run build:backend && npm run build && npm run vercel-build",
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/:path*" },

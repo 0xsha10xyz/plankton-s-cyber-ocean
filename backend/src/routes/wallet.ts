@@ -19,22 +19,25 @@ function parseTokenAccountValue(value: unknown): TokenBalance[] {
   const seen = new Set<string>();
   for (const item of value) {
     const account = (item as { account?: { data?: unknown } })?.account;
-    const data = account?.data;
-    if (typeof data !== "object" || data === null || !("parsed" in data)) continue;
-    const parsed = (data as { parsed?: { info?: { mint?: string; tokenAmount?: { amount?: string; decimals?: number; uiAmountString?: string } } } }).parsed;
-    const info = parsed?.info;
-    const tokenAmount = info?.tokenAmount;
-    if (!info?.mint || !tokenAmount) continue;
-    const mint = String(info.mint);
-    if (seen.has(mint)) continue;
-    seen.add(mint);
-    const decimals = Number(tokenAmount.decimals) || 0;
+    const data = account?.data as Record<string, unknown> | null | undefined;
+    if (typeof data !== "object" || data === null) continue;
+    const parsed = data.parsed as Record<string, unknown> | undefined;
+    if (!parsed) continue;
+    // Standard: parsed.info.{ mint, tokenAmount }
+    const info = (parsed.info ?? parsed) as Record<string, unknown> | undefined;
+    const tokenAmount = (info?.tokenAmount ?? parsed.tokenAmount) as { amount?: string; decimals?: number; uiAmountString?: string } | undefined;
+    const mint = info?.mint ?? parsed.mint;
+    if (!mint || !tokenAmount) continue;
+    const mintStr = String(mint);
+    if (seen.has(mintStr)) continue;
+    seen.add(mintStr);
+    const decimals = Number(tokenAmount.decimals) ?? 0;
     let rawAmount = tokenAmount.amount;
     if (rawAmount == null && tokenAmount.uiAmountString != null) {
       const n = parseFloat(tokenAmount.uiAmountString);
       rawAmount = Number.isFinite(n) ? Math.floor(n * 10 ** decimals).toString() : "0";
     }
-    out.push({ mint, decimals, rawAmount: String(rawAmount ?? "0") });
+    out.push({ mint: mintStr, decimals, rawAmount: String(rawAmount ?? "0") });
   }
   return out;
 }
@@ -67,27 +70,32 @@ walletRouter.get("/balances", async (req: Request, res: Response) => {
   for (const rpcUrl of RPC_URLS) {
     try {
       const balanceResult = await rpcCall<number | { value?: number }>(rpcUrl, "getBalance", [wallet]);
-      sol = typeof balanceResult === "number" ? balanceResult : (balanceResult?.value ?? 0);
+      const lamports = typeof balanceResult === "number" ? balanceResult : (balanceResult?.value ?? 0);
+      if (lamports >= 0) sol = lamports;
+    } catch {
+      // keep previous sol
+    }
+  }
 
+  for (const rpcUrl of RPC_URLS) {
+    try {
       for (const programId of [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID]) {
-        const tokenResult = await rpcCall<{ value?: unknown[] }>(rpcUrl, "getTokenAccountsByOwner", [
+        const tokenResult = await rpcCall<unknown>(rpcUrl, "getTokenAccountsByOwner", [
           wallet,
           { programId },
           { encoding: "jsonParsed" },
         ]);
-        const list = parseTokenAccountValue(tokenResult?.value ?? []);
+        const rawList = Array.isArray(tokenResult) ? tokenResult : (tokenResult as { value?: unknown[] })?.value ?? [];
+        const list = parseTokenAccountValue(rawList);
         for (const t of list) {
           if (!tokensByMint.has(t.mint)) tokensByMint.set(t.mint, t);
         }
       }
-
-      const tokens = Array.from(tokensByMint.values());
-      res.json({ sol, tokens });
-      return;
     } catch {
       continue;
     }
   }
 
-  res.status(502).json({ error: "Unable to fetch balances from RPC" });
+  const tokens = Array.from(tokensByMint.values());
+  res.json({ sol, tokens });
 });

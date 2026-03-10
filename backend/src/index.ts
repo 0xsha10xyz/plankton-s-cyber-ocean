@@ -13,7 +13,7 @@ import { agentRouter } from "./routes/agent.js";
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
 
-const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:8080";
+const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:8080,http://127.0.0.1:8080";
 const corsOrigins = corsOrigin.split(",").map((o) => o.trim()).filter(Boolean);
 
 app.use(

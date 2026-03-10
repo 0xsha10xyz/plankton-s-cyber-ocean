@@ -20,7 +20,8 @@ These steps are **manual**: create or edit `.env` files and fill in the required
    # Server
    PORT=3000
    NODE_ENV=development
-   CORS_ORIGIN=http://localhost:8080
+   # Allow frontend origin (comma-separated for multiple). Default includes both so opening from localhost or 127.0.0.1 works.
+   CORS_ORIGIN=http://localhost:8080,http://127.0.0.1:8080
 
    # Solana RPC for wallet balances (Account + Swap). Optional: use Helius/QuickNode for better rate limits.
    SOLANA_RPC_URL=https://rpc.ankr.com/solana
