@@ -3,11 +3,10 @@
   "outputDirectory": "dist",
   "functions": {
     "api/[[...path]].ts": {
-      "includeFiles": "api/__backend/**"
+      "includeFiles": ["api/__backend/**", "api/wallet/**"]
     }
   },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/:path*" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
