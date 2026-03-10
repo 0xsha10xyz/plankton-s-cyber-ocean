@@ -3,7 +3,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/[[...path]].ts": {
-      "includeFiles": ["api/__backend/**", "api/wallet/**"]
+      "includeFiles": "api/**"
     }
   },
   "rewrites": [
