@@ -22,6 +22,9 @@ These steps are **manual**: create or edit `.env` files and fill in the required
    NODE_ENV=development
    CORS_ORIGIN=http://localhost:8080
 
+   # Solana RPC for wallet balances (Account + Swap). Optional: use Helius/QuickNode for better rate limits.
+   SOLANA_RPC_URL=https://rpc.ankr.com/solana
+
    # Real chart: add your Birdeye API key
    BIRDEYE_API_KEY=your_birdeye_api_key_here
    ```
@@ -108,6 +111,7 @@ The backend runs as Vercel Serverless (folder `api/`). Deploy from the repo root
 | File | Variable | Required? | Value |
 |------|----------|----------|--------|
 | `backend/.env` | `BIRDEYE_API_KEY` | For **Live** chart | API key from birdeye.so |
+| `backend/.env` | `SOLANA_RPC_URL` | Optional (wallet balances) | RPC URL (e.g. `https://rpc.ankr.com/solana` or Helius/QuickNode). Default: Ankr + fallbacks |
 | `frontend/.env` | `VITE_SOLANA_RPC_URL` | Optional (more stable swap) | RPC URL (Helius/QuickNode). Default: Ankr |
 | `frontend/.env` | `VITE_API_URL` | Only if backend is on another host | Backend URL. Leave unset when using Option B (all on Vercel) |
 | Backend (production) | `CORS_ORIGIN` | When backend is separate | `http://localhost:8080,https://planktonomous.vercel.app` |

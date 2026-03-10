@@ -124,6 +124,14 @@ The server allows requests from the frontend origin (e.g. http://localhost:8080 
 
 - `GET /api/market/ohlcv?mint=<token_mint>&range=1H|4H|1D|1W` — Returns `{ data: [ { time, price }, ... ] }` from Birdeye. Requires `BIRDEYE_API_KEY` in backend env; if missing or request fails, returns `{ data: [] }` and the frontend uses sample data.
 
+**Wallet (balances)**
+
+- `GET /api/wallet/balances?wallet=<base58>` — Returns `{ sol, tokens }` (SOL in lamports, SPL tokens with mint, decimals, rawAmount). Fetched server-side to avoid browser CORS/403. Used by Account Assets and Swap page when the backend is available.
+
+**Jupiter (swap)**
+
+- The backend can proxy Jupiter quote and swap requests; the frontend may call these or Jupiter APIs directly depending on configuration.
+
 All responses are JSON unless noted (e.g. live health is plain text).
 
 ### Running the server

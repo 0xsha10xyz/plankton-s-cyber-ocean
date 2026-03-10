@@ -110,6 +110,17 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 
 ---
 
+### Wallet (balances)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/wallet/balances` | SOL balance (lamports) and SPL token accounts for a wallet. Query: `wallet` (base58 address). Server-side RPC avoids CORS/403 in the browser. Used by Account Assets and Swap page when backend is available. |
+
+**Example:** `GET /api/wallet/balances?wallet=7kKwMqJeAPF4T7vnPqhCgXgYkvbsuEZVKwrJ4XjHc8cE`  
+**Response:** `{ "sol": 82663458, "tokens": [ { "mint": "EPjFWdd5...", "decimals": 6, "rawAmount": "1000000" }, ... ] }`
+
+---
+
 ## Environment variables
 
 | Variable | Description | Default |
@@ -118,6 +129,7 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 | `NODE_ENV` | `development` or `production` | — |
 | `CORS_ORIGIN` | Allowed origin for CORS | `http://localhost:8080` |
 | `BIRDEYE_API_KEY` | Birdeye API key for Swap chart OHLCV | Optional; chart uses sample data if unset |
+| `SOLANA_RPC_URL` | Solana RPC for wallet balances (and Jupiter proxy). If unset, uses public RPCs (Ankr, PublicNode, mainnet-beta). | Optional |
 
 Create `backend/.env` and add variables as needed. For full setup (Birdeye, production), see **[Configuration](./CONFIGURATION.md)**.
 

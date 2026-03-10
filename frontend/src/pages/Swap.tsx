@@ -19,6 +19,8 @@ import {
   type JupiterQuoteResponse,
 } from "@/lib/jupiter";
 import { fetchBalance, fetchTokenAccountBalance, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
+import { getApiBase } from "@/lib/api";
+import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
 
 const TOKEN_OPTIONS = [
   { symbol: "SOL", mint: COMMON_MINTS.SOL, decimals: 9 },
@@ -58,28 +60,64 @@ export default function Swap() {
       setTokenBalances({});
       return;
     }
+    const address = publicKey.toBase58();
     let cancelled = false;
 
-    fetchBalance(connection, publicKey)
-      .then((lamports) => {
-        if (!cancelled) setSolBalance(lamports / 1e9);
+    fetchWalletBalancesFromApi(getApiBase(), address)
+      .then((apiData) => {
+        if (cancelled) return;
+        if (apiData) {
+          setSolBalance(apiData.sol / 1e9);
+          const byMint: Record<string, number> = {};
+          for (const t of apiData.tokens) {
+            byMint[t.mint] = rawToUiAmount(t.rawAmount, t.decimals);
+          }
+          setTokenBalances(byMint);
+          return;
+        }
+        fetchBalance(connection, publicKey)
+          .then((lamports) => {
+            if (!cancelled) setSolBalance(lamports / 1e9);
+          })
+          .catch(() => {
+            if (!cancelled) setSolBalance(0);
+          });
+
+        Promise.all([
+          fetchTokenAccountBalance(connection, publicKey, COMMON_MINTS.USDC),
+          fetchTokenAccountBalance(connection, publicKey, COMMON_MINTS.USDT),
+        ]).then(([usdc, usdt]) => {
+          if (!cancelled) {
+            setTokenBalances((prev) => ({
+              ...prev,
+              [COMMON_MINTS.USDC]: usdc,
+              [COMMON_MINTS.USDT]: usdt,
+            }));
+          }
+        });
       })
       .catch(() => {
-        if (!cancelled) setSolBalance(0);
+        if (cancelled) return;
+        fetchBalance(connection, publicKey)
+          .then((lamports) => {
+            if (!cancelled) setSolBalance(lamports / 1e9);
+          })
+          .catch(() => {
+            if (!cancelled) setSolBalance(0);
+          });
+        Promise.all([
+          fetchTokenAccountBalance(connection, publicKey, COMMON_MINTS.USDC),
+          fetchTokenAccountBalance(connection, publicKey, COMMON_MINTS.USDT),
+        ]).then(([usdc, usdt]) => {
+          if (!cancelled) {
+            setTokenBalances((prev) => ({
+              ...prev,
+              [COMMON_MINTS.USDC]: usdc,
+              [COMMON_MINTS.USDT]: usdt,
+            }));
+          }
+        });
       });
-
-    Promise.all([
-      fetchTokenAccountBalance(connection, publicKey, COMMON_MINTS.USDC),
-      fetchTokenAccountBalance(connection, publicKey, COMMON_MINTS.USDT),
-    ]).then(([usdc, usdt]) => {
-      if (!cancelled) {
-        setTokenBalances((prev) => ({
-          ...prev,
-          [COMMON_MINTS.USDC]: usdc,
-          [COMMON_MINTS.USDT]: usdt,
-        }));
-      }
-    });
 
     return () => { cancelled = true; };
   }, [connected, publicKey, connection, balanceRefresh]);

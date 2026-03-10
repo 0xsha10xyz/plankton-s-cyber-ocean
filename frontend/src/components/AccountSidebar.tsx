@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAccount } from "@/contexts/AccountContext";
 import { User, Loader2, Camera, Coins, RefreshCw } from "lucide-react";
 import { formatAssetAmount, getTokenSymbol } from "@/lib/assets";
+import { getApiBase } from "@/lib/api";
+import { fetchWalletBalancesFromApi } from "@/lib/wallet-api";
 
 /** Fallback RPCs when the app's connection fails (e.g. CORS or rate limit). Tried in order. */
 const FALLBACK_RPCS = [
@@ -131,37 +133,80 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
 
   useEffect(() => {
     if (!open || !publicKey) return;
+    const address = publicKey.toBase58();
     let cancelled = false;
     setBalanceError(false);
     setBalanceLoading(true);
     setAssetsLoading(true);
 
-    fetchBalance(connection, publicKey)
-      .then((lamports) => {
-        if (!cancelled) {
-          setBalanceLamports(lamports);
+    fetchWalletBalancesFromApi(getApiBase(), address)
+      .then((apiData) => {
+        if (cancelled) return;
+        if (apiData) {
+          setBalanceLamports(apiData.sol);
+          setTokenAssets(apiData.tokens);
           setBalanceError(false);
+          setBalanceLoading(false);
+          setAssetsLoading(false);
+          return;
         }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setBalanceLamports(null);
-          setBalanceError(true);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setBalanceLoading(false);
-      });
+        // Fallback: client-side RPC
+        fetchBalance(connection, publicKey)
+          .then((lamports) => {
+            if (!cancelled) {
+              setBalanceLamports(lamports);
+              setBalanceError(false);
+            }
+          })
+          .catch(() => {
+            if (!cancelled) {
+              setBalanceLamports(null);
+              setBalanceError(true);
+            }
+          })
+          .finally(() => {
+            if (!cancelled) setBalanceLoading(false);
+          });
 
-    fetchTokenAccounts(connection, publicKey)
-      .then((assets) => {
-        if (!cancelled) setTokenAssets(assets);
+        fetchTokenAccounts(connection, publicKey)
+          .then((assets) => {
+            if (!cancelled) setTokenAssets(assets);
+          })
+          .catch(() => {
+            if (!cancelled) setTokenAssets([]);
+          })
+          .finally(() => {
+            if (!cancelled) setAssetsLoading(false);
+          });
       })
       .catch(() => {
-        if (!cancelled) setTokenAssets([]);
-      })
-      .finally(() => {
-        if (!cancelled) setAssetsLoading(false);
+        if (cancelled) return;
+        fetchBalance(connection, publicKey)
+          .then((lamports) => {
+            if (!cancelled) {
+              setBalanceLamports(lamports);
+              setBalanceError(false);
+            }
+          })
+          .catch(() => {
+            if (!cancelled) {
+              setBalanceLamports(null);
+              setBalanceError(true);
+            }
+          })
+          .finally(() => {
+            if (!cancelled) setBalanceLoading(false);
+          });
+        fetchTokenAccounts(connection, publicKey)
+          .then((assets) => {
+            if (!cancelled) setTokenAssets(assets);
+          })
+          .catch(() => {
+            if (!cancelled) setTokenAssets([]);
+          })
+          .finally(() => {
+            if (!cancelled) setAssetsLoading(false);
+          });
       });
 
     return () => {
@@ -171,27 +216,54 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
 
   const retryAssets = useCallback(() => {
     if (!publicKey) return;
+    const address = publicKey.toBase58();
     setBalanceError(false);
     setBalanceLamports(null);
     setTokenAssets([]);
     setBalanceLoading(true);
     setAssetsLoading(true);
 
-    fetchBalance(connection, publicKey)
-      .then((lamports) => {
-        setBalanceLamports(lamports);
-        setBalanceError(false);
+    fetchWalletBalancesFromApi(getApiBase(), address)
+      .then((apiData) => {
+        if (apiData) {
+          setBalanceLamports(apiData.sol);
+          setTokenAssets(apiData.tokens);
+          setBalanceError(false);
+          setBalanceLoading(false);
+          setAssetsLoading(false);
+          return;
+        }
+        fetchBalance(connection, publicKey)
+          .then((lamports) => {
+            setBalanceLamports(lamports);
+            setBalanceError(false);
+          })
+          .catch(() => {
+            setBalanceLamports(null);
+            setBalanceError(true);
+          })
+          .finally(() => setBalanceLoading(false));
+        fetchTokenAccounts(connection, publicKey)
+          .then((assets) => setTokenAssets(assets))
+          .catch(() => setTokenAssets([]))
+          .finally(() => setAssetsLoading(false));
       })
       .catch(() => {
-        setBalanceLamports(null);
-        setBalanceError(true);
-      })
-      .finally(() => setBalanceLoading(false));
-
-    fetchTokenAccounts(connection, publicKey)
-      .then((assets) => setTokenAssets(assets))
-      .catch(() => setTokenAssets([]))
-      .finally(() => setAssetsLoading(false));
+        fetchBalance(connection, publicKey)
+          .then((lamports) => {
+            setBalanceLamports(lamports);
+            setBalanceError(false);
+          })
+          .catch(() => {
+            setBalanceLamports(null);
+            setBalanceError(true);
+          })
+          .finally(() => setBalanceLoading(false));
+        fetchTokenAccounts(connection, publicKey)
+          .then((assets) => setTokenAssets(assets))
+          .catch(() => setTokenAssets([]))
+          .finally(() => setAssetsLoading(false));
+      });
   }, [publicKey, connection]);
 
   const handleSaveUsername = () => {
