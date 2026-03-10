@@ -3,7 +3,14 @@
   "outputDirectory": "dist",
   "functions": {
     "api/[[...path]].ts": {
-      "includeFiles": "api/**"
+      "includeFiles": "api/**",
+      "runtime": "nodejs20.x"
+    },
+    "api/health.ts": {
+      "runtime": "nodejs20.x"
+    },
+    "api/wallet/balances.ts": {
+      "runtime": "nodejs20.x"
     }
   },
   "rewrites": [

@@ -5,6 +5,10 @@
  */
 import https from "node:https";
 
+export const config = {
+  runtime: "nodejs",
+};
+
 type Req = { method?: string; query?: Record<string, string | string[] | undefined> };
 type Res = {
   status?: (code: number) => Res;
