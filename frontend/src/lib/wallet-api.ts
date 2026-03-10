@@ -15,8 +15,9 @@ export async function fetchWalletBalancesFromApi(
 ): Promise<WalletBalances | null> {
   if (!apiBase || !walletAddress) return null;
   try {
-    const url = `${apiBase.replace(/\/$/, "")}/api/wallet/balances?wallet=${encodeURIComponent(walletAddress)}`;
-    const res = await fetch(url);
+    // Avoid stale browser/proxy cache when balances change after swaps.
+    const url = `${apiBase.replace(/\/$/, "")}/api/wallet/balances?wallet=${encodeURIComponent(walletAddress)}&_ts=${Date.now()}`;
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return null;
     const data = await res.json();
     if (data == null || typeof data.sol !== "number") return null;

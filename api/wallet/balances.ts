@@ -32,12 +32,13 @@ type TokenBalance = { mint: string; decimals: number; rawAmount: string };
 
 function sendJson(res: Res, status: number, body: unknown) {
   if (typeof res.status === "function" && typeof res.json === "function") {
-    res.setHeader("Cache-Control", "private, max-age=10");
+    // Balances change frequently; don't cache.
+    res.setHeader("Cache-Control", "no-store");
     return res.status(status).json(body);
   }
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json");
-  res.setHeader("Cache-Control", "private, max-age=10");
+  res.setHeader("Cache-Control", "no-store");
   res.end(JSON.stringify(body));
 }
 

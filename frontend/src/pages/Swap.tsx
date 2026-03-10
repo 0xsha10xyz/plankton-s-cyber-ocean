@@ -141,6 +141,8 @@ export default function Swap() {
           connection.confirmTransaction(sig, "confirmed"),
           new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 60_000)),
         ]);
+        // Once confirmed, refresh again so UI matches chain state without manual reload.
+        refetchBalances();
       } catch {
         // Tx was sent; confirmation timeout is non-fatal
       }
