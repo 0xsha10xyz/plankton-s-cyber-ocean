@@ -35,7 +35,8 @@ In the Vercel project: **Settings** → **Environment Variables**. Add:
 | `CORS_ORIGIN` | `https://planktonomous.vercel.app` | Replace with your actual Vercel URL. Lets the API allow your frontend origin. |
 | `SOLANA_RPC_URL` | `https://rpc.ankr.com/solana` or your RPC | Optional; used by `/api/wallet/balances` for token balances. |
 | `KV_REST_API_URL` + `KV_REST_API_TOKEN` | From Vercel KV / Upstash Redis | **Optional.** For **Total Users** (unique connected wallets) to persist and display real-time on the dashboard. Add a Redis store in Vercel (Storage → KV or Upstash) and paste the REST URL and token here. Without these, the count stays 0. |
-| `REDIS_URL` | From Vercel Redis (Storage → Redis → Connect) | **Optional.** If you create a **Redis** database in Vercel, this env var is usually auto-added to the project. The code supports `REDIS_URL` for Total Users. |
+| `REDIS_URL` | From Vercel Redis (Storage → Redis → Connect) | **Optional.** If you create a **Redis** database in Vercel, this env var is usually auto-added to the project. The code supports `REDIS_URL` for Total Users and for **Agent logs** (Command Center + Helius webhook). |
+| `HELIUS_API_KEY` | Your Helius API key (get at [helius.xyz](https://helius.xyz)) | **Optional.** For Helius RPC and webhooks. Set **SOLANA_RPC_URL** to `https://mainnet.helius-rpc.com/?api_key=YOUR_KEY` for better rate limits. See [helius-setup.md](helius-setup.md) for webhook URL and steps. |
 
 **Total Users setup (manual in Vercel):** Follow the steps in [Setup Total Users (Redis/KV)](#setup-total-users-rediskv) below.
 

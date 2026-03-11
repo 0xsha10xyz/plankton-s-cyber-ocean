@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Power, TrendingUp, TrendingDown, Gauge, Wallet, Settings, Zap, Gift } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -10,13 +10,40 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+type AgentStatus = { active: boolean; riskLevel: number; profit24h: number; totalPnL: number };
+
 const AutoPilot = () => {
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
   const { openWalletModal } = useWalletModal();
   const [active, setActive] = useState(false);
   const [risk, setRisk] = useState(1); // 0=Low, 1=Mid, 2=High
+  const [status, setStatus] = useState<AgentStatus | null>(null);
   const riskLabels = ["Low", "Mid", "High"];
   const riskColors = ["text-teal-400", "text-primary", "text-destructive"];
+
+  useEffect(() => {
+    if (!connected || !publicKey) {
+      setStatus(null);
+      return;
+    }
+    const fetchStatus = async () => {
+      try {
+        const base = typeof window !== "undefined" ? window.location.origin : "";
+        const res = await fetch(`${base}/api/agent/status?wallet=${encodeURIComponent(publicKey.toBase58())}`);
+        const data = await res.json();
+        if (data && typeof data.riskLevel === "number") setStatus(data);
+      } catch {
+        setStatus(null);
+      }
+    };
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 15000);
+    return () => clearInterval(interval);
+  }, [connected, publicKey]);
+
+  const profit24h = status?.profit24h ?? 0;
+  const totalPnL = status?.totalPnL ?? 0;
+  const formatSol = (n: number) => (n >= 0 ? `+${n.toFixed(1)}` : n.toFixed(1)) + " SOL";
 
   return (
     <div className="glass-card rounded-xl p-6">
@@ -85,7 +112,7 @@ const AutoPilot = () => {
                     animate={{ opacity: 1 }}
                     className="text-xl font-bold text-accent font-mono"
                   >
-                    +12.4 SOL
+                    {formatSol(profit24h)}
                   </motion.span>
                 </div>
                 <div className="bg-secondary/50 rounded-lg p-4 border border-border/30">
@@ -98,7 +125,7 @@ const AutoPilot = () => {
                     animate={{ opacity: 1 }}
                     className="text-xl font-bold text-teal-400 font-mono"
                   >
-                    +89.2 SOL
+                    {formatSol(totalPnL)}
                   </motion.span>
                 </div>
               </div>

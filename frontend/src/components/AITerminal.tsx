@@ -1,56 +1,68 @@
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Terminal, Power } from "lucide-react";
+import { Terminal } from "lucide-react";
 
-const logMessages = [
-  "[SCANNING] Solana Mainnet Block Height: 249,847,291...",
+const FALLBACK_MESSAGES = [
+  "[SCANNING] Solana Mainnet Block Height...",
   "[RESEARCH] Analyzing on-chain whale activity...",
-  "[DETECTED] Whale Movement: 5,000 SOL transferred to DEX",
-  "[RESEARCH] Cross-referencing token liquidity pools...",
-  "[SCANNING] New SPL token launch detected: $KRILL",
-  "[ANALYSIS] $PATTIES/SOL pair volume spike: +340%",
-  "[ACTION] Plankton Agent executing profitable trade on $PATTIES/SOL...",
-  "[CONFIRMED] Trade executed. PnL: +2.4 SOL",
-  "[SCANNING] Monitoring Raydium & Orca liquidity changes...",
-  "[RESEARCH] Detecting social sentiment shift for $PATTIES...",
-  "[ALERT] Risk level elevated — adjusting position size...",
-  "[ACTION] Rebalancing portfolio allocation...",
+  "[DETECTED] Whale Movement: large SOL transfer detected",
+  "[ACTION] Agent ready. Connect wallet and enable Auto Pilot.",
 ];
 
+type LogEntry = { id: string; time: string; message: string; type?: string };
+
 const AITerminal = () => {
-  const [lines, setLines] = useState<string[]>([]);
-  const [currentLine, setCurrentLine] = useState("");
-  const [lineIndex, setLineIndex] = useState(0);
-  const [charIndex, setCharIndex] = useState(0);
+  const [lines, setLines] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const msg = logMessages[lineIndex % logMessages.length];
-    if (charIndex < msg.length) {
-      const timeout = setTimeout(() => {
-        setCurrentLine(msg.slice(0, charIndex + 1));
-        setCharIndex((c) => c + 1);
-      }, 20 + Math.random() * 30);
-      return () => clearTimeout(timeout);
-    } else {
-      const timeout = setTimeout(() => {
-        setLines((prev) => [...prev.slice(-499), msg]);
-        setCurrentLine("");
-        setCharIndex(0);
-        setLineIndex((i) => i + 1);
-      }, 800);
-      return () => clearTimeout(timeout);
-    }
-  }, [charIndex, lineIndex]);
+    const fetchLogs = async () => {
+      try {
+        const base = typeof window !== "undefined" ? window.location.origin : "";
+        const res = await fetch(`${base}/api/agent/logs?limit=80`);
+        const data = await res.json();
+        if (Array.isArray(data?.lines) && data.lines.length > 0) {
+          setLines(data.lines);
+        } else if (lines.length === 0) {
+          setLines(
+            FALLBACK_MESSAGES.map((message, i) => ({
+              id: `fallback-${i}`,
+              time: new Date().toISOString(),
+              message,
+              type: "info",
+            }))
+          );
+        }
+      } catch {
+        if (lines.length === 0) {
+          setLines(
+            FALLBACK_MESSAGES.map((message, i) => ({
+              id: `fallback-${i}`,
+              time: new Date().toISOString(),
+              message,
+              type: "info",
+            }))
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLogs();
+    const interval = setInterval(fetchLogs, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [lines, currentLine]);
+  }, [lines]);
 
-  const getColor = (line: string) => {
-    if (line.startsWith("[ACTION]")) return "text-accent";
-    if (line.startsWith("[ALERT]") || line.startsWith("[DETECTED]")) return "text-destructive";
-    if (line.startsWith("[CONFIRMED]")) return "text-teal-400";
+  const getColor = (message: string) => {
+    if (message.startsWith("[ACTION]") || message.startsWith("[BIG_BUY]")) return "text-accent";
+    if (message.startsWith("[ALERT]") || message.startsWith("[DETECTED]") || message.startsWith("[BIG_SALE]")) return "text-destructive";
+    if (message.startsWith("[CONFIRMED]")) return "text-teal-400";
+    if (message.startsWith("[NEW_TOKEN]")) return "text-amber-400";
     return "text-primary/70";
   };
 
@@ -69,16 +81,14 @@ const AITerminal = () => {
         className="p-4 h-64 overflow-y-auto overflow-x-hidden font-mono text-xs leading-relaxed scroll-smooth"
         style={{ scrollBehavior: "smooth" }}
       >
-        {lines.map((line, i) => (
-          <div key={i} className={`${getColor(line)} opacity-60`}>
-            {line}
-          </div>
-        ))}
-        {currentLine && (
-          <div className={`${getColor(currentLine)}`}>
-            {currentLine}
-            <span className="animate-pulse">▊</span>
-          </div>
+        {loading && lines.length === 0 ? (
+          <div className="text-muted-foreground">Loading agent logs...</div>
+        ) : (
+          lines.map((entry) => (
+            <div key={entry.id} className={`${getColor(entry.message)} opacity-80`}>
+              {entry.message}
+            </div>
+          ))
         )}
       </div>
     </div>

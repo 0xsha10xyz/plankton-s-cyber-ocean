@@ -5,6 +5,7 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import { getWalletBalancesData } from "./wallet/balances-handler.js";
 import { getStatsUsers, statsConnect } from "./stats-handler.js";
+import { getAgentStatus, getAgentLogs, pushAgentLog } from "./agent-handler.js";
 
 function parseUrl(url: string): { pathname: string; searchParams: URLSearchParams } {
   try {
@@ -324,6 +325,122 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       }
     }
     sendJson(res, 502, { error: "Jupiter swap build unavailable" });
+    return;
+  }
+
+  // GET /api/agent/status – agent status for Command Center / Auto Pilot (stub or from Redis later)
+  if (method === "GET" && pathname === "/api/agent/status") {
+    try {
+      const wallet = searchParams.get("wallet")?.trim() || null;
+      const status = await getAgentStatus(wallet);
+      sendJson(res, 200, status);
+    } catch {
+      sendJson(res, 200, { active: false, riskLevel: 0, profit24h: 0, totalPnL: 0 });
+    }
+    return;
+  }
+
+  // GET /api/agent/logs – last N agent log lines (from Redis when configured; stub otherwise)
+  if (method === "GET" && pathname === "/api/agent/logs") {
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam ? Math.min(500, Math.max(1, parseInt(limitParam, 10))) : 100;
+    try {
+      const data = await getAgentLogs(Number.isNaN(limit) ? 100 : limit);
+      sendJson(res, 200, data);
+    } catch {
+      sendJson(res, 200, { lines: [] });
+    }
+    return;
+  }
+
+  // POST /api/webhooks/helius – receive Helius enhanced transaction webhook; push whale/large transfers to agent log
+  if (method === "POST" && pathname === "/api/webhooks/helius") {
+    const bodyStr = await new Promise<string>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (c: Buffer) => chunks.push(c));
+      req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+      req.on("error", reject);
+    });
+    const LAMPORTS_PER_SOL = 1e9;
+    const WHALE_SOL_THRESHOLD = 5 * LAMPORTS_PER_SOL; // 5 SOL
+    try {
+      const payload = JSON.parse(bodyStr || "[]");
+      if (!Array.isArray(payload)) {
+        sendJson(res, 200, { received: 0 });
+        return;
+      }
+      for (const tx of payload) {
+        const desc = typeof tx?.description === "string" ? tx.description : "";
+        const nativeTransfers = Array.isArray(tx?.nativeTransfers) ? tx.nativeTransfers : [];
+        const events = tx?.events as Record<string, { type?: string; amount?: number; buyer?: string; seller?: string; source?: string }> | undefined;
+        const txType = (events?.nft?.type || events?.swap ?? tx?.type) as string | undefined;
+        let pushedForTx = false;
+
+        // Whale: large SOL transfer
+        for (const t of nativeTransfers) {
+          const amount = Number(t?.amount);
+          if (Number.isFinite(amount) && amount >= WHALE_SOL_THRESHOLD) {
+            const sol = (amount / LAMPORTS_PER_SOL).toFixed(1);
+            const from = (t?.fromUserAccount || "").slice(0, 8);
+            const to = (t?.toUserAccount || "").slice(0, 8);
+            await pushAgentLog(
+              `[DETECTED] Whale Movement: ${sol} SOL transferred (${from}… → …${to})`,
+              "detected"
+            );
+            pushedForTx = true;
+          }
+        }
+
+        // Big sale: NFT_SALE, SELL
+        if (txType === "NFT_SALE" && events?.nft) {
+          const nft = events.nft as { amount?: number; seller?: string; buyer?: string; source?: string };
+          const sol = nft.amount != null ? (Number(nft.amount) / LAMPORTS_PER_SOL).toFixed(1) : "?";
+          const source = nft.source || "NFT";
+          await pushAgentLog(
+            `[BIG_SALE] ${source}: ${sol} SOL sale (seller …${(nft.seller || "").slice(-6)})`,
+            "detected"
+          );
+          pushedForTx = true;
+        }
+        if (txType === "SELL" && desc) {
+          await pushAgentLog(`[BIG_SALE] ${desc.slice(0, 100)}${desc.length > 100 ? "…" : ""}`, "detected");
+          pushedForTx = true;
+        }
+
+        // Big buy: BUY, or NFT_SALE (buyer side)
+        if (txType === "BUY" && desc) {
+          await pushAgentLog(`[BIG_BUY] ${desc.slice(0, 100)}${desc.length > 100 ? "…" : ""}`, "action");
+          pushedForTx = true;
+        }
+
+        // Large swap (Jupiter, Raydium, etc.)
+        if (txType === "SWAP" && desc) {
+          await pushAgentLog(`[RESEARCH] Swap: ${desc.slice(0, 110)}${desc.length > 110 ? "…" : ""}`, "research");
+          pushedForTx = true;
+        }
+
+        // New token: TOKEN_MINT, NFT_MINT, CREATE_POOL
+        if (txType === "TOKEN_MINT" || txType === "NFT_MINT") {
+          await pushAgentLog(
+            `[NEW_TOKEN] ${txType}: ${desc.slice(0, 100) || "Mint detected"}${(desc.length > 100) ? "…" : ""}`,
+            "research"
+          );
+          pushedForTx = true;
+        }
+        if (txType === "CREATE_POOL" && desc) {
+          await pushAgentLog(`[NEW_TOKEN] New pool: ${desc.slice(0, 100)}${desc.length > 100 ? "…" : ""}`, "research");
+          pushedForTx = true;
+        }
+
+        // Fallback: use description for other events (listings, liquidity, etc.)
+        if (!pushedForTx && desc && desc.length > 5) {
+          await pushAgentLog(`[RESEARCH] ${desc.slice(0, 120)}${desc.length > 120 ? "…" : ""}`, "research");
+        }
+      }
+      sendJson(res, 200, { received: payload.length });
+    } catch {
+      sendJson(res, 200, { received: 0 });
+    }
     return;
   }
 
