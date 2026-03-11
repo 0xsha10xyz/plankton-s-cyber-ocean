@@ -240,6 +240,7 @@ export default function Swap() {
         return null;
       }
       const token: TokenOption = { symbol, mint: raw, decimals };
+      await ensureTokenInfo(raw);
       setCustomTokens((prev) => (prev.some((t) => t.mint === raw) ? prev : [...prev, token]));
       return token;
     } catch {
@@ -248,7 +249,7 @@ export default function Swap() {
     } finally {
       setResolveLoading(false);
     }
-  }, [tokenOptions]);
+  }, [tokenOptions, ensureTokenInfo]);
 
   if (!connected) {
     return (
@@ -312,12 +313,13 @@ export default function Swap() {
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">From</label>
                 <div className="flex gap-2">
-                  <TokenSelect
+                    <TokenSelect
                     value={inputToken}
                     options={tokenOptions}
                     onSelect={setInputToken}
                     resolveCa={resolveAndAddToken}
                     getBalance={getBalanceForToken}
+                    getSymbol={getSymbol}
                   />
                   <div className="flex-1 space-y-1">
                     <Input
@@ -330,7 +332,7 @@ export default function Swap() {
                       className="w-full bg-secondary/50 border-border"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Balance: {getBalanceForToken(inputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })} {inputToken.symbol}
+                      Balance: {getBalanceForToken(inputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })} {getSymbol(inputToken.mint)}
                       <button
                         type="button"
                         onClick={() => setAmount(String(getMaxAmount(inputToken)))}
@@ -362,12 +364,13 @@ export default function Swap() {
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">To</label>
                 <div className="flex gap-2">
-                  <TokenSelect
+                    <TokenSelect
                     value={outputToken}
                     options={tokenOptions}
                     onSelect={setOutputToken}
                     resolveCa={resolveAndAddToken}
                     getBalance={getBalanceForToken}
+                    getSymbol={getSymbol}
                   />
                   <div className="flex-1 space-y-1">
                     <Input
@@ -385,7 +388,7 @@ export default function Swap() {
                       className="w-full bg-secondary/30 border-border text-muted-foreground"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Balance: {getBalanceForToken(outputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })} {outputToken.symbol}
+                      Balance: {getBalanceForToken(outputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })} {getSymbol(outputToken.mint)}
                     </p>
                   </div>
                 </div>

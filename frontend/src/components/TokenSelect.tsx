@@ -14,6 +14,8 @@ type TokenSelectProps = {
   onSelect: (token: TokenOption) => void;
   resolveCa: (ca: string) => Promise<TokenOption | null>;
   getBalance: (token: TokenOption) => number;
+  /** Resolved symbol by mint (e.g. from TokenSymbolContext). When provided, used for display instead of option.symbol. */
+  getSymbol?: (mint: string) => string;
   disabled?: boolean;
 };
 
@@ -23,9 +25,11 @@ export function TokenSelect({
   onSelect,
   resolveCa,
   getBalance,
+  getSymbol,
   disabled,
 }: TokenSelectProps) {
   const [open, setOpen] = useState(false);
+  const displaySymbol = (t: TokenOption) => (getSymbol ? getSymbol(t.mint) : t.symbol);
   const [pasteCa, setPasteCa] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -57,7 +61,7 @@ export function TokenSelect({
             "hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring"
           )}
         >
-          <span className="truncate">{value.symbol}</span>
+          <span className="truncate">{displaySymbol(value)}</span>
           <ChevronDown size={14} className="shrink-0 opacity-70" />
         </Button>
       </PopoverTrigger>
@@ -100,7 +104,7 @@ export function TokenSelect({
                   t.mint === value.mint && "bg-primary/15 text-primary"
                 )}
               >
-                <span className="font-medium truncate">{t.symbol}</span>
+                <span className="font-medium truncate">{displaySymbol(t)}</span>
                 <span className="text-xs text-muted-foreground tabular-nums">
                   {getBalance(t).toLocaleString(undefined, { maximumFractionDigits: 4 })}
                 </span>
