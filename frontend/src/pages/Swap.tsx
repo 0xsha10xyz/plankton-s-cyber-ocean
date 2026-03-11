@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { VersionedTransaction, PublicKey } from "@solana/web3.js";
-import { ArrowDownLeft, Loader2, Wallet } from "lucide-react";
+import { ArrowDownLeft, Loader2, Wallet, PlusCircle } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -20,8 +20,11 @@ import {
 } from "@/lib/jupiter";
 import { sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 import { useWalletBalances } from "@/contexts/WalletBalancesContext";
+import { getApiBase } from "@/lib/api";
 
-const TOKEN_OPTIONS = [
+export type TokenOption = { symbol: string; mint: string; decimals: number };
+
+const TOKEN_OPTIONS: TokenOption[] = [
   { symbol: "SOL", mint: COMMON_MINTS.SOL, decimals: 9 },
   { symbol: "USDC", mint: COMMON_MINTS.USDC, decimals: 6 },
   { symbol: "USDT", mint: COMMON_MINTS.USDT, decimals: 6 },
@@ -48,6 +51,15 @@ export default function Swap() {
   const [swapLoading, setSwapLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txSuccess, setTxSuccess] = useState<string | null>(null);
+  const [customTokens, setCustomTokens] = useState<TokenOption[]>([]);
+  const [customCaInput, setCustomCaInput] = useState("");
+  const [addTokenLoading, setAddTokenLoading] = useState(false);
+  const [addTokenError, setAddTokenError] = useState<string | null>(null);
+
+  const tokenOptions = useMemo(
+    () => [...TOKEN_OPTIONS, ...customTokens],
+    [customTokens]
+  );
 
   const {
     solLamports,
@@ -58,13 +70,13 @@ export default function Swap() {
   const solBalance = solLamports != null ? solLamports / 1e9 : 0;
   const tokenBalances = tokenBalancesByMint;
 
-  const getBalanceForToken = (token: typeof TOKEN_OPTIONS[0]) => {
-    if (token.symbol === "SOL") return solBalance;
+  const getBalanceForToken = (token: TokenOption) => {
+    if (token.symbol === "SOL" && token.mint === COMMON_MINTS.SOL) return solBalance;
     return tokenBalances[token.mint] ?? 0;
   };
 
   /** Max spendable: for SOL leave ~0.005 for tx fees; for SPL use full balance */
-  const getMaxAmount = (token: typeof TOKEN_OPTIONS[0]) => {
+  const getMaxAmount = (token: TokenOption) => {
     const balance = getBalanceForToken(token);
     if (token.symbol === "SOL") return Math.max(0, balance - 0.005);
     return balance;
@@ -161,6 +173,41 @@ export default function Swap() {
     setError(null);
   };
 
+  const handleAddCustomToken = useCallback(async () => {
+    const raw = customCaInput.trim();
+    if (!raw || raw.length < 32 || raw.length > 44) {
+      setAddTokenError("Enter a valid Solana token mint (CA), 32–44 characters");
+      return;
+    }
+    if (tokenOptions.some((t) => t.mint === raw)) {
+      setAddTokenError("Token already in list");
+      return;
+    }
+    setAddTokenError(null);
+    setAddTokenLoading(true);
+    try {
+      const base = getApiBase();
+      const res = await fetch(`${base}/api/market/token-info?mint=${encodeURIComponent(raw)}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setAddTokenError(data?.error || "Token not found");
+        return;
+      }
+      const symbol = typeof data.symbol === "string" ? data.symbol : `${raw.slice(0, 4)}…${raw.slice(-4)}`;
+      const decimals = Number(data.decimals);
+      if (!Number.isFinite(decimals) || decimals < 0 || decimals > 18) {
+        setAddTokenError("Invalid decimals");
+        return;
+      }
+      setCustomTokens((prev) => [...prev, { symbol, mint: raw, decimals }]);
+      setCustomCaInput("");
+    } catch (e) {
+      setAddTokenError("Failed to fetch token info");
+    } finally {
+      setAddTokenLoading(false);
+    }
+  }, [customCaInput, tokenOptions]);
+
   if (!connected) {
     return (
       <div className="relative min-h-screen">
@@ -220,12 +267,15 @@ export default function Swap() {
                 <label className="text-xs text-muted-foreground mb-1 block">From</label>
                 <div className="flex gap-2">
                   <select
-                    value={inputToken.symbol}
-                    onChange={(e) => setInputToken(TOKEN_OPTIONS.find((t) => t.symbol === e.target.value) ?? inputToken)}
-                    className="h-10 w-24 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    value={inputToken.mint}
+                    onChange={(e) => {
+                      const t = tokenOptions.find((x) => x.mint === e.target.value);
+                      if (t) setInputToken(t);
+                    }}
+                    className="h-10 min-w-[7rem] max-w-[12rem] rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    {TOKEN_OPTIONS.map((t) => (
-                      <option key={t.mint} value={t.symbol}>{t.symbol}</option>
+                    {tokenOptions.map((t) => (
+                      <option key={t.mint} value={t.mint}>{t.symbol}</option>
                     ))}
                   </select>
                   <div className="flex-1 space-y-1">
@@ -272,12 +322,15 @@ export default function Swap() {
                 <label className="text-xs text-muted-foreground mb-1 block">To</label>
                 <div className="flex gap-2">
                   <select
-                    value={outputToken.symbol}
-                    onChange={(e) => setOutputToken(TOKEN_OPTIONS.find((t) => t.symbol === e.target.value) ?? outputToken)}
-                    className="h-10 w-24 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    value={outputToken.mint}
+                    onChange={(e) => {
+                      const t = tokenOptions.find((x) => x.mint === e.target.value);
+                      if (t) setOutputToken(t);
+                    }}
+                    className="h-10 min-w-[7rem] max-w-[12rem] rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    {TOKEN_OPTIONS.map((t) => (
-                      <option key={t.mint} value={t.symbol}>{t.symbol}</option>
+                    {tokenOptions.map((t) => (
+                      <option key={t.mint} value={t.mint}>{t.symbol}</option>
                     ))}
                   </select>
                   <div className="flex-1 space-y-1">
@@ -300,6 +353,31 @@ export default function Swap() {
                     </p>
                   </div>
                 </div>
+              </div>
+
+              <div className="rounded-lg border border-border/50 bg-secondary/20 p-3 space-y-2">
+                <p className="text-xs font-medium text-foreground">Add token by contract address (CA)</p>
+                <p className="text-xs text-muted-foreground">Paste a Solana token mint address to swap it. Chart will show real-time data when BIRDEYE_API_KEY is set.</p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="e.g. EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+                    value={customCaInput}
+                    onChange={(e) => { setCustomCaInput(e.target.value); setAddTokenError(null); }}
+                    className="flex-1 font-mono text-xs bg-background"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleAddCustomToken}
+                    disabled={addTokenLoading || !customCaInput.trim()}
+                    className="gap-1.5 shrink-0"
+                  >
+                    {addTokenLoading ? <Loader2 size={14} className="animate-spin" /> : <PlusCircle size={14} />}
+                    Add
+                  </Button>
+                </div>
+                {addTokenError && <p className="text-xs text-destructive">{addTokenError}</p>}
               </div>
 
               {quote && (
