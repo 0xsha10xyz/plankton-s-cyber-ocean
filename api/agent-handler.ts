@@ -101,7 +101,7 @@ export async function getAgentLogs(limit = 100): Promise<{ lines: AgentLogEntry[
     { id: "1", time: new Date().toISOString(), message: "[SCANNING] Solana Mainnet...", type: "scanning" },
     { id: "2", time: new Date().toISOString(), message: "[RESEARCH] Analyzing on-chain whale activity...", type: "research" },
     { id: "3", time: new Date().toISOString(), message: "[DETECTED] Whale Movement: large SOL transfer detected", type: "detected" },
-    { id: "4", time: new Date().toISOString(), message: "[ACTION] Agent ready. Connect wallet and enable Auto Pilot.", type: "action" },
+    { id: "4", time: new Date().toISOString(), message: "[ACTION] Agent ready. Connect wallet to access benefits.", type: "action" },
   ];
   return { lines: stubLines };
 }
