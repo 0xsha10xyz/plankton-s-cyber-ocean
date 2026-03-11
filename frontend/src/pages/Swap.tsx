@@ -21,8 +21,9 @@ import {
 import { sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 import { useWalletBalances } from "@/contexts/WalletBalancesContext";
 import { getApiBase } from "@/lib/api";
+import { TokenSelect, type TokenOption } from "@/components/TokenSelect";
 
-export type TokenOption = { symbol: string; mint: string; decimals: number };
+export type { TokenOption };
 
 const TOKEN_OPTIONS: TokenOption[] = [
   { symbol: "SOL", mint: COMMON_MINTS.SOL, decimals: 9 },
@@ -52,9 +53,7 @@ export default function Swap() {
   const [error, setError] = useState<string | null>(null);
   const [txSuccess, setTxSuccess] = useState<string | null>(null);
   const [customTokens, setCustomTokens] = useState<TokenOption[]>([]);
-  const [pasteCaFrom, setPasteCaFrom] = useState("");
-  const [pasteCaTo, setPasteCaTo] = useState("");
-  const [resolveLoading, setResolveLoading] = useState<"from" | "to" | null>(null);
+  const [resolveLoading, setResolveLoading] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
 
   const tokenOptions = useMemo(
@@ -174,47 +173,35 @@ export default function Swap() {
     setError(null);
   };
 
-  const resolveTokenByCa = useCallback(async (raw: string, which: "from" | "to") => {
-    const ca = raw.trim();
-    if (!ca || ca.length < 32 || ca.length > 44) return;
-    const existing = tokenOptions.find((t) => t.mint === ca);
-    if (existing) {
-      if (which === "from") setInputToken(existing);
-      else setOutputToken(existing);
-      if (which === "from") setPasteCaFrom("");
-      else setPasteCaTo("");
-      setResolveError(null);
-      return;
-    }
+  const resolveAndAddToken = useCallback(async (ca: string): Promise<TokenOption | null> => {
+    const raw = ca.trim();
+    if (!raw || raw.length < 32 || raw.length > 44) return null;
+    const existing = tokenOptions.find((t) => t.mint === raw);
+    if (existing) return existing;
     setResolveError(null);
-    setResolveLoading(which);
+    setResolveLoading(true);
     try {
       const base = getApiBase();
-      const res = await fetch(`${base}/api/market/token-info?mint=${encodeURIComponent(ca)}`);
+      const res = await fetch(`${base}/api/market/token-info?mint=${encodeURIComponent(raw)}`);
       const data = await res.json();
       if (!res.ok) {
         setResolveError(data?.error || "Token not found");
-        return;
+        return null;
       }
-      const symbol = typeof data.symbol === "string" ? data.symbol : `${ca.slice(0, 4)}…${ca.slice(-4)}`;
+      const symbol = typeof data.symbol === "string" ? data.symbol : `${raw.slice(0, 4)}…${raw.slice(-4)}`;
       const decimals = Number(data.decimals);
       if (!Number.isFinite(decimals) || decimals < 0 || decimals > 18) {
         setResolveError("Invalid token");
-        return;
+        return null;
       }
-      const token: TokenOption = { symbol, mint: ca, decimals };
-      setCustomTokens((prev) => (prev.some((t) => t.mint === ca) ? prev : [...prev, token]));
-      if (which === "from") {
-        setInputToken(token);
-        setPasteCaFrom("");
-      } else {
-        setOutputToken(token);
-        setPasteCaTo("");
-      }
+      const token: TokenOption = { symbol, mint: raw, decimals };
+      setCustomTokens((prev) => (prev.some((t) => t.mint === raw) ? prev : [...prev, token]));
+      return token;
     } catch {
       setResolveError("Could not load token");
+      return null;
     } finally {
-      setResolveLoading(null);
+      setResolveLoading(false);
     }
   }, [tokenOptions]);
 
@@ -276,18 +263,13 @@ export default function Swap() {
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">From</label>
                 <div className="flex gap-2">
-                  <select
-                    value={inputToken.mint}
-                    onChange={(e) => {
-                      const t = tokenOptions.find((x) => x.mint === e.target.value);
-                      if (t) setInputToken(t);
-                    }}
-                    className="h-10 min-w-[7rem] max-w-[12rem] rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    {tokenOptions.map((t) => (
-                      <option key={t.mint} value={t.mint}>{t.symbol}</option>
-                    ))}
-                  </select>
+                  <TokenSelect
+                    value={inputToken}
+                    options={tokenOptions}
+                    onSelect={setInputToken}
+                    resolveCa={resolveAndAddToken}
+                    getBalance={getBalanceForToken}
+                  />
                   <div className="flex-1 space-y-1">
                     <Input
                       type="number"
@@ -313,17 +295,6 @@ export default function Swap() {
                     )}
                   </div>
                 </div>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <Input
-                    placeholder="Paste token CA → nama muncul otomatis"
-                    value={pasteCaFrom}
-                    onChange={(e) => { setPasteCaFrom(e.target.value); setResolveError(null); }}
-                    onKeyDown={(e) => e.key === "Enter" && resolveTokenByCa(pasteCaFrom, "from")}
-                    onBlur={() => pasteCaFrom.trim().length >= 32 && resolveTokenByCa(pasteCaFrom, "from")}
-                    className="h-8 flex-1 text-xs font-mono bg-background/50 border-border/70"
-                  />
-                  {resolveLoading === "from" && <Loader2 size={14} className="animate-spin text-muted-foreground shrink-0" />}
-                </div>
               </div>
 
               <div className="flex justify-center">
@@ -342,18 +313,13 @@ export default function Swap() {
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">To</label>
                 <div className="flex gap-2">
-                  <select
-                    value={outputToken.mint}
-                    onChange={(e) => {
-                      const t = tokenOptions.find((x) => x.mint === e.target.value);
-                      if (t) setOutputToken(t);
-                    }}
-                    className="h-10 min-w-[7rem] max-w-[12rem] rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    {tokenOptions.map((t) => (
-                      <option key={t.mint} value={t.mint}>{t.symbol}</option>
-                    ))}
-                  </select>
+                  <TokenSelect
+                    value={outputToken}
+                    options={tokenOptions}
+                    onSelect={setOutputToken}
+                    resolveCa={resolveAndAddToken}
+                    getBalance={getBalanceForToken}
+                  />
                   <div className="flex-1 space-y-1">
                     <Input
                       readOnly
@@ -373,17 +339,6 @@ export default function Swap() {
                       Balance: {getBalanceForToken(outputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })} {outputToken.symbol}
                     </p>
                   </div>
-                </div>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <Input
-                    placeholder="Paste token CA → nama muncul otomatis"
-                    value={pasteCaTo}
-                    onChange={(e) => { setPasteCaTo(e.target.value); setResolveError(null); }}
-                    onKeyDown={(e) => e.key === "Enter" && resolveTokenByCa(pasteCaTo, "to")}
-                    onBlur={() => pasteCaTo.trim().length >= 32 && resolveTokenByCa(pasteCaTo, "to")}
-                    className="h-8 flex-1 text-xs font-mono bg-background/50 border-border/70"
-                  />
-                  {resolveLoading === "to" && <Loader2 size={14} className="animate-spin text-muted-foreground shrink-0" />}
                 </div>
               </div>
 
