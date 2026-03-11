@@ -33,7 +33,7 @@ const WalletModal = ({
   }, [connected, open, closeWalletModal, onClose]);
 
   const handleWalletClick = useCallback(
-    async (wallet: { adapter: { name: string; url?: string }; readyState: string }) => {
+    async (wallet: { adapter: { name: string; url?: string; icon?: string }; readyState: string }) => {
       const isInstalled = wallet.readyState === "Installed" || wallet.readyState === "Loadable";
       if (isInstalled) {
         try {
@@ -101,6 +101,7 @@ const WalletModal = ({
                 const isInstalled =
                   wallet.readyState === "Installed" || wallet.readyState === "Loadable";
                 const name = wallet.adapter.name;
+                const icon = (wallet.adapter as { icon?: string }).icon;
                 const color = getWalletColor(name);
 
                 return (
@@ -117,10 +118,14 @@ const WalletModal = ({
                     className="flex items-center gap-4 p-4 rounded-xl bg-secondary/50 hover:bg-secondary border border-border/50 hover:border-primary/30 transition-all disabled:opacity-70 disabled:cursor-wait text-left"
                   >
                     <div
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
-                      style={{ background: `${color}20`, color }}
+                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden bg-secondary/50"
+                      style={icon ? undefined : { background: `${color}20`, color }}
                     >
-                      {name[0]}
+                      {icon ? (
+                        <img src={icon} alt="" className="w-10 h-10 rounded-lg object-contain" />
+                      ) : (
+                        <span className="text-sm font-bold">{name[0]}</span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <span className="text-foreground font-medium block">{name}</span>
