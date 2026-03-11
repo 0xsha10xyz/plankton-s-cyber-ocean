@@ -8,6 +8,7 @@ import { useAccount } from "@/contexts/AccountContext";
 import { useWalletBalances } from "@/contexts/WalletBalancesContext";
 import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
 import { formatAssetAmount } from "@/lib/assets";
+import { User, Camera, Coins, RefreshCw, Loader2 } from "lucide-react";
 
 type AccountSidebarProps = {
   open: boolean;
