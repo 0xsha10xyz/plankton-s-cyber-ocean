@@ -43,7 +43,10 @@ async function withRedis<T>(fn: (redis: RedisOps) => Promise<T>): Promise<T | nu
     const m = await import("@upstash/redis");
     const redis = new m.Redis({ url, token });
     return fn({
-      sadd: (key: string, ...members: string[]) => redis.sadd(key, ...members),
+      sadd: (key: string, ...members: string[]) =>
+        members.length === 0
+          ? Promise.resolve(0)
+          : redis.sadd(key, ...(members as [string, ...string[]])),
       scard: (key: string) => redis.scard(key),
     });
   } catch {

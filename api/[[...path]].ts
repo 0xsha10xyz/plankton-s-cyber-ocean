@@ -284,7 +284,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
       req.on("error", reject);
     });
-    let body: { quoteResponse?: unknown; userPublicKey?: string };
+    let body: { quoteResponse?: unknown; userPublicKey?: string; wrapAndUnwrapSol?: boolean };
     try {
       body = JSON.parse(bodyStr || "{}");
     } catch {
