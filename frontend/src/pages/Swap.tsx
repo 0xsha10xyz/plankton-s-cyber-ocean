@@ -249,7 +249,14 @@ export default function Swap() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Chart */}
           <div className="lg:col-span-2 glass-card rounded-xl p-6">
-            <TradingChart pairLabel={pairLabel} inputMint={inputToken.mint} />
+            <TradingChart
+              pairLabel={pairLabel}
+              inputMint={
+                inputToken.mint === COMMON_MINTS.USDC || inputToken.mint === COMMON_MINTS.USDT
+                  ? outputToken.mint
+                  : inputToken.mint
+              }
+            />
           </div>
 
           {/* Swap form */}

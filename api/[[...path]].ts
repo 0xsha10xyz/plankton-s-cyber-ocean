@@ -90,12 +90,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         sendJson(res, 200, { data: [] });
         return;
       }
-      const data = items.map((c: { unixTime: number; c: number }) => ({
-        time: range === "1W"
-          ? new Date(c.unixTime * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" })
-          : new Date(c.unixTime * 1000).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
-        price: Number(c.c),
-      }));
+      const data = items.map((c: { unixTime: number; c: number }) => {
+        const date = new Date(c.unixTime * 1000);
+        const timeLabel =
+          range === "1W" || range === "1D"
+            ? date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+            : date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+        return { time: timeLabel, price: Number(c.c) };
+      });
       sendJson(res, 200, { data });
       return;
     } catch {

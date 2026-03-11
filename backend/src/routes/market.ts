@@ -68,12 +68,14 @@ marketRouter.get("/ohlcv", async (req: Request, res: Response) => {
       return;
     }
 
-    const data = items.map((c: { unixTime: number; c: number }) => ({
-      time: rangeParam === "1W"
-        ? new Date(c.unixTime * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" })
-        : new Date(c.unixTime * 1000).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
-      price: Number(c.c),
-    }));
+    const data = items.map((c: { unixTime: number; c: number }) => {
+      const date = new Date(c.unixTime * 1000);
+      const timeLabel =
+        rangeParam === "1W" || rangeParam === "1D"
+          ? date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+          : date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+      return { time: timeLabel, price: Number(c.c) };
+    });
 
     res.json({ data });
   } catch (e) {

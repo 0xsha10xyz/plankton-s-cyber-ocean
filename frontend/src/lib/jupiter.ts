@@ -5,11 +5,11 @@
 
 import { getApiBase } from "./api.js";
 
-/** Public Jupiter base URLs; backend proxy is prepended when API is configured. */
+/** Public Jupiter base URLs; try api.jup.ag first (current), then fallbacks. */
 const JUPITER_PUBLIC_BASES = [
-  "https://quote-api.jup.ag/v6",
-  "https://lite-api.jup.ag/swap/v1",
   "https://api.jup.ag/swap/v1",
+  "https://lite-api.jup.ag/swap/v1",
+  "https://quote-api.jup.ag/v6",
 ];
 
 function getJupiterBases(): string[] {
