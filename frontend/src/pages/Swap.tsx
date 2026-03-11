@@ -86,6 +86,20 @@ export default function Swap() {
 
   const pairLabel = `${inputToken.symbol}/${outputToken.symbol}`;
 
+  const chartMint =
+    inputToken.mint === COMMON_MINTS.USDC || inputToken.mint === COMMON_MINTS.USDT
+      ? outputToken.mint
+      : inputToken.mint;
+  const isChartOutput = chartMint === outputToken.mint;
+  let latestPriceFromQuote: number | null = null;
+  if (quote && quote.outAmount != null) {
+    const inAmt = parseFloat(amount) || 0;
+    const outAmt = Number(quote.outAmount) / 10 ** outputToken.decimals;
+    if (outAmt > 0 && inAmt > 0) {
+      latestPriceFromQuote = isChartOutput ? inAmt / outAmt : outAmt / inAmt;
+    }
+  }
+
   const fetchQuote = useCallback(async () => {
     const rawAmount = toRawAmount(amount, inputToken.decimals);
     if (rawAmount === "0") {
@@ -251,11 +265,8 @@ export default function Swap() {
           <div className="lg:col-span-2 glass-card rounded-xl p-6">
             <TradingChart
               pairLabel={pairLabel}
-              inputMint={
-                inputToken.mint === COMMON_MINTS.USDC || inputToken.mint === COMMON_MINTS.USDT
-                  ? outputToken.mint
-                  : inputToken.mint
-              }
+              inputMint={chartMint}
+              latestPriceFromQuote={latestPriceFromQuote}
             />
           </div>
 

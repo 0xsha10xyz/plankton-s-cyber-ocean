@@ -84,10 +84,12 @@ export interface TradingChartProps {
   pairLabel?: string;
   /** Token mint for OHLCV (e.g. SOL mint for SOL/USDC). When set, chart uses real data from API. */
   inputMint?: string;
+  /** Current price from swap quote (USD per token). When set, chart shows "Live" and uses this as latest point even if OHLCV fails. */
+  latestPriceFromQuote?: number | null;
   className?: string;
 }
 
-export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: TradingChartProps) {
+export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFromQuote, className }: TradingChartProps) {
   const [range, setRange] = useState<TimeRange>("1D");
   const sampleData = useSamplePriceData(pairLabel, range);
   const [realData, setRealData] = useState<{ time: string; price: number }[] | null>(null);
@@ -108,7 +110,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
 
     const tryBackend = () =>
       base
-        ? fetch(`${base}/api/market/ohlcv?mint=${encodeURIComponent(inputMint.trim())}&range=${range}`)
+        ? fetch(`${base}/api/market/ohlcv?mint=${encodeURIComponent(inputMint.trim())}&range=${range}&_=${Date.now()}`)
             .then((res) => res.json())
             .then((json) => {
               if (cancelled) return;
@@ -122,6 +124,12 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
             })
             .catch(() => false)
         : Promise.resolve(false);
+
+    const tryBackendWithRetry = () =>
+      tryBackend().then((ok) => {
+        if (cancelled || ok) return ok;
+        return tryBackend();
+      });
 
     const tryCoinGecko = (): Promise<boolean> => {
       // Use CoinGecko SOL/USD for any pair that involves SOL (e.g. USDC/SOL, USDT/SOL, SOL/USDC)
@@ -140,7 +148,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
         .catch(() => false);
     };
 
-    tryBackend()
+    tryBackendWithRetry()
       .then((ok) => {
         if (cancelled) return;
         if (ok) return;
@@ -176,8 +184,20 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
     return () => clearInterval(interval);
   }, [inputMint, range, pairLabel, dataSource]);
 
-  const data = (realData && realData.length > 0) ? realData : sampleData;
-  const isLive = dataSource === "live" || dataSource === "coingecko";
+  const hasQuotePrice = latestPriceFromQuote != null && Number.isFinite(latestPriceFromQuote) && latestPriceFromQuote > 0;
+  const baseSeries = (realData && realData.length > 0) ? realData : sampleData;
+  const withQuotePoint =
+    hasQuotePrice && baseSeries.length > 0
+      ? [...baseSeries.filter((d) => d.time !== "Now"), { time: "Now", price: latestPriceFromQuote }]
+      : hasQuotePrice && !(realData && realData.length > 0)
+        ? [
+            { time: "Now", price: latestPriceFromQuote },
+            { time: "Now", price: latestPriceFromQuote },
+          ]
+        : baseSeries;
+
+  const data = withQuotePoint;
+  const isLive = dataSource === "live" || dataSource === "coingecko" || hasQuotePrice;
   const safeData = data
     .map((d) => ({
       time: String(d?.time ?? ""),
