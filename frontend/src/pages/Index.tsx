@@ -89,18 +89,6 @@ const Index = () => {
           </motion.div>
         </section>
 
-        {/* Stats strip — Total Users for social proof / investors */}
-        <section className="border-y border-border/40 bg-secondary/20">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
-              <TotalUsersStat variant="strip" />
-              <p className="text-xs text-muted-foreground max-w-md text-center md:text-left">
-                Join thousands of users on the autonomous Solana protocol. Connect your wallet to be counted.
-              </p>
-            </div>
-          </div>
-        </section>
-
         <div className="container mx-auto px-4">
           {/* Command Center */}
           <Section title="Command Center" id="command">
