@@ -93,7 +93,7 @@ const WalletModal = ({
             </div>
 
             <p className="text-sm text-muted-foreground mb-5">
-              Connect a Solana wallet for full access to Plankton&apos;s autonomous trading features.
+              Connect a Solana wallet for full access to Plankton&apos;s autonomous protocols.
             </p>
 
             <div className="flex flex-col gap-2">
