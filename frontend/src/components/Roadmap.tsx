@@ -19,14 +19,14 @@ const phases = [
   {
     phase: "Phase 2",
     title: "Development",
-    description: "Protocol architecture design.",
+    description: "Protocol architecture design, API integration.",
     icon: Code2,
     status: "LIVE",
   },
   {
     phase: "Phase 3",
-    title: "Pre Launch",
-    description: "Pre Launch Mainnet: Community building, Agent onboarding program",
+    title: "Pre Launch Mainnet",
+    description: "Community building, Agent onboarding program.",
     icon: Users,
     status: "LIVE",
   },
