@@ -57,6 +57,53 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
+  // GET /api/market/ohlcv – Birdeye OHLCV for chart (no Express dependency)
+  if (method === "GET" && pathname === "/api/market/ohlcv") {
+    const mint = searchParams.get("mint")?.trim() || "";
+    const rangeParam = searchParams.get("range") || "1D";
+    const validRanges = ["1H", "4H", "1D", "1W"];
+    const range = validRanges.includes(rangeParam) ? rangeParam : "1D";
+    if (!mint || mint.length > 64) {
+      sendJson(res, 200, { data: [] });
+      return;
+    }
+    const apiKey = process.env.BIRDEYE_API_KEY;
+    if (!apiKey) {
+      sendJson(res, 200, { data: [] });
+      return;
+    }
+    try {
+      const timeTo = Math.floor(Date.now() / 1000);
+      const rangeSeconds = range === "1H" ? 24 * 3600 : range === "4H" ? 6 * 24 * 3600 : range === "1D" ? 30 * 24 * 3600 : 14 * 24 * 3600;
+      const timeFrom = timeTo - rangeSeconds;
+      const url = `https://public-api.birdeye.so/defi/ohlcv?address=${encodeURIComponent(mint)}&type=${range}&time_from=${timeFrom}&time_to=${timeTo}&currency=usd`;
+      const resp = await fetch(url, {
+        headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
+      });
+      if (!resp.ok) {
+        sendJson(res, 200, { data: [] });
+        return;
+      }
+      const json = await resp.json();
+      const items = json?.data?.items;
+      if (!Array.isArray(items) || items.length === 0) {
+        sendJson(res, 200, { data: [] });
+        return;
+      }
+      const data = items.map((c: { unixTime: number; c: number }) => ({
+        time: range === "1W"
+          ? new Date(c.unixTime * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+          : new Date(c.unixTime * 1000).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+        price: Number(c.c),
+      }));
+      sendJson(res, 200, { data });
+      return;
+    } catch {
+      sendJson(res, 200, { data: [] });
+      return;
+    }
+  }
+
   // All other /api/* → Express backend
   try {
     if (!(req as { url?: string }).url) {

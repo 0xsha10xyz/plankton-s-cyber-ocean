@@ -91,7 +91,6 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
       return;
     }
     const base = getApiBase();
-    const isSol = inputMint.trim() === SOL_MINT;
     let cancelled = false;
     setLoading(true);
     setRealData(null);
@@ -115,7 +114,9 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
         : Promise.resolve(false);
 
     const tryCoinGecko = (): Promise<boolean> => {
-      if (!isSol) return Promise.resolve(false);
+      // Use CoinGecko SOL/USD for any pair that involves SOL (e.g. USDC/SOL, USDT/SOL, SOL/USDC)
+      const pairHasSol = /SOL/i.test(pairLabel || "");
+      if (!pairHasSol) return Promise.resolve(false);
       return fetchCoinGeckoOHLCV(range)
         .then((arr) => {
           if (cancelled) return false;
@@ -141,6 +142,29 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
 
     return () => { cancelled = true; };
   }, [inputMint, range]);
+
+  // Refetch real data periodically so chart stays up to date
+  useEffect(() => {
+    if (!inputMint?.trim() || (dataSource !== "live" && dataSource !== "coingecko")) return;
+    const interval = setInterval(() => {
+      const base = getApiBase();
+      const isSolPair = /SOL/i.test(pairLabel || "");
+      if (dataSource === "live" && base) {
+        fetch(`${base}/api/market/ohlcv?mint=${encodeURIComponent(inputMint.trim())}&range=${range}&_=${Date.now()}`)
+          .then((res) => res.json())
+          .then((json) => {
+            const arr = Array.isArray(json?.data) ? json.data : [];
+            if (arr.length > 0) setRealData(arr);
+          })
+          .catch(() => {});
+      } else if (dataSource === "coingecko" && isSolPair) {
+        fetchCoinGeckoOHLCV(range).then((arr) => {
+          if (arr.length >= 2) setRealData(arr);
+        }).catch(() => {});
+      }
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [inputMint, range, pairLabel, dataSource]);
 
   const data = (realData && realData.length > 0) ? realData : sampleData;
   const isLive = dataSource === "live" || dataSource === "coingecko";

@@ -30,7 +30,7 @@ In the Vercel project: **Settings** → **Environment Variables**. Add:
 
 | Name | Value | Notes |
 |------|--------|--------|
-| `BIRDEYE_API_KEY` | Your Birdeye API key | For real OHLCV chart on Swap. Optional. |
+| `BIRDEYE_API_KEY` | Your Birdeye API key | For **real-time** OHLCV chart on Swap (all pairs). Without it, SOL pairs still show **Live** via CoinGecko. |
 | `CORS_ORIGIN` | `https://planktonomous.vercel.app` | Replace with your actual Vercel URL. Lets the API allow your frontend origin. |
 | `SOLANA_RPC_URL` | `https://rpc.ankr.com/solana` or your RPC | Optional; used by `/api/wallet/balances` for token balances. |
 
