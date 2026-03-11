@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { VersionedTransaction, PublicKey } from "@solana/web3.js";
-import { ArrowDownLeft, Loader2, Wallet, PlusCircle } from "lucide-react";
+import { ArrowDownLeft, Loader2, Wallet } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -52,9 +52,10 @@ export default function Swap() {
   const [error, setError] = useState<string | null>(null);
   const [txSuccess, setTxSuccess] = useState<string | null>(null);
   const [customTokens, setCustomTokens] = useState<TokenOption[]>([]);
-  const [customCaInput, setCustomCaInput] = useState("");
-  const [addTokenLoading, setAddTokenLoading] = useState(false);
-  const [addTokenError, setAddTokenError] = useState<string | null>(null);
+  const [pasteCaFrom, setPasteCaFrom] = useState("");
+  const [pasteCaTo, setPasteCaTo] = useState("");
+  const [resolveLoading, setResolveLoading] = useState<"from" | "to" | null>(null);
+  const [resolveError, setResolveError] = useState<string | null>(null);
 
   const tokenOptions = useMemo(
     () => [...TOKEN_OPTIONS, ...customTokens],
@@ -173,40 +174,49 @@ export default function Swap() {
     setError(null);
   };
 
-  const handleAddCustomToken = useCallback(async () => {
-    const raw = customCaInput.trim();
-    if (!raw || raw.length < 32 || raw.length > 44) {
-      setAddTokenError("Enter a valid Solana token mint (CA), 32–44 characters");
+  const resolveTokenByCa = useCallback(async (raw: string, which: "from" | "to") => {
+    const ca = raw.trim();
+    if (!ca || ca.length < 32 || ca.length > 44) return;
+    const existing = tokenOptions.find((t) => t.mint === ca);
+    if (existing) {
+      if (which === "from") setInputToken(existing);
+      else setOutputToken(existing);
+      if (which === "from") setPasteCaFrom("");
+      else setPasteCaTo("");
+      setResolveError(null);
       return;
     }
-    if (tokenOptions.some((t) => t.mint === raw)) {
-      setAddTokenError("Token already in list");
-      return;
-    }
-    setAddTokenError(null);
-    setAddTokenLoading(true);
+    setResolveError(null);
+    setResolveLoading(which);
     try {
       const base = getApiBase();
-      const res = await fetch(`${base}/api/market/token-info?mint=${encodeURIComponent(raw)}`);
+      const res = await fetch(`${base}/api/market/token-info?mint=${encodeURIComponent(ca)}`);
       const data = await res.json();
       if (!res.ok) {
-        setAddTokenError(data?.error || "Token not found");
+        setResolveError(data?.error || "Token not found");
         return;
       }
-      const symbol = typeof data.symbol === "string" ? data.symbol : `${raw.slice(0, 4)}…${raw.slice(-4)}`;
+      const symbol = typeof data.symbol === "string" ? data.symbol : `${ca.slice(0, 4)}…${ca.slice(-4)}`;
       const decimals = Number(data.decimals);
       if (!Number.isFinite(decimals) || decimals < 0 || decimals > 18) {
-        setAddTokenError("Invalid decimals");
+        setResolveError("Invalid token");
         return;
       }
-      setCustomTokens((prev) => [...prev, { symbol, mint: raw, decimals }]);
-      setCustomCaInput("");
-    } catch (e) {
-      setAddTokenError("Failed to fetch token info");
+      const token: TokenOption = { symbol, mint: ca, decimals };
+      setCustomTokens((prev) => (prev.some((t) => t.mint === ca) ? prev : [...prev, token]));
+      if (which === "from") {
+        setInputToken(token);
+        setPasteCaFrom("");
+      } else {
+        setOutputToken(token);
+        setPasteCaTo("");
+      }
+    } catch {
+      setResolveError("Could not load token");
     } finally {
-      setAddTokenLoading(false);
+      setResolveLoading(null);
     }
-  }, [customCaInput, tokenOptions]);
+  }, [tokenOptions]);
 
   if (!connected) {
     return (
@@ -303,6 +313,17 @@ export default function Swap() {
                     )}
                   </div>
                 </div>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <Input
+                    placeholder="Paste token CA → nama muncul otomatis"
+                    value={pasteCaFrom}
+                    onChange={(e) => { setPasteCaFrom(e.target.value); setResolveError(null); }}
+                    onKeyDown={(e) => e.key === "Enter" && resolveTokenByCa(pasteCaFrom, "from")}
+                    onBlur={() => pasteCaFrom.trim().length >= 32 && resolveTokenByCa(pasteCaFrom, "from")}
+                    className="h-8 flex-1 text-xs font-mono bg-background/50 border-border/70"
+                  />
+                  {resolveLoading === "from" && <Loader2 size={14} className="animate-spin text-muted-foreground shrink-0" />}
+                </div>
               </div>
 
               <div className="flex justify-center">
@@ -353,32 +374,20 @@ export default function Swap() {
                     </p>
                   </div>
                 </div>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <Input
+                    placeholder="Paste token CA → nama muncul otomatis"
+                    value={pasteCaTo}
+                    onChange={(e) => { setPasteCaTo(e.target.value); setResolveError(null); }}
+                    onKeyDown={(e) => e.key === "Enter" && resolveTokenByCa(pasteCaTo, "to")}
+                    onBlur={() => pasteCaTo.trim().length >= 32 && resolveTokenByCa(pasteCaTo, "to")}
+                    className="h-8 flex-1 text-xs font-mono bg-background/50 border-border/70"
+                  />
+                  {resolveLoading === "to" && <Loader2 size={14} className="animate-spin text-muted-foreground shrink-0" />}
+                </div>
               </div>
 
-              <div className="rounded-lg border border-border/50 bg-secondary/20 p-3 space-y-2">
-                <p className="text-xs font-medium text-foreground">Add token by contract address (CA)</p>
-                <p className="text-xs text-muted-foreground">Paste a Solana token mint address to swap it. Chart will show real-time data when BIRDEYE_API_KEY is set.</p>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="e.g. EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
-                    value={customCaInput}
-                    onChange={(e) => { setCustomCaInput(e.target.value); setAddTokenError(null); }}
-                    className="flex-1 font-mono text-xs bg-background"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleAddCustomToken}
-                    disabled={addTokenLoading || !customCaInput.trim()}
-                    className="gap-1.5 shrink-0"
-                  >
-                    {addTokenLoading ? <Loader2 size={14} className="animate-spin" /> : <PlusCircle size={14} />}
-                    Add
-                  </Button>
-                </div>
-                {addTokenError && <p className="text-xs text-destructive">{addTokenError}</p>}
-              </div>
+              {resolveError && <p className="text-xs text-destructive">{resolveError}</p>}
 
               {quote && (
                 <p className="text-xs text-muted-foreground">
