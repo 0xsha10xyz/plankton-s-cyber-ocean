@@ -95,11 +95,13 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
   const [realData, setRealData] = useState<{ time: string; price: number }[] | null>(null);
   const [dataSource, setDataSource] = useState<"live" | "coingecko" | null>(null);
   const [loading, setLoading] = useState(false);
+  const [currentPriceFromApi, setCurrentPriceFromApi] = useState<number | null>(null);
 
   useEffect(() => {
     if (!inputMint?.trim()) {
       setRealData(null);
       setDataSource(null);
+      setCurrentPriceFromApi(null);
       return;
     }
     const base = getApiBase();
@@ -132,7 +134,6 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
       });
 
     const tryCoinGecko = (): Promise<boolean> => {
-      // Use CoinGecko SOL/USD for any pair that involves SOL (e.g. USDC/SOL, USDT/SOL, SOL/USDC)
       const pairHasSol = /SOL/i.test(pairLabel || "");
       if (!pairHasSol) return Promise.resolve(false);
       return fetchCoinGeckoOHLCV(range)
@@ -148,6 +149,19 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
         .catch(() => false);
     };
 
+    const fetchCurrentPrice = () =>
+      base
+        ? fetch(`${base}/api/market/price?mint=${encodeURIComponent(inputMint.trim())}&_=${Date.now()}`)
+            .then((res) => res.json())
+            .then((json) => {
+              if (cancelled) return;
+              const p = json?.price;
+              if (typeof p === "number" && Number.isFinite(p) && p >= 0) setCurrentPriceFromApi(p);
+            })
+            .catch(() => {})
+        : Promise.resolve();
+
+    fetchCurrentPrice();
     tryBackendWithRetry()
       .then((ok) => {
         if (cancelled) return;
@@ -161,12 +175,22 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
     return () => { cancelled = true; };
   }, [inputMint, range]);
 
-  // Refetch real data periodically so chart stays up to date
+  // Refetch current price and OHLCV periodically so chart stays Live after swap / without quote
   useEffect(() => {
-    if (!inputMint?.trim() || (dataSource !== "live" && dataSource !== "coingecko")) return;
-    const interval = setInterval(() => {
-      const base = getApiBase();
-      const isSolPair = /SOL/i.test(pairLabel || "");
+    if (!inputMint?.trim()) return;
+    const base = getApiBase();
+    const isSolPair = /SOL/i.test(pairLabel || "");
+
+    const refresh = () => {
+      if (base) {
+        fetch(`${base}/api/market/price?mint=${encodeURIComponent(inputMint.trim())}&_=${Date.now()}`)
+          .then((res) => res.json())
+          .then((json) => {
+            const p = json?.price;
+            if (typeof p === "number" && Number.isFinite(p) && p >= 0) setCurrentPriceFromApi(p);
+          })
+          .catch(() => {});
+      }
       if (dataSource === "live" && base) {
         fetch(`${base}/api/market/ohlcv?mint=${encodeURIComponent(inputMint.trim())}&range=${range}&_=${Date.now()}`)
           .then((res) => res.json())
@@ -180,19 +204,26 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
           if (arr.length >= 2) setRealData(arr);
         }).catch(() => {});
       }
-    }, 30_000);
+    };
+
+    const interval = setInterval(refresh, 30_000);
     return () => clearInterval(interval);
   }, [inputMint, range, pairLabel, dataSource]);
 
-  const hasQuotePrice = latestPriceFromQuote != null && Number.isFinite(latestPriceFromQuote) && latestPriceFromQuote > 0;
+  const effectiveLivePrice =
+    (latestPriceFromQuote != null && Number.isFinite(latestPriceFromQuote) && latestPriceFromQuote > 0
+      ? latestPriceFromQuote
+      : null) ?? (currentPriceFromApi != null && currentPriceFromApi > 0 ? currentPriceFromApi : null);
+
+  const hasQuotePrice = effectiveLivePrice != null;
   const baseSeries = (realData && realData.length > 0) ? realData : sampleData;
   const withQuotePoint =
     hasQuotePrice && baseSeries.length > 0
-      ? [...baseSeries.filter((d) => d.time !== "Now"), { time: "Now", price: latestPriceFromQuote }]
+      ? [...baseSeries.filter((d) => d.time !== "Now"), { time: "Now", price: effectiveLivePrice }]
       : hasQuotePrice && !(realData && realData.length > 0)
         ? [
-            { time: "Now", price: latestPriceFromQuote },
-            { time: "Now", price: latestPriceFromQuote },
+            { time: "Now", price: effectiveLivePrice },
+            { time: "Now", price: effectiveLivePrice },
           ]
         : baseSeries;
 

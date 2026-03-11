@@ -32,9 +32,11 @@ export function StatsProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setUserCount(typeof data.count === "number" ? data.count : 0);
+      } else {
+        setUserCount(0);
       }
     } catch {
-      // ignore
+      if (mounted.current) setUserCount(0);
     }
   }, []);
 

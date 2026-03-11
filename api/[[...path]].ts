@@ -164,6 +164,53 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
+  // GET /api/market/price – current token price in USD (Birdeye); for real-time chart without quote
+  if (method === "GET" && pathname === "/api/market/price") {
+    const mint = searchParams.get("mint")?.trim() || "";
+    if (!mint || mint.length > 64) {
+      sendJson(res, 400, { error: "Missing or invalid mint" });
+      return;
+    }
+    const apiKey = process.env.BIRDEYE_API_KEY;
+    if (!apiKey) {
+      sendJson(res, 200, { price: null });
+      return;
+    }
+    try {
+      const priceUrl = `https://public-api.birdeye.so/defi/price?address=${encodeURIComponent(mint)}`;
+      const resp = await fetch(priceUrl, {
+        headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
+      });
+      if (!resp.ok) {
+        sendJson(res, 200, { price: null });
+        return;
+      }
+      const json = await resp.json();
+      const value = json?.data?.value;
+      if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+        sendJson(res, 200, { price: value });
+        return;
+      }
+      sendJson(res, 200, { price: null });
+      return;
+    } catch {
+      sendJson(res, 200, { price: null });
+      return;
+    }
+  }
+
+  // GET /api/stats/users – stub when Express not loaded (avoids 404 in console)
+  if (method === "GET" && pathname === "/api/stats/users") {
+    sendJson(res, 200, { count: 0 });
+    return;
+  }
+
+  // POST /api/stats/connect – stub when Express not loaded (avoids 404 in console)
+  if (method === "POST" && pathname === "/api/stats/connect") {
+    sendJson(res, 200, { count: 0, isNew: false });
+    return;
+  }
+
   // GET /api/jupiter/quote – proxy to Jupiter (avoids CORS/401; set JUPITER_API_KEY in Vercel for auth)
   if (method === "GET" && pathname === "/api/jupiter/quote") {
     const inputMint = searchParams.get("inputMint")?.trim() || "";
