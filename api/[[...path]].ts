@@ -3,7 +3,7 @@
  * GET /api/wallet/balances is handled here first (no Express). Other /api/* go to Express backend.
  */
 import type { IncomingMessage, ServerResponse } from "http";
-import { getWalletBalancesData } from "./wallet/balances-handler";
+import { getWalletBalancesData } from "./wallet/balances-handler.js";
 
 function parseUrl(url: string): { pathname: string; searchParams: URLSearchParams } {
   try {
