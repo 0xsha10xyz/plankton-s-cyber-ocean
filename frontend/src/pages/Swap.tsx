@@ -286,9 +286,6 @@ export default function Swap() {
         </motion.h1>
         <div className="flex flex-wrap items-center gap-4 mb-8">
         </div>
-        <p className="text-muted-foreground text-sm mb-8 max-w-2xl">
-          Trade manually with the chart and swap form. When the autonomous protocol is live, you’ll be able to let the agent execute for you.
-        </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Chart */}
