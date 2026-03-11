@@ -444,6 +444,17 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
+  // GET /api/subscription/me – stub when Express not loaded (same shape as backend)
+  if (method === "GET" && pathname === "/api/subscription/me") {
+    const wallet = searchParams.get("wallet")?.trim();
+    if (!wallet) {
+      sendJson(res, 400, { error: "wallet query required" });
+      return;
+    }
+    sendJson(res, 200, { tier: "free" });
+    return;
+  }
+
   // All other /api/* → Express backend
   try {
     if (!(req as { url?: string }).url) {
