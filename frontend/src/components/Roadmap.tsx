@@ -26,9 +26,9 @@ const phases = [
   {
     phase: "Phase 3",
     title: "Pre Launch",
-    description: "MVP, Community building, Agent onboarding program.",
+    description: "Pre Launch Mainnet: Community building, Agent onboarding program",
     icon: Users,
-    status: "SOON",
+    status: "LIVE",
   },
   {
     phase: "Phase 4",
