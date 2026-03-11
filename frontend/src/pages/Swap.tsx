@@ -301,7 +301,7 @@ export default function Swap() {
           <div className="glass-card rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <ArrowDownLeft size={18} className="text-primary" />
-              <h2 className="text-base font-semibold text-foreground">Manual swap</h2>
+              <h2 className="text-base font-semibold text-foreground">Swap</h2>
             </div>
 
             <div className="space-y-4">
