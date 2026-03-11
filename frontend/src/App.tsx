@@ -9,6 +9,7 @@ import { StatsProvider, StatsWalletTracker } from "@/contexts/StatsContext";
 import { WalletModalProvider } from "@/contexts/WalletModalContext";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { WalletBalancesProvider } from "@/contexts/WalletBalancesContext";
+import { TokenSymbolProvider } from "@/contexts/TokenSymbolContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -24,6 +25,7 @@ const App = () => (
           <WalletModalProvider>
             <AccountProvider>
             <WalletBalancesProvider>
+            <TokenSymbolProvider>
             <SubscriptionProvider>
             <TooltipProvider>
             <Toaster />
@@ -38,6 +40,7 @@ const App = () => (
             </BrowserRouter>
             </TooltipProvider>
             </SubscriptionProvider>
+            </TokenSymbolProvider>
             </WalletBalancesProvider>
           </AccountProvider>
         </WalletModalProvider>

@@ -216,16 +216,45 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
       : null) ?? (currentPriceFromApi != null && currentPriceFromApi > 0 ? currentPriceFromApi : null);
 
   const hasQuotePrice = effectiveLivePrice != null;
-  const baseSeries = (realData && realData.length > 0) ? realData : sampleData;
+  const rawBase = (realData && realData.length > 0) ? realData : sampleData;
+  const pricesRaw = rawBase.map((d) => Number(d?.price) ?? 0).filter((p) => Number.isFinite(p) && p > 0);
+  const median = pricesRaw.length > 0
+    ? (() => {
+        const s = [...pricesRaw].sort((a, b) => a - b);
+        const mid = Math.floor(s.length / 2);
+        return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+      })()
+    : 0;
+  const filterOutliers = (arr: { time: string; price: number }[], maxRatio = 5): { time: string; price: number }[] => {
+    if (median <= 0 || arr.length < 2) return arr;
+    const lo = median / maxRatio;
+    const hi = median * maxRatio;
+    return arr.filter((d) => {
+      const p = Number(d.price);
+      return Number.isFinite(p) && p >= lo && p <= hi;
+    });
+  };
+  const baseSeries = filterOutliers(rawBase);
+  const lastPrice = baseSeries.length > 0 ? Number(baseSeries[baseSeries.length - 1]?.price) : null;
+  const canAppendNow =
+    hasQuotePrice &&
+    effectiveLivePrice != null &&
+    (baseSeries.length === 0 ||
+      (lastPrice != null &&
+        lastPrice > 0 &&
+        effectiveLivePrice >= lastPrice / 5 &&
+        effectiveLivePrice <= lastPrice * 5));
   const withQuotePoint =
-    hasQuotePrice && baseSeries.length > 0
-      ? [...baseSeries.filter((d) => d.time !== "Now"), { time: "Now", price: effectiveLivePrice }]
+    canAppendNow && baseSeries.length > 0
+      ? [...baseSeries.filter((d) => d.time !== "Now"), { time: "Now", price: effectiveLivePrice! }]
       : hasQuotePrice && !(realData && realData.length > 0)
         ? [
-            { time: "Now", price: effectiveLivePrice },
-            { time: "Now", price: effectiveLivePrice },
+            { time: "Now", price: effectiveLivePrice! },
+            { time: "Now", price: effectiveLivePrice! },
           ]
-        : baseSeries;
+        : baseSeries.length > 0
+          ? baseSeries
+          : sampleData;
 
   const data = withQuotePoint;
   const isLive = dataSource === "live" || dataSource === "coingecko" || hasQuotePrice;

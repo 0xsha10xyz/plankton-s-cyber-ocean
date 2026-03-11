@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAccount } from "@/contexts/AccountContext";
 import { useWalletBalances } from "@/contexts/WalletBalancesContext";
-import { User, Loader2, Camera, Coins, RefreshCw } from "lucide-react";
-import { formatAssetAmount, getTokenSymbol } from "@/lib/assets";
+import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
+import { formatAssetAmount } from "@/lib/assets";
 
 type AccountSidebarProps = {
   open: boolean;
@@ -24,6 +24,12 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
     error: balanceError,
     refetch: retryAssets,
   } = useWalletBalances();
+  const { getSymbol, ensureTokenInfo } = useTokenSymbol();
+
+  useEffect(() => {
+    if (!tokenAssets.length) return;
+    tokenAssets.forEach((t) => ensureTokenInfo(t.mint));
+  }, [tokenAssets, ensureTokenInfo]);
   const [usernameInput, setUsernameInput] = useState("");
   const [savingUsername, setSavingUsername] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -179,7 +185,7 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
                     className="flex items-center justify-between gap-2 py-1.5 border-b border-border/30 last:border-0"
                     title={mint}
                   >
-                    <span className="text-sm font-medium text-foreground">{getTokenSymbol(mint)}</span>
+                    <span className="text-sm font-medium text-foreground">{getSymbol(mint)}</span>
                     <span className="text-sm font-mono text-foreground tabular-nums">
                       {formatAssetAmount(rawAmount, decimals)}
                     </span>

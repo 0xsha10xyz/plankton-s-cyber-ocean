@@ -20,6 +20,7 @@ import {
 } from "@/lib/jupiter";
 import { sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 import { useWalletBalances } from "@/contexts/WalletBalancesContext";
+import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
 import { getApiBase } from "@/lib/api";
 import { TokenSelect, type TokenOption } from "@/components/TokenSelect";
 
@@ -55,17 +56,47 @@ export default function Swap() {
   const [customTokens, setCustomTokens] = useState<TokenOption[]>([]);
   const [resolveLoading, setResolveLoading] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
-
-  const tokenOptions = useMemo(
-    () => [...TOKEN_OPTIONS, ...customTokens],
-    [customTokens]
-  );
+  const [walletTokenOptions, setWalletTokenOptions] = useState<TokenOption[]>([]);
+  const { ensureTokenInfo, getSymbol } = useTokenSymbol();
 
   const {
     solLamports,
+    tokens: walletTokens,
     tokenBalancesByMint,
     refetch: refetchBalances,
   } = useWalletBalances();
+
+  useEffect(() => {
+    if (!walletTokens.length) {
+      setWalletTokenOptions([]);
+      return;
+    }
+    const knownMints = new Set(TOKEN_OPTIONS.map((o) => o.mint));
+    const list = walletTokens.filter((t) => !knownMints.has(t.mint));
+    if (list.length === 0) {
+      setWalletTokenOptions([]);
+      return;
+    }
+    let cancelled = false;
+    Promise.all(list.map((t) => ensureTokenInfo(t.mint))).then((infos) => {
+      if (cancelled) return;
+      const options: TokenOption[] = list.map((t, i) => ({
+        symbol: infos[i]?.symbol ?? getSymbol(t.mint),
+        mint: t.mint,
+        decimals: t.decimals,
+      }));
+      setWalletTokenOptions(options);
+    });
+    return () => { cancelled = true; };
+  }, [walletTokens, ensureTokenInfo, getSymbol]);
+
+  const tokenOptions = useMemo(() => {
+    const byMint = new Map<string, TokenOption>();
+    for (const t of TOKEN_OPTIONS) byMint.set(t.mint, t);
+    for (const t of customTokens) if (!byMint.has(t.mint)) byMint.set(t.mint, t);
+    for (const t of walletTokenOptions) if (!byMint.has(t.mint)) byMint.set(t.mint, t);
+    return Array.from(byMint.values());
+  }, [customTokens, walletTokenOptions]);
 
   const solBalance = solLamports != null ? solLamports / 1e9 : 0;
   const tokenBalances = tokenBalancesByMint;
