@@ -32,7 +32,9 @@ function getStoredTierOverride(wallet: string): TierId | null {
   try {
     const v = localStorage.getItem(tierStorageKey(wallet));
     if (v === "free" || v === "pro" || v === "autonomous") return v;
-  } catch {}
+  } catch {
+    // ignore
+  }
   return null;
 }
 
@@ -120,7 +122,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     try {
       if (t) localStorage.setItem(tierStorageKey(wallet), t);
       else localStorage.removeItem(tierStorageKey(wallet));
-    } catch {}
+    } catch {
+      // ignore
+    }
   }, [wallet]);
 
   const recordResearchLookup = useCallback(() => {

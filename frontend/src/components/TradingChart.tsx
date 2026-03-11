@@ -217,7 +217,12 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
 
   const hasQuotePrice = effectiveLivePrice != null;
   const rawBase = (realData && realData.length > 0) ? realData : sampleData;
-  const pricesRaw = rawBase.map((d) => Number(d?.price) ?? 0).filter((p) => Number.isFinite(p) && p > 0);
+  const pricesRaw = rawBase
+    .map((d) => {
+      const n = Number(d?.price);
+      return Number.isFinite(n) ? n : 0;
+    })
+    .filter((p) => p > 0);
   const median = pricesRaw.length > 0
     ? (() => {
         const s = [...pricesRaw].sort((a, b) => a - b);
@@ -261,7 +266,10 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
   const safeData = data
     .map((d) => ({
       time: String(d?.time ?? ""),
-      price: Number(d?.price) ?? 0,
+      price: (() => {
+        const n = Number(d?.price);
+        return Number.isFinite(n) ? n : 0;
+      })(),
     }))
     .filter((d) => d.time !== "" && Number.isFinite(d.price) && d.price >= 0);
 

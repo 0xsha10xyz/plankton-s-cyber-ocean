@@ -67,7 +67,7 @@ export function TokenSelect({
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="start">
         <div className="p-2 border-b border-border/50">
-          <p className="text-xs text-muted-foreground mb-1.5">Paste token CA → nama muncul otomatis</p>
+          <p className="text-xs text-muted-foreground mb-1.5">Paste a token CA → the token name appears automatically</p>
           <div className="flex gap-1.5">
             <Input
               placeholder="Contract address..."

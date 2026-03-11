@@ -78,44 +78,42 @@ const Docs = () => {
 
         {/* Sidebar */}
         <AnimatePresence>
-          {(sidebarOpen || true) && (
-            <motion.aside
-              className={cn(
-                "fixed lg:sticky top-20 left-0 h-[calc(100vh-5rem)] w-64 z-40 flex-shrink-0 overflow-y-auto",
-                "lg:block",
-                sidebarOpen ? "block" : "hidden lg:block"
-              )}
-              style={{
-                background: "hsl(220 80% 6% / 0.95)",
-                borderRight: "1px solid hsl(180 90% 50% / 0.1)",
-                backdropFilter: "blur(20px)",
-              }}
-            >
-              <nav className="p-4 pt-14 lg:pt-6 space-y-1">
-                <p className="text-xs font-mono text-muted-foreground/60 uppercase tracking-widest mb-4 px-3">
-                  Documentation
-                </p>
-                {sidebarSections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => scrollToSection(section.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group text-left",
-                      activeSection === section.id
-                        ? "bg-primary/10 text-primary border border-primary/20"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-                    )}
-                  >
-                    <section.icon size={16} className={activeSection === section.id ? "text-primary" : "text-muted-foreground/60"} />
-                    <span>{section.label}</span>
-                    {activeSection === section.id && (
-                      <ChevronRight size={14} className="ml-auto text-primary" />
-                    )}
-                  </button>
-                ))}
-              </nav>
-            </motion.aside>
-          )}
+          <motion.aside
+            className={cn(
+              "fixed lg:sticky top-20 left-0 h-[calc(100vh-5rem)] w-64 z-40 flex-shrink-0 overflow-y-auto",
+              "lg:block",
+              sidebarOpen ? "block" : "hidden lg:block"
+            )}
+            style={{
+              background: "hsl(220 80% 6% / 0.95)",
+              borderRight: "1px solid hsl(180 90% 50% / 0.1)",
+              backdropFilter: "blur(20px)",
+            }}
+          >
+            <nav className="p-4 pt-14 lg:pt-6 space-y-1">
+              <p className="text-xs font-mono text-muted-foreground/60 uppercase tracking-widest mb-4 px-3">
+                Documentation
+              </p>
+              {sidebarSections.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => scrollToSection(section.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group text-left",
+                    activeSection === section.id
+                      ? "bg-primary/10 text-primary border border-primary/20"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                  )}
+                >
+                  <section.icon size={16} className={activeSection === section.id ? "text-primary" : "text-muted-foreground/60"} />
+                  <span>{section.label}</span>
+                  {activeSection === section.id && (
+                    <ChevronRight size={14} className="ml-auto text-primary" />
+                  )}
+                </button>
+              ))}
+            </nav>
+          </motion.aside>
         </AnimatePresence>
 
         {/* Main content */}

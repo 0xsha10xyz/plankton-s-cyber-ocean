@@ -138,7 +138,7 @@ export async function fetchAllTokenBalancesAsTokens(
           const tokenAmount = info?.tokenAmount;
           if (!mint || seen.has(mint)) continue;
           seen.add(mint);
-          const decimals = Number(tokenAmount?.decimals) ?? 0;
+          const decimals = Number(tokenAmount?.decimals ?? 0);
           let rawAmount = tokenAmount?.amount;
           if (rawAmount == null && tokenAmount?.uiAmount != null)
             rawAmount = Math.floor(tokenAmount.uiAmount * 10 ** decimals).toString();
