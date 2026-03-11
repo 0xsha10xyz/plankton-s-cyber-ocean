@@ -73,3 +73,4 @@ User-facing documentation is available in the app: use **Docs** on the page and 
 - **In-app / PDF:** `frontend/public/plankton-documentation.html` (served at `/plankton-documentation.html`). No environment variables or secrets are included; a link to the project repository is included for source code and updates only.
 - **Source (for maintainers):** `docs/plankton-documentation.md`. Keep `.env` and any secrets out of all docs for user security.
 - **API recommendations (for integration):** `docs/api-recommendations.md` — which external APIs to use for autonomous agent trading, research, AI chat, Command Center, and supporting features.
+- **Language:** All UI copy and documentation are in **English**. Use English for any new user-facing strings or docs.
