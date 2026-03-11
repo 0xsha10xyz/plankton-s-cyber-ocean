@@ -164,6 +164,93 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
+  // GET /api/jupiter/quote – proxy to Jupiter (avoids CORS/401; set JUPITER_API_KEY in Vercel for auth)
+  if (method === "GET" && pathname === "/api/jupiter/quote") {
+    const inputMint = searchParams.get("inputMint")?.trim() || "";
+    const outputMint = searchParams.get("outputMint")?.trim() || "";
+    const amount = searchParams.get("amount")?.trim() || "";
+    const slippageBps = searchParams.get("slippageBps")?.trim() || "50";
+    if (!inputMint || !outputMint || !amount || amount === "0") {
+      sendJson(res, 400, { error: "Missing or invalid inputMint, outputMint, or amount" });
+      return;
+    }
+    const jupiterKey = process.env.JUPITER_API_KEY;
+    const bases = ["https://api.jup.ag/swap/v1", "https://lite-api.jup.ag/swap/v1", "https://quote-api.jup.ag/v6"];
+    const headers: Record<string, string> = {};
+    if (jupiterKey) headers["x-api-key"] = jupiterKey;
+    for (const base of bases) {
+      try {
+        const qUrl = `${base}/quote?inputMint=${encodeURIComponent(inputMint)}&outputMint=${encodeURIComponent(outputMint)}&amount=${encodeURIComponent(amount)}&slippageBps=${encodeURIComponent(slippageBps)}`;
+        const resp = await fetch(qUrl, { headers });
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        if (data && typeof (data as { outAmount?: string }).outAmount === "string") {
+          res.statusCode = 200;
+          res.setHeader("Content-Type", "application/json");
+          res.setHeader("Cache-Control", "private, max-age=5");
+          res.end(JSON.stringify(data));
+          return;
+        }
+      } catch {
+        continue;
+      }
+    }
+    sendJson(res, 502, { error: "Jupiter quote unavailable" });
+    return;
+  }
+
+  // POST /api/jupiter/swap – proxy to Jupiter (set JUPITER_API_KEY in Vercel for auth)
+  if (method === "POST" && pathname === "/api/jupiter/swap") {
+    const bodyStr = await new Promise<string>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (c: Buffer) => chunks.push(c));
+      req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+      req.on("error", reject);
+    });
+    let body: { quoteResponse?: unknown; userPublicKey?: string };
+    try {
+      body = JSON.parse(bodyStr || "{}");
+    } catch {
+      sendJson(res, 400, { error: "Invalid JSON body" });
+      return;
+    }
+    if (!body?.quoteResponse || !body?.userPublicKey) {
+      sendJson(res, 400, { error: "Missing quoteResponse or userPublicKey" });
+      return;
+    }
+    const jupiterKey = process.env.JUPITER_API_KEY;
+    const bases = ["https://api.jup.ag/swap/v1", "https://lite-api.jup.ag/swap/v1", "https://quote-api.jup.ag/v6"];
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (jupiterKey) headers["x-api-key"] = jupiterKey;
+    const payload = {
+      quoteResponse: { ...(body.quoteResponse as object), slippageBps: (body.quoteResponse as { slippageBps?: number })?.slippageBps ?? 50 },
+      userPublicKey: body.userPublicKey,
+      wrapAndUnwrapSol: body.wrapAndUnwrapSol ?? true,
+      dynamicComputeUnitLimit: true,
+    };
+    for (const base of bases) {
+      try {
+        const resp = await fetch(`${base}/swap`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok) continue;
+        if (data?.swapTransaction && typeof data.lastValidBlockHeight === "number") {
+          res.statusCode = 200;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify(data));
+          return;
+        }
+      } catch {
+        continue;
+      }
+    }
+    sendJson(res, 502, { error: "Jupiter swap build unavailable" });
+    return;
+  }
+
   // All other /api/* → Express backend
   try {
     if (!(req as { url?: string }).url) {

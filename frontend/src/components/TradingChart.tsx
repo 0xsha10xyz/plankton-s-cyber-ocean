@@ -70,6 +70,16 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+/** Format price for Y-axis and tooltip so small values (e.g. 0.000078) show accurately. */
+function formatPrice(v: number): string {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "$0";
+  if (n >= 1) return `$${n.toFixed(2)}`;
+  if (n >= 0.01) return `$${n.toFixed(4)}`;
+  if (n >= 0.0001) return `$${n.toFixed(6)}`;
+  return `$${n.toFixed(8)}`;
+}
+
 export interface TradingChartProps {
   pairLabel?: string;
   /** Token mint for OHLCV (e.g. SOL mint for SOL/USDC). When set, chart uses real data from API. */
@@ -162,7 +172,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
           if (arr.length >= 2) setRealData(arr);
         }).catch(() => {});
       }
-    }, 60_000);
+    }, 30_000);
     return () => clearInterval(interval);
   }, [inputMint, range, pairLabel, dataSource]);
 
@@ -232,8 +242,8 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, className }: T
             </linearGradient>
           </defs>
           <XAxis dataKey="time" tickLine={false} axisLine={false} />
-          <YAxis domain={[yMin, yMax]} tickLine={false} axisLine={false} tickFormatter={(v) => `$${Number(v) >= 1 ? Number(v).toFixed(2) : Number(v).toFixed(4)}`} />
-          <ChartTooltip content={<ChartTooltipContent indicator="line" formatter={(v) => `$${Number(v) >= 1 ? Number(v).toFixed(2) : Number(v).toFixed(4)}`} />} />
+          <YAxis domain={[yMin, yMax]} tickLine={false} axisLine={false} tickFormatter={(v) => formatPrice(v)} />
+          <ChartTooltip content={<ChartTooltipContent indicator="line" formatter={(v) => formatPrice(Number(v))} />} />
           <Area type="monotone" dataKey="price" stroke="var(--color-price)" fill="url(#fillPrice)" strokeWidth={2} />
         </AreaChart>
       </ChartContainer>

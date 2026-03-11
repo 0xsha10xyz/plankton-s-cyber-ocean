@@ -1,10 +1,16 @@
 import { Router, Request, Response } from "express";
 
 const JUPITER_BASES = [
-  "https://quote-api.jup.ag/v6",
-  "https://lite-api.jup.ag/swap/v1",
   "https://api.jup.ag/swap/v1",
+  "https://lite-api.jup.ag/swap/v1",
+  "https://quote-api.jup.ag/v6",
 ];
+
+function getJupiterHeaders(): Record<string, string> {
+  const key = process.env.JUPITER_API_KEY;
+  if (key) return { "x-api-key": key };
+  return {};
+}
 
 export const jupiterRouter = Router();
 
@@ -23,7 +29,7 @@ jupiterRouter.get("/quote", async (req: Request, res: Response) => {
   for (const base of JUPITER_BASES) {
     try {
       const url = `${base}/quote?inputMint=${encodeURIComponent(inputMint)}&outputMint=${encodeURIComponent(outputMint)}&amount=${encodeURIComponent(amount)}&slippageBps=${encodeURIComponent(slippageBps)}`;
-      const resp = await fetch(url);
+      const resp = await fetch(url, { headers: getJupiterHeaders() });
       if (!resp.ok) continue;
       const data = await resp.json();
       if (data?.outAmount != null) {
@@ -56,7 +62,7 @@ jupiterRouter.post("/swap", async (req: Request, res: Response) => {
     try {
       const resp = await fetch(`${base}/swap`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getJupiterHeaders() },
         body: JSON.stringify(payload),
       });
       const data = await resp.json().catch(() => ({}));
