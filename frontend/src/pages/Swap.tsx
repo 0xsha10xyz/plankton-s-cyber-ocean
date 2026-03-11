@@ -42,6 +42,7 @@ export default function Swap() {
   const { connection } = useConnection();
   const { publicKey, connected, signTransaction } = useWallet();
   const { openWalletModal } = useWalletModal();
+  const walletAddress = publicKey?.toBase58() ?? "";
 
   const [inputToken, setInputToken] = useState(TOKEN_OPTIONS[0]);
   const [outputToken, setOutputToken] = useState(TOKEN_OPTIONS[1]);
@@ -65,13 +66,64 @@ export default function Swap() {
     refetch: refetchBalances,
   } = useWalletBalances();
 
+  const savedTokensStorageKey = useMemo(() => {
+    return walletAddress ? `plankton_saved_tokens_${walletAddress}` : "";
+  }, [walletAddress]);
+
+  const loadSavedTokens = useCallback((): TokenOption[] => {
+    if (!savedTokensStorageKey) return [];
+    try {
+      const raw = localStorage.getItem(savedTokensStorageKey);
+      if (!raw) return [];
+      const arr = JSON.parse(raw) as unknown;
+      if (!Array.isArray(arr)) return [];
+      return arr
+        .map((t) => {
+          const mint = typeof (t as { mint?: unknown }).mint === "string" ? (t as { mint: string }).mint : "";
+          const symbol = typeof (t as { symbol?: unknown }).symbol === "string" ? (t as { symbol: string }).symbol : "";
+          const decimals = Number((t as { decimals?: unknown }).decimals);
+          if (!mint || !symbol || !Number.isFinite(decimals)) return null;
+          if (symbol.includes("…")) return null; // never persist truncated CA labels
+          return { mint, symbol, decimals } satisfies TokenOption;
+        })
+        .filter((x): x is TokenOption => Boolean(x));
+    } catch {
+      return [];
+    }
+  }, [savedTokensStorageKey]);
+
+  const persistSavedTokens = useCallback((tokens: TokenOption[]) => {
+    if (!savedTokensStorageKey) return;
+    try {
+      localStorage.setItem(savedTokensStorageKey, JSON.stringify(tokens));
+    } catch {
+      // ignore
+    }
+  }, [savedTokensStorageKey]);
+
+  // Load saved tokens for this wallet, but only keep ones with a positive balance.
+  useEffect(() => {
+    if (!walletAddress) {
+      setCustomTokens([]);
+      return;
+    }
+    const knownMints = new Set(TOKEN_OPTIONS.map((o) => o.mint));
+    const saved = loadSavedTokens().filter((t) => !knownMints.has(t.mint));
+    const withBalance = saved.filter((t) => (tokenBalancesByMint[t.mint] ?? 0) > 0);
+    setCustomTokens(withBalance);
+    // keep storage in sync (drop tokens with 0 balance)
+    persistSavedTokens(withBalance);
+  }, [walletAddress, loadSavedTokens, persistSavedTokens, tokenBalancesByMint]);
+
   useEffect(() => {
     if (!walletTokens.length) {
       setWalletTokenOptions([]);
       return;
     }
     const knownMints = new Set(TOKEN_OPTIONS.map((o) => o.mint));
-    const list = walletTokens.filter((t) => !knownMints.has(t.mint));
+    const list = walletTokens
+      .filter((t) => !knownMints.has(t.mint))
+      .filter((t) => (tokenBalancesByMint[t.mint] ?? 0) > 0);
     if (list.length === 0) {
       setWalletTokenOptions([]);
       return;
@@ -87,7 +139,7 @@ export default function Swap() {
       setWalletTokenOptions(options);
     });
     return () => { cancelled = true; };
-  }, [walletTokens, ensureTokenInfo, getSymbol]);
+  }, [walletTokens, tokenBalancesByMint, ensureTokenInfo, getSymbol]);
 
   const tokenOptions = useMemo(() => {
     const byMint = new Map<string, TokenOption>();
@@ -232,7 +284,8 @@ export default function Swap() {
         setResolveError(data?.error || "Token not found");
         return null;
       }
-      const symbol = typeof data.symbol === "string" ? data.symbol : `${raw.slice(0, 4)}…${raw.slice(-4)}`;
+      const symbolFromApi = typeof data.symbol === "string" ? data.symbol.trim() : "";
+      const symbol = symbolFromApi || getSymbol(raw);
       const decimals = Number(data.decimals);
       if (!Number.isFinite(decimals) || decimals < 0 || decimals > 18) {
         setResolveError("Invalid token");
@@ -240,7 +293,15 @@ export default function Swap() {
       }
       const token: TokenOption = { symbol, mint: raw, decimals };
       await ensureTokenInfo(raw);
-      setCustomTokens((prev) => (prev.some((t) => t.mint === raw) ? prev : [...prev, token]));
+      // Only persist/save tokens that the wallet actually holds (balance > 0),
+      // and only when we have a real symbol (never save truncated CA labels).
+      const balance = tokenBalancesByMint[raw] ?? 0;
+      const hasRealSymbol = Boolean(symbolFromApi) && !symbolFromApi.includes("…");
+      if (balance > 0 && hasRealSymbol && savedTokensStorageKey) {
+        setCustomTokens((prev) => (prev.some((t) => t.mint === raw) ? prev : [...prev, { ...token, symbol: symbolFromApi }]));
+        const next = [...loadSavedTokens().filter((t) => t.mint !== raw), { ...token, symbol: symbolFromApi }];
+        persistSavedTokens(next);
+      }
       return token;
     } catch {
       setResolveError("Could not load token");
@@ -248,7 +309,7 @@ export default function Swap() {
     } finally {
       setResolveLoading(false);
     }
-  }, [tokenOptions, ensureTokenInfo]);
+  }, [tokenOptions, ensureTokenInfo, getSymbol, tokenBalancesByMint, savedTokensStorageKey, loadSavedTokens, persistSavedTokens]);
 
   if (!connected) {
     return (
