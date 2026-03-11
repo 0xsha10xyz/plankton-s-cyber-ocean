@@ -30,9 +30,11 @@ In the Vercel project: **Settings** → **Environment Variables**. Add:
 
 | Name | Value | Notes |
 |------|--------|--------|
-| `BIRDEYE_API_KEY` | Your Birdeye API key | For **real-time** OHLCV chart on Swap (all pairs) and **token symbol** when adding custom token by CA. Without it, SOL pairs still show **Live** via CoinGecko; custom token decimals still work via RPC. |
+| `BIRDEYE_API_KEY` | Your Birdeye API key | **Required for real-time chart** (all pairs, including tokens added by paste CA). Without it, the chart shows "Sample" for custom tokens; SOL pairs can still use CoinGecko fallback. |
 | `CORS_ORIGIN` | `https://planktonomous.vercel.app` | Replace with your actual Vercel URL. Lets the API allow your frontend origin. |
 | `SOLANA_RPC_URL` | `https://rpc.ankr.com/solana` or your RPC | Optional; used by `/api/wallet/balances` for token balances. |
+
+**Chart real-time (termasuk token paste CA):** Set **BIRDEYE_API_KEY** di Vercel Environment Variables. Endpoint `/api/market/ohlcv` dan `/api/market/token-info` memakai Birdeye; chart akan tampil "Live" untuk token apa pun (SOL, USDC, atau token yang ditambah lewat paste CA).
 
 **Do not set** `VITE_API_URL`. In production the frontend uses the same origin, so `/api/*` is your backend.
 

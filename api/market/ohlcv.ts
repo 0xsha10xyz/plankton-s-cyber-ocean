@@ -1,6 +1,7 @@
 /**
  * Vercel serverless: GET /api/market/ohlcv?mint=...&range=1H|4H|1D|1W
- * Birdeye OHLCV for chart.
+ * Birdeye OHLCV for chart. Supports any SPL token mint (including tokens added by paste CA).
+ * Set BIRDEYE_API_KEY in Vercel env for real-time data; otherwise returns { data: [] }.
  */
 import type { IncomingMessage, ServerResponse } from "http";
 
