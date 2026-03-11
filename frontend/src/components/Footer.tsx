@@ -1,6 +1,4 @@
 import { motion } from "framer-motion";
-import { MessageCircle, Users } from "lucide-react";
-import { useStats } from "@/contexts/StatsContext";
 import PlanktonLogo from "./PlanktonLogo";
 
 const XIcon = () => (
@@ -28,7 +26,6 @@ const socials = [
 ];
 
 const Footer = () => {
-  const { userCount } = useStats();
   return (
     <footer className="border-t border-border/30 mt-20">
       <div className="container mx-auto px-4 py-12">
@@ -57,11 +54,6 @@ const Footer = () => {
         </div>
 
         <div className="text-center mt-8">
-          <div className="inline-flex items-center gap-2 rounded-lg bg-primary/5 border border-primary/20 px-4 py-2 mb-4">
-            <Users size={18} className="text-primary shrink-0" />
-            <span className="text-sm font-medium text-muted-foreground">Total Users</span>
-            <span className="text-lg font-bold tabular-nums text-foreground">{userCount.toLocaleString()}</span>
-          </div>
           <p className="text-xs text-muted-foreground mt-2">
             All links — <span className="text-primary/70">Coming Soon</span>
           </p>

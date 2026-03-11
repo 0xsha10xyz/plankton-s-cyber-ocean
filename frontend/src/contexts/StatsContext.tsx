@@ -17,7 +17,7 @@ type StatsContextValue = {
 
 const StatsContext = createContext<StatsContextValue | null>(null);
 
-const POLL_INTERVAL_MS = 15_000;
+const POLL_INTERVAL_MS = 10_000;
 
 export function StatsProvider({ children }: { children: ReactNode }) {
   const [userCount, setUserCount] = useState(0);

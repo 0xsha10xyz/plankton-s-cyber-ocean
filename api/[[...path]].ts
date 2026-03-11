@@ -4,6 +4,7 @@
  */
 import type { IncomingMessage, ServerResponse } from "http";
 import { getWalletBalancesData } from "./wallet/balances-handler.js";
+import { getStatsUsers, statsConnect } from "./stats-handler.js";
 
 function parseUrl(url: string): { pathname: string; searchParams: URLSearchParams } {
   try {
@@ -199,15 +200,43 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }
   }
 
-  // GET /api/stats/users – stub when Express not loaded (avoids 404 in console)
+  // GET /api/stats/users – unique wallets that have connected (real-time from Redis when configured)
   if (method === "GET" && pathname === "/api/stats/users") {
-    sendJson(res, 200, { count: 0 });
+    try {
+      const { count } = await getStatsUsers();
+      sendJson(res, 200, { count });
+    } catch {
+      sendJson(res, 200, { count: 0 });
+    }
     return;
   }
 
-  // POST /api/stats/connect – stub when Express not loaded (avoids 404 in console)
+  // POST /api/stats/connect – register wallet (idempotent). Call when user connects.
   if (method === "POST" && pathname === "/api/stats/connect") {
-    sendJson(res, 200, { count: 0, isNew: false });
+    const bodyStr = await new Promise<string>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (c: Buffer) => chunks.push(c));
+      req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+      req.on("error", reject);
+    });
+    let body: { wallet?: string };
+    try {
+      body = JSON.parse(bodyStr || "{}");
+    } catch {
+      sendJson(res, 400, { error: "Invalid JSON body" });
+      return;
+    }
+    const wallet = typeof body?.wallet === "string" ? body.wallet.trim() : "";
+    if (!wallet || wallet.length > 64) {
+      sendJson(res, 400, { error: "Invalid wallet address" });
+      return;
+    }
+    try {
+      const result = await statsConnect(wallet);
+      sendJson(res, 200, result);
+    } catch {
+      sendJson(res, 200, { count: 0, isNew: false });
+    }
     return;
   }
 
