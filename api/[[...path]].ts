@@ -373,7 +373,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         const desc = typeof tx?.description === "string" ? tx.description : "";
         const nativeTransfers = Array.isArray(tx?.nativeTransfers) ? tx.nativeTransfers : [];
         const events = tx?.events as Record<string, { type?: string; amount?: number; buyer?: string; seller?: string; source?: string }> | undefined;
-        const txType = (events?.nft?.type || events?.swap ?? tx?.type) as string | undefined;
+        const txType = (events?.nft?.type ?? events?.swap ?? tx?.type ?? ("" as string)) as string | undefined;
         let pushedForTx = false;
 
         // Whale: large SOL transfer

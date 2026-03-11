@@ -23,7 +23,7 @@ export type AgentStatus = {
 };
 
 type RedisListOps = {
-  rpush: (key: string, ...values: string[]) => Promise<number>;
+  rpush: (key: string, ...values: string[]) => Promise<void>;
   lrange: (key: string, start: number, stop: number) => Promise<string[]>;
   ltrim: (key: string, start: number, stop: number) => Promise<void>;
 };
@@ -37,9 +37,9 @@ async function withRedisList<T>(fn: (redis: RedisListOps) => Promise<T>): Promis
       await client.connect();
       try {
         return await fn({
-          rpush: (key, ...values) => client.rPush(key, values),
+          rpush: (key, ...values) => client.rPush(key, values).then(() => undefined),
           lrange: (key, start, stop) => client.lRange(key, start, stop),
-          ltrim: (key, start, stop) => client.lTrim(key, start, stop),
+          ltrim: (key, start, stop) => client.lTrim(key, start, stop).then(() => undefined),
         });
       } finally {
         await client.quit();
@@ -57,9 +57,9 @@ async function withRedisList<T>(fn: (redis: RedisListOps) => Promise<T>): Promis
     const m = await import("@upstash/redis");
     const redis = new m.Redis({ url, token });
     return fn({
-      rpush: (key: string, ...values: string[]) => redis.rpush(key, ...values),
+      rpush: (key: string, ...values: string[]) => redis.rpush(key, ...values).then(() => undefined),
       lrange: (key: string, start: number, stop: number) => redis.lrange(key, start, stop),
-      ltrim: (key: string, start: number, stop: number) => redis.ltrim(key, start, stop),
+      ltrim: (key: string, start: number, stop: number) => redis.ltrim(key, start, stop).then(() => undefined),
     });
   } catch {
     return null;
