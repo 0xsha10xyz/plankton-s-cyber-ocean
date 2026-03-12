@@ -135,6 +135,29 @@ async function seedRedisIfEmpty(): Promise<void> {
   });
 }
 
+/** Detect old stub content (so we can auto-upgrade Redis to new stub). */
+function isOldStub(lines: AgentLogEntry[]): boolean {
+  if (lines.length === 0 || lines.length > 20) return false;
+  const hasOld = lines.some(
+    (e) =>
+      e.message.includes("Analyzing on-chain whale") ||
+      e.message.includes("large SOL transfer detected")
+  );
+  const hasNew = lines.some((e) => e.message.includes("Tracking: new mints") || e.message.includes("pump.fun / Raydium"));
+  return hasOld && !hasNew;
+}
+
+/** Replace Redis log list with current STUB_LINES (e.g. after detecting old stub). */
+async function replaceRedisWithNewStub(): Promise<void> {
+  await withRedisList(async (redis) => {
+    await redis.ltrim(AGENT_LOGS_KEY, 1, 0);
+    for (const entry of STUB_LINES) {
+      await redis.rpush(AGENT_LOGS_KEY, JSON.stringify(entry));
+    }
+    await redis.ltrim(AGENT_LOGS_KEY, -AGENT_LOGS_MAX, -1);
+  });
+}
+
 /** Last N log lines from Redis, or stub lines when Redis not configured. */
 export async function getAgentLogs(limit = 100): Promise<{ lines: AgentLogEntry[]; source: "redis" | "stub" }> {
   const raw = await withRedisList(async (redis) => {
@@ -152,6 +175,10 @@ export async function getAgentLogs(limit = 100): Promise<{ lines: AgentLogEntry[
         }
       })
       .filter((x): x is AgentLogEntry => x != null);
+    if (isOldStub(lines)) {
+      await replaceRedisWithNewStub();
+      return { lines: STUB_LINES, source: "redis" };
+    }
     return { lines, source: "redis" };
   }
 

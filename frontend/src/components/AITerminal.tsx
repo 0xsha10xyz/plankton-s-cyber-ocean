@@ -85,10 +85,10 @@ const AITerminal = () => {
 
   const getColor = (message: string) => {
     if (message.startsWith("[NEW_MINT]") || message.startsWith("[NEW_TOKEN]")) return "text-amber-400";
-    if (message.startsWith("[WHALE_TRANSFER]") || message.startsWith("[WHALE_ACCUMULATION]") || message.startsWith("[DETECTED]")) return "text-rose-400";
+    if (message.startsWith("[WHALE_TRANSFER]") || message.startsWith("[WHALE_ACCUMULATION]") || message.startsWith("[DETECTED]")) return "text-amber-400";
     if (message.startsWith("[SNIPER_BUY]") || message.startsWith("[ACTION]") || message.startsWith("[BIG_BUY]")) return "text-emerald-400";
     if (message.startsWith("[SWAP]")) return "text-sky-400";
-    if (message.startsWith("[BIG_SALE]") || message.startsWith("[ALERT]")) return "text-destructive";
+    if (message.startsWith("[BIG_SALE]") || message.startsWith("[ALERT]")) return "text-orange-400";
     if (message.startsWith("[CONFIRMED]")) return "text-teal-400";
     if (message.startsWith("[ON_CHAIN]") || message.startsWith("[SCANNING]") || message.startsWith("[RESEARCH]")) return "text-primary/70";
     return "text-muted-foreground";
@@ -127,10 +127,10 @@ const AITerminal = () => {
       {live && (
         <p className="px-4 pb-2 text-[9px] text-muted-foreground/60 border-t border-border/20 flex flex-wrap gap-x-2 gap-y-0.5">
           <span className="text-amber-400/90">NEW_MINT</span>
-          <span className="text-rose-400/90">WHALE</span>
+          <span className="text-amber-400/90">WHALE</span>
           <span className="text-emerald-400/90">SNIPER_BUY</span>
           <span className="text-sky-400/90">SWAP</span>
-          <span className="text-destructive/80">BIG_SALE</span>
+          <span className="text-orange-400/90">BIG_SALE</span>
         </p>
       )}
     </div>
