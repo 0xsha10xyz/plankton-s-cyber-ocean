@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from "react";
-import { motion } from "framer-motion";
 import { Terminal } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 
@@ -10,7 +9,17 @@ const FALLBACK_MESSAGES = [
   "[ACTION] Agent ready.",
 ];
 
-type LogEntry = { id: string; time: string; message: string; type?: string };
+type LogEntry = {
+  id: string;
+  time: string;
+  message: string;
+  type?: string;
+  from?: string;
+  to?: string;
+  value?: string;
+  token?: string;
+  usd?: string;
+};
 
 const STUB_PLACEHOLDER_PATTERNS = [
   "[SCANNING] Solana Mainnet",
@@ -42,7 +51,7 @@ const AITerminal = () => {
     const fetchLogs = async () => {
       try {
         const base = typeof window !== "undefined" ? window.location.origin : "";
-        const res = await fetch(`${base}/api/agent/logs?limit=80`);
+        const res = await fetch(`${base}/api/agent/logs?limit=80`, { cache: "no-store" });
         const data = await res.json();
         if (Array.isArray(data?.lines) && data.lines.length > 0) {
           setLines(data.lines);
@@ -83,14 +92,14 @@ const AITerminal = () => {
     return () => clearInterval(interval);
   }, [live]);
 
-  // When LIVE, trigger backend to fetch recent token mints from Helius every 90s (throttled server-side)
+  // Trigger feed on mount (once) dan tiap 60s saat LIVE supaya data Solana masuk
   useEffect(() => {
-    if (!live) return;
     const base = typeof window !== "undefined" ? window.location.origin : "";
     const triggerFeed = () =>
       fetch(`${base}/api/agent/feed-recent`, { cache: "no-store" }).catch(() => {});
     triggerFeed();
-    const t = setInterval(triggerFeed, 90_000);
+    if (!live) return;
+    const t = setInterval(triggerFeed, 60_000);
     return () => clearInterval(t);
   }, [live]);
 
@@ -109,6 +118,17 @@ const AITerminal = () => {
     return "text-muted-foreground";
   };
 
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    const now = Date.now();
+    const diff = (now - d.getTime()) / 1000;
+    if (diff < 60) return "just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const hasTableData = (e: LogEntry) => e.from != null || e.to != null || e.value != null;
+
   return (
     <div className="glass-card rounded-xl overflow-hidden">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
@@ -123,21 +143,50 @@ const AITerminal = () => {
       </div>
       <div
         ref={scrollRef}
-        className="p-4 h-64 overflow-y-auto overflow-x-hidden font-mono text-xs leading-relaxed scroll-smooth"
-        style={{ scrollBehavior: "smooth" }}
+        className="overflow-x-auto overflow-y-auto font-mono text-xs scroll-smooth"
+        style={{ height: "16rem", scrollBehavior: "smooth" }}
       >
         {loading && lines.length === 0 ? (
-          <div className="text-muted-foreground">Loading agent logs...</div>
+          <div className="p-4 text-muted-foreground">Loading Solana on-chain data...</div>
+        ) : displayLines.length === 0 ? (
+          <div className="p-4 text-muted-foreground">No events yet. Connect wallet and ensure Redis + Helius are configured.</div>
         ) : (
-          displayLines.map((entry) => (
-            <div key={entry.id} className={`${getColor(entry.message)} opacity-80`}>
-              {entry.message}
-            </div>
-          ))
+          <table className="w-full min-w-[520px] border-collapse">
+            <thead className="sticky top-0 bg-background/95 border-b border-border/50 text-muted-foreground text-[10px] uppercase tracking-wider">
+              <tr>
+                <th className="text-left py-2 px-3 font-medium">Time</th>
+                <th className="text-left py-2 px-3 font-medium">From</th>
+                <th className="text-left py-2 px-3 font-medium">To</th>
+                <th className="text-right py-2 px-3 font-medium">Value</th>
+                <th className="text-left py-2 px-3 font-medium">Token</th>
+                <th className="text-left py-2 px-3 font-medium">Event</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayLines.map((entry) =>
+                hasTableData(entry) ? (
+                  <tr key={entry.id} className="border-b border-border/30 hover:bg-muted/30">
+                    <td className="py-1.5 px-3 text-muted-foreground whitespace-nowrap">{formatTime(entry.time)}</td>
+                    <td className="py-1.5 px-3 text-primary/80 font-mono">{entry.from ?? "—"}</td>
+                    <td className="py-1.5 px-3 text-primary/80 font-mono">{entry.to ?? "—"}</td>
+                    <td className="py-1.5 px-3 text-right font-medium">{entry.value ?? "—"}</td>
+                    <td className="py-1.5 px-3">{entry.token ?? "—"}</td>
+                    <td className={`py-1.5 px-3 ${getColor(entry.message)}`}>{entry.message.slice(0, 50)}{entry.message.length > 50 ? "…" : ""}</td>
+                  </tr>
+                ) : (
+                  <tr key={entry.id} className="border-b border-border/30">
+                    <td colSpan={6} className={`py-1.5 px-3 ${getColor(entry.message)} opacity-90`}>
+                      {entry.message}
+                    </td>
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
         )}
       </div>
       <p className="px-4 py-2 text-[10px] text-muted-foreground/80 border-t border-border/30">
-        {live ? "Real-time on-chain events" : "Logs are simulated until Redis + webhook are configured for real-time on-chain events."}
+        {live ? "Real-time Solana on-chain events" : "Set Redis + Helius in Vercel for real-time Solana data."}
       </p>
     </div>
   );

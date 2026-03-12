@@ -6,6 +6,13 @@
  */
 const REDIS_KEY = "plankton:connected_wallets";
 
+function stripEnvQuotes(s: string | undefined): string {
+  if (s == null) return "";
+  const t = s.trim();
+  if (t.length >= 2 && ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'")))) return t.slice(1, -1);
+  return t;
+}
+
 type RedisOps = {
   sadd: (key: string, ...members: string[]) => Promise<number>;
   scard: (key: string) => Promise<number>;
@@ -35,8 +42,8 @@ async function withRedis<T>(fn: (redis: RedisOps) => Promise<T>): Promise<T | nu
     }
   }
 
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = stripEnvQuotes(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL);
+  const token = stripEnvQuotes(process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN);
   if (!url || !token) return null;
 
   try {

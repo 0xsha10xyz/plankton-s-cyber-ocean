@@ -411,13 +411,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           const amount = Number(t?.amount);
           if (!Number.isFinite(amount) || amount < SNIPER_SOL) continue;
           const sol = amount / LAMPORTS_PER_SOL;
-          const from = (t?.fromUserAccount || "").slice(0, 8);
-          const to = (t?.toUserAccount || "").slice(0, 8);
-          if (sol >= ACCUMULATION_SOL) {
-            await pushAgentLog(`[WHALE_ACCUMULATION] ${sol.toFixed(1)} SOL moved (${from}… → …${to})${sourceLabel}`, "detected");
-          } else {
-            await pushAgentLog(`[WHALE_TRANSFER] ${sol.toFixed(1)} SOL (${from}… → …${to})${sourceLabel}`, "detected");
-          }
+          const fromRaw = t?.fromUserAccount || "";
+          const toRaw = t?.toUserAccount || "";
+          const fromShort = fromRaw ? `${fromRaw.slice(0, 4)}…${fromRaw.slice(-4)}` : "";
+          const toShort = toRaw ? `${toRaw.slice(0, 4)}…${toRaw.slice(-4)}` : "";
+          const msg = sol >= ACCUMULATION_SOL
+            ? `[WHALE_ACCUMULATION] ${sol.toFixed(1)} SOL${sourceLabel}`
+            : `[WHALE_TRANSFER] ${sol.toFixed(1)} SOL${sourceLabel}`;
+          await pushAgentLog(msg, "detected", { from: fromShort, to: toShort, value: sol.toFixed(2), token: "SOL" });
           pushedForTx = true;
         }
 

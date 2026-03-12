@@ -19,6 +19,8 @@ Setelah ubah env vars, wajib **Redeploy** project.
 
 Webhook Helius: URL harus persis **`https://planktonomous.dev/api/webhooks/helius`** (dengan **s** di webhooks).
 
+**Penting — nilai env tanpa kutip:** Di Vercel, isi **Value** jangan pakai tanda kutip. Contoh salah: `"https://finer-dogfish-69017.upstash.io"`. Contoh benar: `https://finer-dogfish-69017.upstash.io`. Kalau pakai kutip, koneksi Redis/Helius bisa gagal. (Di kode terbaru, kutip otomatis dibuang; tetap lebih aman isi tanpa kutip.)
+
 ---
 
 ## 1. Cek Redis di Vercel

@@ -8,11 +8,23 @@
 const AGENT_LOGS_KEY = "plankton:agent_logs";
 const AGENT_LOGS_MAX = 500;
 
+function stripEnvQuotes(s: string | undefined): string {
+  if (s == null) return "";
+  const t = s.trim();
+  if (t.length >= 2 && ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'")))) return t.slice(1, -1);
+  return t;
+}
+
 export type AgentLogEntry = {
   id: string;
   time: string;
   message: string;
   type?: "info" | "detected" | "action" | "confirmed" | "alert" | "research" | "scanning";
+  from?: string;
+  to?: string;
+  value?: string;
+  token?: string;
+  usd?: string;
 };
 
 export type AgentStatus = {
@@ -54,8 +66,8 @@ async function withRedisList<T>(fn: (redis: RedisListOps) => Promise<T>): Promis
     }
   }
 
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = stripEnvQuotes(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL);
+  const token = stripEnvQuotes(process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN);
   if (!url || !token) return null;
 
   try {
@@ -90,8 +102,8 @@ async function withRedisKey<T>(fn: (redis: RedisKeyOps) => Promise<T>): Promise<
       return null;
     }
   }
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = stripEnvQuotes(process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL);
+  const token = stripEnvQuotes(process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN);
   if (!url || !token) return null;
   try {
     const m = await import("@upstash/redis");
@@ -191,12 +203,23 @@ export async function getAgentLogs(limit = 100): Promise<{ lines: AgentLogEntry[
 }
 
 /** Append one log line (from Helius webhook or agent worker). Trims list to last AGENT_LOGS_MAX. */
-export async function pushAgentLog(message: string, type?: AgentLogEntry["type"]): Promise<void> {
+export async function pushAgentLog(
+  message: string,
+  type?: AgentLogEntry["type"],
+  opts?: { from?: string; to?: string; value?: string; token?: string; usd?: string }
+): Promise<void> {
   const entry: AgentLogEntry = {
     id: `log_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
     time: new Date().toISOString(),
     message,
     type: type ?? "info",
+    ...(opts && {
+      from: opts.from,
+      to: opts.to,
+      value: opts.value,
+      token: opts.token,
+      usd: opts.usd,
+    }),
   };
   await withRedisList(async (redis) => {
     await redis.rpush(AGENT_LOGS_KEY, JSON.stringify(entry));
@@ -205,7 +228,7 @@ export async function pushAgentLog(message: string, type?: AgentLogEntry["type"]
 }
 
 const AGENT_FEED_LAST_KEY = "plankton:agent_feed_last";
-const FEED_THROTTLE_MS = 90_000; // 90 seconds
+const FEED_THROTTLE_MS = 60_000; // 60 seconds
 const TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const RAYDIUM_AMM_ID = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8";
 const PUMP_FUN_PROGRAM_ID = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
@@ -223,7 +246,7 @@ async function heliusFetch(apiKey: string, address: string, type: string, limit:
 
 /** Fetch recent on-chain activity (NEW_MINT, SWAP) from Helius and push to agent log (throttled). */
 export async function runFeedRecentMints(): Promise<{ pushed: number; skipped?: boolean; error?: string }> {
-  const apiKey = process.env.HELIUS_API_KEY?.trim();
+  const apiKey = stripEnvQuotes(process.env.HELIUS_API_KEY);
   if (!apiKey) return { pushed: 0, error: "HELIUS_API_KEY not set" };
 
   const lastRun = await withRedisKey(async (redis) => redis.get(AGENT_FEED_LAST_KEY));
@@ -237,32 +260,40 @@ export async function runFeedRecentMints(): Promise<{ pushed: number; skipped?: 
 
   let pushed = 0;
   try {
-    // 1) New mints (Token Program + Pump.fun). Pump.fun tanpa type supaya dapat txs apa saja.
-    const [mintTxs, pumpTxs, swapTxs] = await Promise.all([
+    const [mintTxs, mintAnyTxs, pumpTxs, swapTxs] = await Promise.all([
       heliusFetch(apiKey, TOKEN_PROGRAM_ID, "TOKEN_MINT", 6),
-      heliusFetch(apiKey, PUMP_FUN_PROGRAM_ID, "", 4).catch(() => []),
+      heliusFetch(apiKey, TOKEN_PROGRAM_ID, "", 4).catch(() => []),
+      heliusFetch(apiKey, PUMP_FUN_PROGRAM_ID, "", 5).catch(() => []),
       heliusFetch(apiKey, RAYDIUM_AMM_ID, "SWAP", 5).catch(() => []),
     ]);
 
-    for (const tx of mintTxs) {
+    const seenSig = new Set<string>();
+    const pushTx = async (tx: unknown, prefix: string, defaultToken = "SOL") => {
+      const sig = typeof (tx as { signature?: string })?.signature === "string" ? (tx as { signature: string }).signature : "";
+      if (sig && seenSig.has(sig)) return;
+      if (sig) seenSig.add(sig);
       const desc = typeof (tx as { description?: string })?.description === "string" ? (tx as { description: string }).description : "";
-      const sig = typeof (tx as { signature?: string })?.signature === "string" ? (tx as { signature: string }).signature.slice(0, 10) + "…" : "";
-      const msg = desc ? `[NEW_MINT] ${desc.slice(0, 92)}${desc.length > 92 ? "…" : ""}` : `[NEW_MINT] Token mint ${sig}`;
-      await pushAgentLog(msg, "research");
+      const native = Array.isArray((tx as { nativeTransfers?: unknown[] })?.nativeTransfers) ? (tx as { nativeTransfers: { fromUserAccount?: string; toUserAccount?: string; amount?: number }[] }).nativeTransfers : [];
+      const first = native[0];
+      const sol = first && typeof first.amount === "number" ? (first.amount / 1e9).toFixed(2) : "";
+      const from = first?.fromUserAccount ? `${first.fromUserAccount.slice(0, 4)}…${first.fromUserAccount.slice(-4)}` : "";
+      const to = first?.toUserAccount ? `${first.toUserAccount.slice(0, 4)}…${first.toUserAccount.slice(-4)}` : "";
+      const msg = desc ? `${prefix} ${desc.slice(0, 80)}${desc.length > 80 ? "…" : ""}` : `${prefix} ${sig.slice(0, 8)}…`;
+      if (from && to && sol) {
+        await pushAgentLog(msg, "research", { from, to, value: sol, token: defaultToken });
+      } else {
+        await pushAgentLog(msg, "research");
+      }
       pushed++;
+    };
+
+    for (const tx of mintTxs) await pushTx(tx, "[NEW_MINT]", "TOKEN");
+    for (const tx of mintAnyTxs) {
+      const sig = (tx as { signature?: string })?.signature;
+      if (sig && !seenSig.has(sig)) await pushTx(tx, "[ON_CHAIN]", "SOL");
     }
-    for (const tx of pumpTxs) {
-      const desc = typeof (tx as { description?: string })?.description === "string" ? (tx as { description: string }).description : "";
-      const msg = desc ? `[NEW_MINT] ${desc.slice(0, 92)}${desc.length > 92 ? "…" : ""}` : "[NEW_MINT] pump.fun activity";
-      await pushAgentLog(msg, "research");
-      pushed++;
-    }
-    for (const tx of swapTxs) {
-      const desc = typeof (tx as { description?: string })?.description === "string" ? (tx as { description: string }).description : "";
-      const msg = desc ? `[SWAP] ${desc.slice(0, 95)}${desc.length > 95 ? "…" : ""}` : "[SWAP] Raydium swap";
-      await pushAgentLog(msg, "research");
-      pushed++;
-    }
+    for (const tx of pumpTxs) await pushTx(tx, "[NEW_MINT]", "TOKEN");
+    for (const tx of swapTxs) await pushTx(tx, "[SWAP]", "SOL");
 
     await withRedisKey((r) => r.set(AGENT_FEED_LAST_KEY, String(now)));
     return { pushed };
