@@ -1,8 +1,8 @@
 import { useMemo, type ReactNode } from "react";
 import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from "@solana/wallet-adapter-react";
+import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-solflare";
 
-// Phantom is registered as Standard Wallet by the browser.
 // Default RPC: Ankr has higher rate limit than api.mainnet-beta.solana.com. Set VITE_SOLANA_RPC_URL for production.
 const DEFAULT_RPC = "https://rpc.ankr.com/solana";
 
@@ -15,13 +15,10 @@ function getRpcEndpoint(): string {
 export function SolanaWalletProviders({ children }: { children: ReactNode }) {
   const endpoint = useMemo(() => getRpcEndpoint(), []);
 
-  const wallets = useMemo(() => {
-    try {
-      return [new SolflareWalletAdapter()];
-    } catch {
-      return [];
-    }
-  }, []);
+  const wallets = useMemo(
+    () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
+    []
+  );
 
   return (
     <ConnectionProvider endpoint={endpoint}>

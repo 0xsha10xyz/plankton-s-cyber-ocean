@@ -4,6 +4,32 @@ These steps are **manual**: create or edit `.env` files and fill in the required
 
 ---
 
+## Custom domain (planktonomous.dev) — checklist
+
+Your domain **planktonomous.dev** is already showing **Valid Configuration** on Vercel. To keep the project running well in production:
+
+1. **Confirm Git → Vercel**  
+   In Vercel: **Project → Settings → Git**. Ensure the connected repo is **plankton-s-cyber-ocean** and the production branch is **main**. Every push to `main` will deploy.
+
+2. **Set production env vars (Vercel)**  
+   **Project → Settings → Environment Variables** (for **Production**):
+   - **`BIRDEYE_API_KEY`** — from [birdeye.so](https://birdeye.so) so the Swap chart uses live data. Without it, the chart uses sample data.
+   - **`CORS_ORIGIN`** (optional) — `https://planktonomous.dev,https://planktonomous.vercel.app` if your API checks CORS.
+   - **`VITE_SOLANA_RPC_URL`** (optional) — e.g. Helius/QuickNode for more reliable swaps. If unset, the app uses the default RPC.
+
+   Do **not** set `VITE_API_URL` when the API runs on Vercel (same origin `/api/*`).
+
+3. **Redeploy after env changes**  
+   After adding or changing variables: **Deployments → … on latest → Redeploy**.
+
+4. **Optional: redirect www → apex**  
+   If you add `www.planktonomous.dev`, in **Domains** set the primary to **planktonomous.dev** and add a redirect from `www` to the apex so one canonical URL is used.
+
+5. **Test the live site**  
+   Open **https://planktonomous.dev** and check: Dashboard, Connect Wallet, Swap (chart + quote), Research, Tokenomics, and Docs. If the chart shows “Sample” and you added `BIRDEYE_API_KEY`, trigger a redeploy.
+
+---
+
 ## Step 1: Backend — BIRDEYE_API_KEY (for real chart data)
 
 1. **Get a Birdeye API key**
@@ -78,13 +104,10 @@ These steps are **manual**: create or edit `.env` files and fill in the required
 ## Step 4: Production (frontend on Vercel + backend deployment)
 
 **Option A — Backend on a separate host (Render/Railway/etc.):**  
-So that production (e.g. **https://planktonomous.vercel.app**) can use Total Users, real-time chart, research, and swap with real data:
-
-**Option A — Backend on a separate host (Render/Railway/etc.):**  
-So that production (e.g. **https://planktonomous.vercel.app**) can use Total Users, real-time chart, research, and swap with real data:
+So that production (e.g. **https://planktonomous.dev** or **https://planktonomous.vercel.app**) can use Total Users, real-time chart, research, and swap with real data:
 
 1. **Deploy the backend** to a service like Railway, Render, or Fly.io. Set environment variables there:
-   - `CORS_ORIGIN` = **`http://localhost:8080,https://planktonomous.vercel.app`** (comma-separated for multiple origins).
+   - `CORS_ORIGIN` = **`https://planktonomous.dev,https://planktonomous.vercel.app`** (comma-separated; add localhost if you test locally).
    - `BIRDEYE_API_KEY` = your Birdeye API key (for OHLCV chart).
    - Other vars as needed: `PORT`, `NODE_ENV`, etc.
 
@@ -98,7 +121,7 @@ Without this, the production frontend won’t call the backend (no CORS errors),
 **Option B — Everything on Vercel (frontend + API in one project):**  
 The backend runs as Vercel Serverless (folder `api/`). Deploy from the repo root. In **Vercel → Settings → Environment Variables** set:
 - `BIRDEYE_API_KEY` = your Birdeye API key (so the chart shows **Live**; without it the chart uses **Sample**).
-- `CORS_ORIGIN` = `https://planktonomous.vercel.app` (optional).
+- `CORS_ORIGIN` = `https://planktonomous.dev,https://planktonomous.vercel.app` (optional; use your production domain).
 
 **Total Users:** On Vercel the count is stored in memory (may reset on cold start). Connecting a wallet increases the count.
 **RPC:** Default is Ankr. For more stable swap, set `VITE_SOLANA_RPC_URL` (e.g. Helius/QuickNode).
@@ -115,7 +138,7 @@ The backend runs as Vercel Serverless (folder `api/`). Deploy from the repo root
 | `backend/.env` | `SOLANA_RPC_URL` | Optional (wallet balances) | RPC URL (e.g. `https://rpc.ankr.com/solana` or Helius/QuickNode). Default: Ankr + fallbacks |
 | `frontend/.env` | `VITE_SOLANA_RPC_URL` | Optional (more stable swap) | RPC URL (Helius/QuickNode). Default: Ankr |
 | `frontend/.env` | `VITE_API_URL` | Only if backend is on another host | Backend URL. Leave unset when using Option B (all on Vercel) |
-| Backend (production) | `CORS_ORIGIN` | When backend is separate | `http://localhost:8080,https://planktonomous.vercel.app` |
+| Backend (production) | `CORS_ORIGIN` | When backend is separate | `https://planktonomous.dev,https://planktonomous.vercel.app` |
 
 **Important:** Do not commit `.env` files to Git (they are in `.gitignore`). Do not share `.env` contents with others.
 

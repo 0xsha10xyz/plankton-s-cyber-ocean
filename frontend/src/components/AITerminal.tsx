@@ -91,6 +91,9 @@ const AITerminal = () => {
           ))
         )}
       </div>
+      <p className="px-4 py-2 text-[10px] text-muted-foreground/80 border-t border-border/30">
+        Logs are simulated until Redis + webhook are configured for real-time on-chain events.
+      </p>
     </div>
   );
 };

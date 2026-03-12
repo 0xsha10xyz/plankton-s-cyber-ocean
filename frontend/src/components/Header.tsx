@@ -5,7 +5,6 @@ import { Link, useLocation } from "react-router-dom";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { cn } from "@/lib/utils";
 import PlanktonLogo from "./PlanktonLogo";
-import WalletModal from "./WalletModal";
 import { AccountSidebar } from "./AccountSidebar";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 
@@ -36,7 +35,7 @@ const Header = () => {
   const [showDisconnect, setShowDisconnect] = useState(false);
   const { pathname } = useLocation();
   const { connected, publicKey, disconnect } = useWallet();
-  const { walletModalOpen, openWalletModal, closeWalletModal } = useWalletModal();
+  const { openWalletModal } = useWalletModal();
 
   const updateActiveSection = useCallback(() => {
     if (pathname !== "/") return;
@@ -320,7 +319,6 @@ const Header = () => {
         </AnimatePresence>
       </header>
 
-      <WalletModal open={walletModalOpen} onClose={closeWalletModal} />
       {connected && (
         <AccountSidebar open={accountSidebarOpen} onOpenChange={setAccountSidebarOpen} />
       )}

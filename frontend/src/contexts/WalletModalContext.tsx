@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import WalletModal from "@/components/WalletModal";
 
 type WalletModalContextValue = {
   walletModalOpen: boolean;
@@ -18,6 +19,7 @@ export function WalletModalProvider({ children }: { children: ReactNode }) {
       value={{ walletModalOpen, openWalletModal, closeWalletModal }}
     >
       {children}
+      <WalletModal open={walletModalOpen} onClose={closeWalletModal} />
     </WalletModalContext.Provider>
   );
 }
