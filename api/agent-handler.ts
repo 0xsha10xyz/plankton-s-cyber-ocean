@@ -261,13 +261,13 @@ async function heliusFetch(
 }
 
 /** Fetch recent on-chain activity (NEW_MINT, SWAP) from Helius and push to agent log (throttled). */
-export async function runFeedRecentMints(): Promise<{ pushed: number; skipped?: boolean; error?: string }> {
+export async function runFeedRecentMints(opts?: { force?: boolean }): Promise<{ pushed: number; skipped?: boolean; error?: string }> {
   const apiKey = stripEnvQuotes(process.env.HELIUS_API_KEY);
   if (!apiKey) return { pushed: 0, error: "HELIUS_API_KEY not set" };
 
   const lastRun = await withRedisKey(async (redis) => redis.get(AGENT_FEED_LAST_KEY));
   const now = Date.now();
-  if (lastRun) {
+  if (!opts?.force && lastRun) {
     const last = parseInt(lastRun, 10);
     if (Number.isFinite(last) && now - last < FEED_THROTTLE_MS) {
       return { pushed: 0, skipped: true };

@@ -65,7 +65,8 @@ export default async function handler(
 
   if (isFeed) {
     try {
-      const result = await runFeedRecentMints();
+      const force = searchParams.get("force") === "1";
+      const result = await runFeedRecentMints({ force });
       return res.status(200).json({ ok: true, pushed: result.pushed, skipped: result.skipped ?? false, error: result.error });
     } catch {
       return res.status(200).json({ ok: false, pushed: 0, skipped: false });
