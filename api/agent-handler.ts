@@ -81,7 +81,7 @@ const STUB_LINES: AgentLogEntry[] = [
   { id: "1", time: new Date().toISOString(), message: "[SCANNING] Solana Mainnet...", type: "scanning" },
   { id: "2", time: new Date().toISOString(), message: "[RESEARCH] Analyzing on-chain whale activity...", type: "research" },
   { id: "3", time: new Date().toISOString(), message: "[DETECTED] Whale Movement: large SOL transfer detected", type: "detected" },
-  { id: "4", time: new Date().toISOString(), message: "[ACTION] Agent ready. Connect wallet to access benefits.", type: "action" },
+  { id: "4", time: new Date().toISOString(), message: "[ACTION] Agent ready.", type: "action" },
 ];
 
 /** Seed Redis with initial lines so Command Center shows LIVE and real-time updates from Helius will append. */

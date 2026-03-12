@@ -6,7 +6,7 @@ const FALLBACK_MESSAGES = [
   "[SCANNING] Solana Mainnet Block Height...",
   "[RESEARCH] Analyzing on-chain whale activity...",
   "[DETECTED] Whale Movement: large SOL transfer detected",
-  "[ACTION] Agent ready. Connect wallet to access benefits.",
+  "[ACTION] Agent ready.",
 ];
 
 type LogEntry = { id: string; time: string; message: string; type?: string };
