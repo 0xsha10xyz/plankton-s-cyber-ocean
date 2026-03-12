@@ -4,9 +4,9 @@ import { Terminal } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 
 const FALLBACK_MESSAGES = [
-  "[SCANNING] Solana Mainnet Block Height...",
-  "[RESEARCH] Analyzing on-chain whale activity...",
-  "[DETECTED] Whale Movement: large SOL transfer detected",
+  "[SCANNING] Solana Mainnet...",
+  "[ON_CHAIN] Tracking: new mints, whale transfers, sniper buys, swaps.",
+  "[WHALE_TRANSFER] Large SOL/token • [NEW_MINT] pump.fun / Raydium / gmgn",
   "[ACTION] Agent ready.",
 ];
 
@@ -69,16 +69,29 @@ const AITerminal = () => {
     return () => clearInterval(interval);
   }, [live]);
 
+  // When LIVE, trigger backend to fetch recent token mints from Helius every 90s (throttled server-side)
+  useEffect(() => {
+    if (!live) return;
+    const base = typeof window !== "undefined" ? window.location.origin : "";
+    const triggerFeed = () => fetch(`${base}/api/agent/feed-recent`).catch(() => {});
+    triggerFeed();
+    const t = setInterval(triggerFeed, 90_000);
+    return () => clearInterval(t);
+  }, [live]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [lines, displayLines]);
 
   const getColor = (message: string) => {
-    if (message.startsWith("[ACTION]") || message.startsWith("[BIG_BUY]")) return "text-accent";
-    if (message.startsWith("[ALERT]") || message.startsWith("[DETECTED]") || message.startsWith("[BIG_SALE]")) return "text-destructive";
+    if (message.startsWith("[NEW_MINT]") || message.startsWith("[NEW_TOKEN]")) return "text-amber-400";
+    if (message.startsWith("[WHALE_TRANSFER]") || message.startsWith("[WHALE_ACCUMULATION]") || message.startsWith("[DETECTED]")) return "text-rose-400";
+    if (message.startsWith("[SNIPER_BUY]") || message.startsWith("[ACTION]") || message.startsWith("[BIG_BUY]")) return "text-emerald-400";
+    if (message.startsWith("[SWAP]")) return "text-sky-400";
+    if (message.startsWith("[BIG_SALE]") || message.startsWith("[ALERT]")) return "text-destructive";
     if (message.startsWith("[CONFIRMED]")) return "text-teal-400";
-    if (message.startsWith("[NEW_TOKEN]")) return "text-amber-400";
-    return "text-primary/70";
+    if (message.startsWith("[ON_CHAIN]") || message.startsWith("[SCANNING]") || message.startsWith("[RESEARCH]")) return "text-primary/70";
+    return "text-muted-foreground";
   };
 
   return (
@@ -111,6 +124,15 @@ const AITerminal = () => {
       <p className="px-4 py-2 text-[10px] text-muted-foreground/80 border-t border-border/30">
         {live ? "Real-time on-chain events" : "Logs are simulated until Redis + webhook are configured for real-time on-chain events."}
       </p>
+      {live && (
+        <p className="px-4 pb-2 text-[9px] text-muted-foreground/60 border-t border-border/20 flex flex-wrap gap-x-2 gap-y-0.5">
+          <span className="text-amber-400/90">NEW_MINT</span>
+          <span className="text-rose-400/90">WHALE</span>
+          <span className="text-emerald-400/90">SNIPER_BUY</span>
+          <span className="text-sky-400/90">SWAP</span>
+          <span className="text-destructive/80">BIG_SALE</span>
+        </p>
+      )}
     </div>
   );
 };

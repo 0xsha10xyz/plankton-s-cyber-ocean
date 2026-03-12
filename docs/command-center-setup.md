@@ -47,8 +47,8 @@ Supaya event on-chain (transfer besar, swap, dll.) masuk ke Command Center:
 1. Buka [Helius Dashboard](https://dashboard.helius.dev) → login.
 2. **Webhooks** → buka webhook yang dipakai (atau buat baru).
 3. Pastikan:
-   - **Webhook URL:** `https://planktonomous.vercel.app/api/webhooks/helius`  
-     (atau `https://planktonomous.dev/api/webhooks/helius` kalau domain itu yang dipakai).
+   - **Webhook URL:** `https://planktonomous.dev/api/webhooks/helius`  
+     (pastikan pakai **webhooks** dengan **s** dan path **/helius**).
    - **Network:** mainnet.
    - **Webhook type:** Enhanced Transactions.
    - **Transaction types:** minimal TRANSFER (untuk whale), bisa tambah SWAP, TOKEN_MINT, NFT_MINT, dll.
@@ -58,7 +58,7 @@ Supaya event on-chain (transfer besar, swap, dll.) masuk ke Command Center:
 ### Tes webhook
 
 - Setelah deploy + Redis jalan, tunggu ada transaksi yang match (atau kirim test dari dashboard Helius kalau ada).
-- Buka Command Center → dalam beberapa detik harusnya muncul baris baru misalnya `[DETECTED] Whale Movement: ...` atau `[RESEARCH] Swap: ...`.
+- Buka Command Center → dalam beberapa detik harusnya muncul baris baru dengan label **NEW_MINT**, **WHALE_TRANSFER**, **SNIPER_BUY**, **SWAP**, atau **BIG_SALE**.
 
 ---
 
@@ -68,8 +68,10 @@ Supaya event on-chain (transfer besar, swap, dll.) masuk ke Command Center:
 |-----|--------|------------|
 | Redis | Vercel → Settings → Environment Variables | **REDIS_URL** atau **KV_REST_API_URL** + **KV_REST_API_TOKEN** |
 | CORS (opsional) | Vercel → Environment Variables | **CORS_ORIGIN** = `https://planktonomous.dev,https://planktonomous.vercel.app` |
-| Helius webhook | dashboard.helius.dev → Webhooks | URL = `https://planktonomous.vercel.app/api/webhooks/helius`, mainnet, Enhanced, types TRANSFER (+ lain bila mau) |
+| Helius webhook | dashboard.helius.dev → Webhooks | URL = `https://planktonomous.dev/api/webhooks/helius`, mainnet, Enhanced, types TRANSFER, SWAP, TOKEN_MINT, BUY, dll. |
 | Redeploy | Vercel → Deployments | Setelah ubah env vars, wajib **Redeploy** |
+
+**Token mint + swap otomatis (tanpa webhook):** Kalau **HELIUS_API_KEY** di-set di Vercel, Command Center memanggil Helius API tiap ~90 detik untuk **TOKEN_MINT** (Token Program + pump.fun) dan **SWAP** (Raydium), lalu menampilkannya di log. Jadi data new mint dan swap bisa masuk meski webhook belum dapat event.
 
 ---
 
@@ -102,9 +104,10 @@ Helius hanya kirim event untuk transaksi yang **melibatkan alamat yang kamu watc
 
 - Klik **Manage Addresses** / **Account addresses**.
 - Tambah beberapa alamat yang sering ada transaksi, misalnya:
-  - **Token Program:** `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA` (banyak token mint lewat sini),
+  - **Token Program:** `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA` (banyak token mint),
+  - **Pump.fun:** `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P`,
   - **Raydium AMM:** `675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8`,
-  - Atau alamat DEX / wallet besar lain yang ingin kamu pantau.
+  - Wallet besar / DEX lain yang ingin kamu pantau.
 - Simpan. Setelah ada transaksi yang match, baris baru akan muncul di Command Center (bisa delay beberapa detik).
 
 ### C. Cek log webhook di Helius
