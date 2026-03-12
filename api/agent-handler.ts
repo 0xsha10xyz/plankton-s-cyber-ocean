@@ -77,7 +77,7 @@ export async function getAgentStatus(_wallet?: string | null): Promise<AgentStat
 }
 
 /** Last N log lines from Redis, or stub lines when Redis not configured. */
-export async function getAgentLogs(limit = 100): Promise<{ lines: AgentLogEntry[] }> {
+export async function getAgentLogs(limit = 100): Promise<{ lines: AgentLogEntry[]; source: "redis" | "stub" }> {
   const raw = await withRedisList(async (redis) => {
     const items = await redis.lrange(AGENT_LOGS_KEY, -limit, -1);
     return items;
@@ -93,7 +93,7 @@ export async function getAgentLogs(limit = 100): Promise<{ lines: AgentLogEntry[
         }
       })
       .filter((x): x is AgentLogEntry => x != null);
-    return { lines };
+    return { lines, source: "redis" };
   }
 
   // Stub when no Redis or empty
@@ -103,7 +103,7 @@ export async function getAgentLogs(limit = 100): Promise<{ lines: AgentLogEntry[
     { id: "3", time: new Date().toISOString(), message: "[DETECTED] Whale Movement: large SOL transfer detected", type: "detected" },
     { id: "4", time: new Date().toISOString(), message: "[ACTION] Agent ready. Connect wallet to access benefits.", type: "action" },
   ];
-  return { lines: stubLines };
+  return { lines: stubLines, source: "stub" };
 }
 
 /** Append one log line (from Helius webhook or agent worker). Trims list to last AGENT_LOGS_MAX. */

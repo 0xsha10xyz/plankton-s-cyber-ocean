@@ -348,7 +348,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       const data = await getAgentLogs(Number.isNaN(limit) ? 100 : limit);
       sendJson(res, 200, data);
     } catch {
-      sendJson(res, 200, { lines: [] });
+      sendJson(res, 200, { lines: [], source: "stub" });
     }
     return;
   }

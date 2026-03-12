@@ -14,6 +14,7 @@ type LogEntry = { id: string; time: string; message: string; type?: string };
 const AITerminal = () => {
   const [lines, setLines] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [live, setLive] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,6 +25,10 @@ const AITerminal = () => {
         const data = await res.json();
         if (Array.isArray(data?.lines) && data.lines.length > 0) {
           setLines(data.lines);
+          setLive(data.source === "redis");
+        } else if (data?.source === "redis" && Array.isArray(data?.lines)) {
+          setLines(data.lines);
+          setLive(true);
         } else if (lines.length === 0) {
           setLines(
             FALLBACK_MESSAGES.map((message, i) => ({
@@ -33,6 +38,7 @@ const AITerminal = () => {
               type: "info",
             }))
           );
+          setLive(false);
         }
       } catch {
         if (lines.length === 0) {
@@ -45,14 +51,16 @@ const AITerminal = () => {
             }))
           );
         }
+        setLive(false);
       } finally {
         setLoading(false);
       }
     };
     fetchLogs();
-    const interval = setInterval(fetchLogs, 5000);
+    const intervalMs = live ? 2000 : 5000;
+    const interval = setInterval(fetchLogs, intervalMs);
     return () => clearInterval(interval);
-  }, []);
+  }, [live]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -72,8 +80,10 @@ const AITerminal = () => {
         <Terminal size={16} className="text-primary" />
         <span className="text-sm font-mono font-semibold text-primary">PLANKTON AGENT v4.0</span>
         <div className="ml-auto flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-accent animate-pulse-glow" />
-          <span className="text-xs text-accent font-mono">LIVE</span>
+          <div className={`w-2 h-2 rounded-full ${live ? "bg-accent animate-pulse-glow" : "bg-muted-foreground/60"}`} />
+          <span className={`text-xs font-mono ${live ? "text-accent" : "text-muted-foreground"}`}>
+            {live ? "LIVE" : "SIMULATED"}
+          </span>
         </div>
       </div>
       <div
@@ -92,7 +102,7 @@ const AITerminal = () => {
         )}
       </div>
       <p className="px-4 py-2 text-[10px] text-muted-foreground/80 border-t border-border/30">
-        Logs are simulated until Redis + webhook are configured for real-time on-chain events.
+        {live ? "Real-time on-chain events" : "Logs are simulated until Redis + webhook are configured for real-time on-chain events."}
       </p>
     </div>
   );
