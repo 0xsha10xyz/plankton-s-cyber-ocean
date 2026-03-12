@@ -76,6 +76,26 @@ export async function getAgentStatus(_wallet?: string | null): Promise<AgentStat
   };
 }
 
+/** Stub lines used when Redis is empty; also used to seed Redis so UI shows LIVE immediately. */
+const STUB_LINES: AgentLogEntry[] = [
+  { id: "1", time: new Date().toISOString(), message: "[SCANNING] Solana Mainnet...", type: "scanning" },
+  { id: "2", time: new Date().toISOString(), message: "[RESEARCH] Analyzing on-chain whale activity...", type: "research" },
+  { id: "3", time: new Date().toISOString(), message: "[DETECTED] Whale Movement: large SOL transfer detected", type: "detected" },
+  { id: "4", time: new Date().toISOString(), message: "[ACTION] Agent ready. Connect wallet to access benefits.", type: "action" },
+];
+
+/** Seed Redis with initial lines so Command Center shows LIVE and real-time updates from Helius will append. */
+async function seedRedisIfEmpty(): Promise<void> {
+  await withRedisList(async (redis) => {
+    const existing = await redis.lrange(AGENT_LOGS_KEY, 0, 0);
+    if (existing.length > 0) return;
+    for (const entry of STUB_LINES) {
+      await redis.rpush(AGENT_LOGS_KEY, JSON.stringify(entry));
+    }
+    await redis.ltrim(AGENT_LOGS_KEY, -AGENT_LOGS_MAX, -1);
+  });
+}
+
 /** Last N log lines from Redis, or stub lines when Redis not configured. */
 export async function getAgentLogs(limit = 100): Promise<{ lines: AgentLogEntry[]; source: "redis" | "stub" }> {
   const raw = await withRedisList(async (redis) => {
@@ -96,14 +116,12 @@ export async function getAgentLogs(limit = 100): Promise<{ lines: AgentLogEntry[
     return { lines, source: "redis" };
   }
 
-  // Stub when no Redis or empty
-  const stubLines: AgentLogEntry[] = [
-    { id: "1", time: new Date().toISOString(), message: "[SCANNING] Solana Mainnet...", type: "scanning" },
-    { id: "2", time: new Date().toISOString(), message: "[RESEARCH] Analyzing on-chain whale activity...", type: "research" },
-    { id: "3", time: new Date().toISOString(), message: "[DETECTED] Whale Movement: large SOL transfer detected", type: "detected" },
-    { id: "4", time: new Date().toISOString(), message: "[ACTION] Agent ready. Connect wallet to access benefits.", type: "action" },
-  ];
-  return { lines: stubLines, source: "stub" };
+  if (raw !== null) {
+    await seedRedisIfEmpty();
+    return { lines: STUB_LINES, source: "redis" };
+  }
+
+  return { lines: STUB_LINES, source: "stub" };
 }
 
 /** Append one log line (from Helius webhook or agent worker). Trims list to last AGENT_LOGS_MAX. */
