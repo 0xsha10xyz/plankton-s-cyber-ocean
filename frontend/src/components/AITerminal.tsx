@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Terminal } from "lucide-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 const FALLBACK_MESSAGES = [
   "[SCANNING] Solana Mainnet Block Height...",
@@ -16,6 +17,12 @@ const AITerminal = () => {
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState<boolean>(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { connected } = useWallet();
+
+  // Sembunyikan baris "Connect wallet to access benefits" kalau wallet sudah connect
+  const displayLines = connected
+    ? lines.filter((entry) => !entry.message.includes("Connect wallet to access benefits"))
+    : lines;
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -64,7 +71,7 @@ const AITerminal = () => {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [lines]);
+  }, [lines, displayLines]);
 
   const getColor = (message: string) => {
     if (message.startsWith("[ACTION]") || message.startsWith("[BIG_BUY]")) return "text-accent";
@@ -94,7 +101,7 @@ const AITerminal = () => {
         {loading && lines.length === 0 ? (
           <div className="text-muted-foreground">Loading agent logs...</div>
         ) : (
-          lines.map((entry) => (
+          displayLines.map((entry) => (
             <div key={entry.id} className={`${getColor(entry.message)} opacity-80`}>
               {entry.message}
             </div>
