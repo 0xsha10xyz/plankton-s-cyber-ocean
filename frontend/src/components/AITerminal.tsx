@@ -12,6 +12,17 @@ const FALLBACK_MESSAGES = [
 
 type LogEntry = { id: string; time: string; message: string; type?: string };
 
+const STUB_PLACEHOLDER_PATTERNS = [
+  "[SCANNING] Solana Mainnet",
+  "Tracking: new mints, whale",
+  "Large SOL/token",
+  "Connect wallet to access benefits",
+];
+
+function isStubPlaceholder(message: string): boolean {
+  return STUB_PLACEHOLDER_PATTERNS.some((p) => message.includes(p));
+}
+
 const AITerminal = () => {
   const [lines, setLines] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,9 +30,12 @@ const AITerminal = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { connected } = useWallet();
 
-  // Sembunyikan baris "Connect wallet to access benefits" kalau wallet sudah connect
+  // Kalau wallet connect: kosongkan placeholder, tampilkan hanya "[ACTION] Agent ready." + data on-chain nyata
   const displayLines = connected
-    ? lines.filter((entry) => !entry.message.includes("Connect wallet to access benefits"))
+    ? lines.filter(
+        (entry) =>
+          entry.message === "[ACTION] Agent ready." || !isStubPlaceholder(entry.message)
+      )
     : lines;
 
   useEffect(() => {
@@ -73,7 +87,8 @@ const AITerminal = () => {
   useEffect(() => {
     if (!live) return;
     const base = typeof window !== "undefined" ? window.location.origin : "";
-    const triggerFeed = () => fetch(`${base}/api/agent/feed-recent`).catch(() => {});
+    const triggerFeed = () =>
+      fetch(`${base}/api/agent/feed-recent`, { cache: "no-store" }).catch(() => {});
     triggerFeed();
     const t = setInterval(triggerFeed, 90_000);
     return () => clearInterval(t);
@@ -124,15 +139,6 @@ const AITerminal = () => {
       <p className="px-4 py-2 text-[10px] text-muted-foreground/80 border-t border-border/30">
         {live ? "Real-time on-chain events" : "Logs are simulated until Redis + webhook are configured for real-time on-chain events."}
       </p>
-      {live && (
-        <p className="px-4 pb-2 text-[9px] text-muted-foreground/60 border-t border-border/20 flex flex-wrap gap-x-2 gap-y-0.5">
-          <span className="text-amber-400/90">NEW_MINT</span>
-          <span className="text-amber-400/90">WHALE</span>
-          <span className="text-emerald-400/90">SNIPER_BUY</span>
-          <span className="text-sky-400/90">SWAP</span>
-          <span className="text-orange-400/90">BIG_SALE</span>
-        </p>
-      )}
     </div>
   );
 };

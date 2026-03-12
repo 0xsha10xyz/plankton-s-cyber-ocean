@@ -1,6 +1,23 @@
 # Command Center — Cek Redis & Helius (Live / Real-time)
 
-Panduan singkat agar Command Center tampil **LIVE** dengan data real-time dari Helius.
+Panduan singkat agar Command Center tampil **LIVE** dan terisi **data on-chain nyata**.
+
+---
+
+## Konfigurasi API (wajib)
+
+Agar Command Center berfungsi dengan baik, di **Vercel → Settings → Environment Variables** harus ada:
+
+| Variabel | Wajib | Contoh / Keterangan |
+|----------|--------|----------------------|
+| **KV_REST_API_URL** | Ya (Redis) | REST URL dari Upstash, contoh: `https://xxx.upstash.io` |
+| **KV_REST_API_TOKEN** | Ya (Redis) | REST Token dari Upstash |
+| **HELIUS_API_KEY** | Ya (data feed) | API key dari [dashboard.helius.dev](https://dashboard.helius.dev) |
+
+Alternatif Redis: **UPSTASH_REDIS_REST_URL** + **UPSTASH_REDIS_REST_TOKEN** (nama persis seperti itu).  
+Setelah ubah env vars, wajib **Redeploy** project.
+
+Webhook Helius: URL harus persis **`https://planktonomous.dev/api/webhooks/helius`** (dengan **s** di webhooks).
 
 ---
 

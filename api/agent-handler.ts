@@ -212,10 +212,12 @@ const PUMP_FUN_PROGRAM_ID = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
 
 async function heliusFetch(apiKey: string, address: string, type: string, limit: number): Promise<unknown[]> {
   const baseUrl = "https://api-mainnet.helius-rpc.com";
-  const url = `${baseUrl}/v0/addresses/${address}/transactions?api-key=${encodeURIComponent(apiKey)}&type=${type}&limit=${limit}`;
-  const res = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+  const typeParam = type ? `&type=${encodeURIComponent(type)}` : "";
+  const url = `${baseUrl}/v0/addresses/${address}/transactions?api-key=${encodeURIComponent(apiKey)}${typeParam}&limit=${limit}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(12_000), cache: "no-store" });
   if (!res.ok) return [];
   const data = await res.json();
+  if (data?.error && typeof data.error === "string") return [];
   return Array.isArray(data) ? data : [];
 }
 
@@ -235,11 +237,11 @@ export async function runFeedRecentMints(): Promise<{ pushed: number; skipped?: 
 
   let pushed = 0;
   try {
-    // 1) New mints (Token Program + Pump.fun)
+    // 1) New mints (Token Program + Pump.fun). Pump.fun tanpa type supaya dapat txs apa saja.
     const [mintTxs, pumpTxs, swapTxs] = await Promise.all([
-      heliusFetch(apiKey, TOKEN_PROGRAM_ID, "TOKEN_MINT", 5),
-      heliusFetch(apiKey, PUMP_FUN_PROGRAM_ID, "TOKEN_MINT", 3).catch(() => []),
-      heliusFetch(apiKey, RAYDIUM_AMM_ID, "SWAP", 4).catch(() => []),
+      heliusFetch(apiKey, TOKEN_PROGRAM_ID, "TOKEN_MINT", 6),
+      heliusFetch(apiKey, PUMP_FUN_PROGRAM_ID, "", 4).catch(() => []),
+      heliusFetch(apiKey, RAYDIUM_AMM_ID, "SWAP", 5).catch(() => []),
     ]);
 
     for (const tx of mintTxs) {
@@ -251,7 +253,7 @@ export async function runFeedRecentMints(): Promise<{ pushed: number; skipped?: 
     }
     for (const tx of pumpTxs) {
       const desc = typeof (tx as { description?: string })?.description === "string" ? (tx as { description: string }).description : "";
-      const msg = desc ? `[NEW_MINT] (pump.fun) ${desc.slice(0, 85)}${desc.length > 85 ? "…" : ""}` : "[NEW_MINT] (pump.fun) new token";
+      const msg = desc ? `[NEW_MINT] ${desc.slice(0, 92)}${desc.length > 92 ? "…" : ""}` : "[NEW_MINT] pump.fun activity";
       await pushAgentLog(msg, "research");
       pushed++;
     }
