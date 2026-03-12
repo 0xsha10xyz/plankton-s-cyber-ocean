@@ -1,48 +1,48 @@
 # Helius webhook — transaction types for Command Center
 
-Gunakan dokumen ini saat mengatur **Transaction type(s)** dan **Account addresses** di webhook Helius supaya Command Center menampilkan sinyal yang tepat.
+Use this doc to configure **Transaction type(s)** and **Account addresses** in your Helius webhook so the Command Center shows the right signals.
 
 ---
 
-## Yang dilacak Command Center
+## What Command Center tracks
 
-| Sinyal | Label di log | Helius transaction types | Keterangan |
+| Signal | Log label | Helius transaction types | Notes |
 |--------|----------------|----------------------------|------------|
-| **Mint token baru** (pump.fun, gmgn, Raydium, dll.) | `[NEW_MINT]` | `TOKEN_MINT`, `NFT_MINT`, `CREATE_POOL` | Token baru di jaringan Solana |
-| **Whale transfer** (SOL atau token) | `[WHALE_TRANSFER]` | `TRANSFER` | Transfer SOL ≥ 5 SOL atau token dalam jumlah besar |
-| **Whale akumulasi** | `[WHALE_ACCUMULATION]` | `TRANSFER` | Transfer SOL ≥ 20 SOL |
-| **Sniper / big buy** | `[SNIPER_BUY]` | `BUY` | Pembelian menengah–besar (termasuk token baru) |
-| **Swap** (Jupiter, Raydium, dll.) | `[SWAP]` | `SWAP` | Swap DEX |
-| **Big sale** | `[BIG_SALE]` | `NFT_SALE`, `SELL` | Penjualan besar |
-| **Lainnya** (liquidity, listing, dll.) | `[ON_CHAIN]` | `ADD_LIQUIDITY`, `NFT_LISTING`, dll. | Event pendukung |
+| **New token mints** (pump.fun, gmgn, Raydium, etc.) | `[NEW_MINT]` | `TOKEN_MINT`, `NFT_MINT`, `CREATE_POOL` | New tokens on Solana |
+| **Whale transfers** (SOL or tokens) | `[WHALE_TRANSFER]` | `TRANSFER` | SOL ≥ 5 SOL or large token transfers |
+| **Whale accumulation** | `[WHALE_ACCUMULATION]` | `TRANSFER` | SOL ≥ 20 SOL |
+| **Sniper / big buy** | `[SNIPER_BUY]` | `BUY` | Medium-to-large buys (often new tokens) |
+| **Swaps** (Jupiter, Raydium, etc.) | `[SWAP]` | `SWAP` | DEX swaps |
+| **Big sales** | `[BIG_SALE]` | `NFT_SALE`, `SELL` | Large sales |
+| **Other signals** (liquidity, listings, etc.) | `[ON_CHAIN]` | `ADD_LIQUIDITY`, `NFT_LISTING`, etc. | Supporting context |
 
 ---
 
-## Rekomendasi transaction types
+## Recommended transaction types
 
-Centang minimal: **TRANSFER**, **SWAP**, **TOKEN_MINT**, **NFT_MINT**, **CREATE_POOL**, **BUY**, **SELL**, **NFT_SALE**.
+Select at least: **TRANSFER**, **SWAP**, **TOKEN_MINT**, **NFT_MINT**, **CREATE_POOL**, **BUY**, **SELL**, **NFT_SALE**.
 
-Opsional: **ADD_LIQUIDITY**, **NFT_LISTING**, **NFT_BID** (lebih banyak konteks, lebih banyak kredit). Hindari **Any** agar tidak menerima semua transaksi.
-
----
-
-## Account addresses yang disarankan
-
-- **Token Program:** `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA` — banyak token mint.
-- **Pump.fun:** `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P` — mint dari pump.fun.
-- **Raydium AMM:** `675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8` — swap & pool.
-- Tambah wallet besar atau DEX lain sesuai kebutuhan.
+Optional: **ADD_LIQUIDITY**, **NFT_LISTING**, **NFT_BID** (more context, more credits). Avoid **Any** so you don’t receive everything.
 
 ---
 
-## Mapping handler → label
+## Suggested account addresses
+
+- **Token Program:** `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA` — many mints.
+- **Pump.fun:** `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P` — pump.fun activity.
+- **Raydium AMM:** `675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8` — swaps & pools.
+- Add large wallets or other DEX programs as needed.
+
+---
+
+## Handler mapping → labels
 
 - **TRANSFER** (≥ 5 SOL) → `[WHALE_TRANSFER]`; ≥ 20 SOL → `[WHALE_ACCUMULATION]`
-- **TOKEN_MINT**, **NFT_MINT**, **CREATE_POOL** → `[NEW_MINT]` (termasuk source bila ada, e.g. pump.fun)
+- **TOKEN_MINT**, **NFT_MINT**, **CREATE_POOL** → `[NEW_MINT]` (includes source when available, e.g. pump.fun)
 - **BUY** → `[SNIPER_BUY]`
 - **SWAP** → `[SWAP]`
 - **NFT_SALE**, **SELL** → `[BIG_SALE]`
-- Token transfer besar (dari `tokenTransfers`) → `[WHALE_TRANSFER]` Token …
-- Lainnya dengan description → `[ON_CHAIN]`
+- Large token transfers (from `tokenTransfers`) → `[WHALE_TRANSFER]` Token …
+- Anything else with a description → `[ON_CHAIN]`
 
-Lihat [helius-setup.md](./helius-setup.md) untuk langkah lengkap webhook.
+See [helius-setup.md](./helius-setup.md) for full webhook setup steps.

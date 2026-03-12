@@ -15,6 +15,7 @@ Documentation for **Plankton's Cyber Ocean** — frontend app, backend API, wall
 | [Integration](./integration.md) | Using the API from the frontend |
 | [Deploy to Vercel](./deploy-vercel.md) | One-project deploy, env vars, Redis, Hobby limits |
 | [Helius setup](./helius-setup.md) | Helius webhook, agent logs, transaction types |
+| [Command Center (Redis & Helius)](./command-center-setup.md) | Configure Redis + Helius so Command Center is LIVE / real-time |
 
 ## Quick links
 

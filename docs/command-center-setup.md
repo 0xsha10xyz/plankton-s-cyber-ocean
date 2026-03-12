@@ -1,138 +1,138 @@
-# Command Center — Cek Redis & Helius (Live / Real-time)
+# Command Center — Redis & Helius setup (LIVE / real-time)
 
-Panduan singkat agar Command Center tampil **LIVE** dan terisi **data on-chain nyata**.
+Quick setup so the Command Center shows **LIVE** and receives **real on-chain data**.
 
 ---
 
-## Konfigurasi API (wajib)
+## API configuration (required)
 
-Agar Command Center berfungsi dengan baik, di **Vercel → Settings → Environment Variables** harus ada:
+To make Command Center work correctly, set these in **Vercel → Settings → Environment Variables**:
 
-| Variabel | Wajib | Contoh / Keterangan |
+| Variable | Required | Example / Notes |
 |----------|--------|----------------------|
-| **KV_REST_API_URL** | Ya (Redis) | REST URL dari Upstash, contoh: `https://xxx.upstash.io` |
-| **KV_REST_API_TOKEN** | Ya (Redis) | REST Token dari Upstash |
-| **HELIUS_API_KEY** | Ya (data feed) | API key dari [dashboard.helius.dev](https://dashboard.helius.dev) |
+| **KV_REST_API_URL** | Yes (Redis) | Upstash REST URL, e.g. `https://xxx.upstash.io` |
+| **KV_REST_API_TOKEN** | Yes (Redis) | Upstash REST token |
+| **HELIUS_API_KEY** | Yes (data feed) | API key from [dashboard.helius.dev](https://dashboard.helius.dev) |
 
-Alternatif Redis: **UPSTASH_REDIS_REST_URL** + **UPSTASH_REDIS_REST_TOKEN** (nama persis seperti itu).  
-Setelah ubah env vars, wajib **Redeploy** project.
+Alternative Redis vars: **UPSTASH_REDIS_REST_URL** + **UPSTASH_REDIS_REST_TOKEN** (exact names).  
+After changing env vars, **redeploy** the project.
 
-Webhook Helius: URL harus persis **`https://planktonomous.dev/api/webhooks/helius`** (dengan **s** di webhooks).
+Helius webhook URL must be exactly **`https://planktonomous.dev/api/webhooks/helius`** (note the **s** in `webhooks`).
 
-**Penting — nilai env tanpa kutip:** Di Vercel, isi **Value** jangan pakai tanda kutip. Contoh salah: `"https://finer-dogfish-69017.upstash.io"`. Contoh benar: `https://finer-dogfish-69017.upstash.io`. Kalau pakai kutip, koneksi Redis/Helius bisa gagal. (Di kode terbaru, kutip otomatis dibuang; tetap lebih aman isi tanpa kutip.)
+**Important — env values without quotes:** In Vercel, do not wrap values in quotes. Wrong: `"https://finer-dogfish-69017.upstash.io"`. Correct: `https://finer-dogfish-69017.upstash.io`. Quoted values can break Redis/Helius connections. (We now strip quotes in code, but setting them correctly is still best.)
 
 ---
 
-## 1. Cek Redis di Vercel
+## 1. Check Redis in Vercel
 
-Command Center butuh **Redis** supaya log disimpan dan status **LIVE** muncul.
+Command Center needs **Redis** to persist logs and show **LIVE**.
 
-### Langkah
+### Steps
 
-1. Buka **Vercel** → project **planktonomous** → **Settings** → **Environment Variables**.
-2. Cek salah satu sudah ada:
-   - **REDIS_URL** — isi contoh: `redis://default:xxxxx@xxx.upstash.io:6379` atau `rediss://...` (pakai TLS).
-   - **Atau** Upstash REST:
+1. Open **Vercel** → project **planktonomous** → **Settings** → **Environment Variables**.
+2. Ensure you have either:
+   - **REDIS_URL** — e.g. `redis://default:xxxxx@xxx.upstash.io:6379` or `rediss://...` (TLS), or
+   - **Upstash REST**:
      - **KV_REST_API_URL**
-     - **KV_REST_API_TOKEN** (atau **UPSTASH_REDIS_REST_URL** + **UPSTASH_REDIS_REST_TOKEN**).
+     - **KV_REST_API_TOKEN** (or **UPSTASH_REDIS_REST_URL** + **UPSTASH_REDIS_REST_TOKEN**).
 
-### Kalau belum ada Redis
+### If you don’t have Redis yet
 
-- **Upstash (disarankan untuk Vercel):**
-  1. Daftar di [upstash.com](https://upstash.com) → buat **Redis** database.
-  2. Di dashboard: copy **REST URL** dan **REST Token**.
-  3. Di Vercel env vars tambah:
+- **Upstash (recommended for Vercel):**
+  1. Create a Redis database at [upstash.com](https://upstash.com).
+  2. Copy **REST URL** and **REST token** from the Upstash dashboard.
+  3. In Vercel env vars add:
      - Name: `KV_REST_API_URL`, Value: *(REST URL)*
-     - Name: `KV_REST_API_TOKEN`, Value: *(REST Token)*
-  4. Simpan → **Redeploy** project.
+     - Name: `KV_REST_API_TOKEN`, Value: *(REST token)*
+  4. Save → **Redeploy** the project.
 
 - **REDIS_URL (TCP):**  
-  Kalau pakai `redis://` dan di Vercel tetap **SIMULATED**, serverless sering bermasalah dengan koneksi TCP. Lebih aman pakai **Upstash REST** (dua variabel di atas).
+  If you use `redis://` and Vercel still shows **SIMULATED**, serverless TCP connections can be unreliable. Prefer **Upstash REST** (vars above).
 
-### Setelah diisi
+### After setting vars
 
 - **Redeploy** (Deployments → … → Redeploy).
-- Buka **planktonomous.dev** → scroll ke **Command Center**.
-- Harusnya status **LIVE** (titik hijau) dan footer: **"Real-time on-chain events"**. Kalau masih **SIMULATED**, Redis belum terbaca (cek nama variabel dan redeploy lagi).
+- Open **planktonomous.dev** → scroll to **Command Center**.
+- You should see **LIVE** (green dot) and the footer: **"Real-time on-chain events"**. If it still shows **SIMULATED**, Redis isn’t being detected (check variable names and redeploy again).
 
 ---
 
-## 2. Cek Webhook Helius
+## 2. Check the Helius webhook
 
-Supaya event on-chain (transfer besar, swap, dll.) masuk ke Command Center:
+To receive on-chain events (large transfers, swaps, etc.) in Command Center:
 
-### Langkah
+### Steps
 
-1. Buka [Helius Dashboard](https://dashboard.helius.dev) → login.
-2. **Webhooks** → buka webhook yang dipakai (atau buat baru).
-3. Pastikan:
+1. Open [Helius Dashboard](https://dashboard.helius.dev) and sign in.
+2. Go to **Webhooks** → open your webhook (or create a new one).
+3. Make sure:
    - **Webhook URL:** `https://planktonomous.dev/api/webhooks/helius`  
-     (pastikan pakai **webhooks** dengan **s** dan path **/helius**).
+     (note **webhooks** with **s** and the **/helius** path).
    - **Network:** mainnet.
    - **Webhook type:** Enhanced Transactions.
-   - **Transaction types:** minimal TRANSFER (untuk whale), bisa tambah SWAP, TOKEN_MINT, NFT_MINT, dll.
-   - **Account addresses:** ada alamat yang di-watch (atau pakai opsi network-wide sesuai Helius).
-4. Klik **Update** / **Save**.
+   - **Transaction types:** at least TRANSFER (whales), optionally SWAP, TOKEN_MINT, NFT_MINT, etc.
+   - **Account addresses:** add addresses to watch (or use a network-wide option if available in your plan).
+4. Click **Update** / **Save**.
 
-### Tes webhook
+### Test the webhook
 
-- Setelah deploy + Redis jalan, tunggu ada transaksi yang match (atau kirim test dari dashboard Helius kalau ada).
-- Buka Command Center → dalam beberapa detik harusnya muncul baris baru dengan label **NEW_MINT**, **WHALE_TRANSFER**, **SNIPER_BUY**, **SWAP**, atau **BIG_SALE**.
+- After deploy + Redis are working, wait for matching transactions (or use Helius’ test feature if available).
+- Open Command Center → within a few seconds you should see new log lines labeled **NEW_MINT**, **WHALE_TRANSFER**, **SNIPER_BUY**, **SWAP**, or **BIG_SALE**.
 
 ---
 
-## 3. Ringkasan checklist
+## 3. Checklist
 
-| Cek | Di mana | Yang harus |
+| Check | Where | Requirement |
 |-----|--------|------------|
-| Redis | Vercel → Settings → Environment Variables | **REDIS_URL** atau **KV_REST_API_URL** + **KV_REST_API_TOKEN** |
-| CORS (opsional) | Vercel → Environment Variables | **CORS_ORIGIN** = `https://planktonomous.dev,https://planktonomous.vercel.app` |
-| Helius webhook | dashboard.helius.dev → Webhooks | URL = `https://planktonomous.dev/api/webhooks/helius`, mainnet, Enhanced, types TRANSFER, SWAP, TOKEN_MINT, BUY, dll. |
-| Redeploy | Vercel → Deployments | Setelah ubah env vars, wajib **Redeploy** |
+| Redis | Vercel → Settings → Environment Variables | **REDIS_URL** or **KV_REST_API_URL** + **KV_REST_API_TOKEN** |
+| CORS (optional) | Vercel → Environment Variables | **CORS_ORIGIN** = `https://planktonomous.dev,https://planktonomous.vercel.app` |
+| Helius webhook | dashboard.helius.dev → Webhooks | URL = `https://planktonomous.dev/api/webhooks/helius`, mainnet, Enhanced, types TRANSFER, SWAP, TOKEN_MINT, BUY, etc. |
+| Redeploy | Vercel → Deployments | After changing env vars, **redeploy** |
 
-**Token mint + swap otomatis (tanpa webhook):** Kalau **HELIUS_API_KEY** di-set di Vercel, Command Center memanggil Helius API tiap ~90 detik untuk **TOKEN_MINT** (Token Program + pump.fun) dan **SWAP** (Raydium), lalu menampilkannya di log. Jadi data new mint dan swap bisa masuk meski webhook belum dapat event.
-
----
-
-## 4. Kalau tetap SIMULATED
-
-1. **Redis:** Pastikan env var persis **REDIS_URL** atau **KV_REST_API_URL** + **KV_REST_API_TOKEN**, tanpa typo. Redeploy.
-2. **Upstash:** Kalau pakai **REDIS_URL** dengan `redis://` dan tetap SIMULATED, ganti ke Upstash REST (dua variabel di atas).
-3. **Cache:** Hard refresh (Ctrl+Shift+R) atau buka tab baru, cek lagi Command Center.
-
-Kalau semua sudah benar, status **LIVE** dan teks **"Real-time on-chain events"** akan muncul, dan log dari Helius akan nongol saat ada event yang match.
+**Automatic mint/swap feed (no webhook):** If **HELIUS_API_KEY** is set in Vercel, the server can periodically call Helius APIs for **TOKEN_MINT** (Token Program + pump.fun) and **SWAP** (Raydium) and push them into the log. This helps when webhooks aren’t configured or aren’t receiving matches.
 
 ---
 
-## 5. LIVE tapi tidak ada data baru (token mint, whale, dll.)
+## 4. If it still shows SIMULATED
 
-Kalau status sudah **LIVE** tapi cuma 4 baris awal dan tidak ada baris baru:
+1. **Redis:** Ensure the env vars are exactly **REDIS_URL** or **KV_REST_API_URL** + **KV_REST_API_TOKEN** (no typos). Redeploy.
+2. **Upstash:** If using **REDIS_URL** (`redis://`) and it still shows SIMULATED, switch to Upstash REST (vars above).
+3. **Cache:** Hard refresh (Ctrl+Shift+R) or open a new tab and check again.
 
-### A. Transaction types di Helius
+If everything is correct, you’ll see **LIVE** and **"Real-time on-chain events"**, and Helius events will start appearing as they arrive.
 
-- Buka webhook di [Helius Dashboard](https://dashboard.helius.dev) → **Edit**.
-- Di **Transaction type(s)** pastikan tercentang:
-  - **TOKEN_MINT**, **NFT_MINT** (untuk token mint),
-  - **TRANSFER** (untuk whale SOL),
-  - **SWAP**, **BUY**, **SELL**, **NFT_SALE**, **CREATE_POOL** (opsional).
-- Simpan webhook.
+---
 
-### B. Account addresses (penting)
+## 5. LIVE but no new data (mints, whales, etc.)
 
-Helius hanya kirim event untuk transaksi yang **melibatkan alamat yang kamu watch**. Kalau **Account addresses** kosong atau hanya 1–2 alamat yang jarang dipakai, hampir tidak akan ada data.
+If it’s **LIVE** but you only see the initial lines and nothing new:
 
-- Klik **Manage Addresses** / **Account addresses**.
-- Tambah beberapa alamat yang sering ada transaksi, misalnya:
-  - **Token Program:** `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA` (banyak token mint),
-  - **Pump.fun:** `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P`,
-  - **Raydium AMM:** `675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8`,
-  - Wallet besar / DEX lain yang ingin kamu pantau.
-- Simpan. Setelah ada transaksi yang match, baris baru akan muncul di Command Center (bisa delay beberapa detik).
+### A. Transaction types in Helius
 
-### C. Cek log webhook di Helius
+- Open your webhook in [Helius Dashboard](https://dashboard.helius.dev) → **Edit**.
+- Under **Transaction type(s)**, ensure at least:
+  - **TOKEN_MINT**, **NFT_MINT** (for mints)
+  - **TRANSFER** (for SOL whales)
+  - Optionally **SWAP**, **BUY**, **SELL**, **NFT_SALE**, **CREATE_POOL**
+- Save the webhook.
 
-- Di dashboard Helius, cek apakah webhook ada **delivery logs** / **recent deliveries**. Kalau status 200 dan ada request, artinya webhook terpanggil dan backend sudah terima. Kalau tidak ada request sama sekali, kemungkinan address/types belum match.
+### B. Account addresses (important)
 
-### D. Pesan "Connect wallet" padahal sudah connect
+Helius only sends events for transactions that **involve the addresses you watch**. If **Account addresses** is empty or only contains low-activity addresses, you may see little/no data.
 
-Itu baris **log awal** (bukan cek status wallet). Di versi terbaru sudah diganti jadi **"[ACTION] Agent ready."** saja. Setelah deploy terbaru + Redis di-reset (hapus key `plankton:agent_logs` di Upstash Data Browser supaya di-seed ulang), baris itu tidak lagi muncul. Atau tunggu saja sampai log tertimpa oleh event baru dari Helius.
+- Click **Manage Addresses** / **Account addresses**.
+- Add some high-activity addresses, for example:
+  - **Token Program:** `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`
+  - **Pump.fun:** `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P`
+  - **Raydium AMM:** `675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8`
+  - Any large wallets / other DEX programs you want to track
+- Save. New lines should appear once matching transactions occur (may take a few seconds).
+
+### C. Check webhook deliveries in Helius
+
+- In Helius dashboard, check **delivery logs** / **recent deliveries**. If you see 200 responses, your backend is receiving events. If you see no requests, your addresses/types likely don’t match (or credits are exhausted).
+
+### D. “Connect wallet” message even though you’re connected
+
+That line is part of the initial stub (not a wallet status check). In the latest version it was changed to **"[ACTION] Agent ready."** only. If you still see old text in Redis, either clear the `plankton:agent_logs` key once so it reseeds, or wait until new events push the old entries out.
