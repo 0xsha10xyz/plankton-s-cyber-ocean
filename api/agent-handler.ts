@@ -233,15 +233,31 @@ const TOKEN_PROGRAM_ID = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 const RAYDIUM_AMM_ID = "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8";
 const PUMP_FUN_PROGRAM_ID = "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P";
 
-async function heliusFetch(apiKey: string, address: string, type: string, limit: number): Promise<unknown[]> {
+async function heliusFetch(
+  apiKey: string,
+  address: string,
+  type: string,
+  limit: number
+): Promise<{ items: unknown[]; status: number; error?: string }> {
   const baseUrl = "https://api-mainnet.helius-rpc.com";
   const typeParam = type ? `&type=${encodeURIComponent(type)}` : "";
   const url = `${baseUrl}/v0/addresses/${address}/transactions?api-key=${encodeURIComponent(apiKey)}${typeParam}&limit=${limit}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(12_000), cache: "no-store" });
-  if (!res.ok) return [];
-  const data = await res.json();
-  if (data?.error && typeof data.error === "string") return [];
-  return Array.isArray(data) ? data : [];
+  const status = res.status;
+  let data: unknown = null;
+  try {
+    data = await res.json();
+  } catch {
+    // ignore
+  }
+  if (!res.ok) {
+    const msg = typeof (data as { error?: unknown })?.error === "string" ? String((data as { error: string }).error) : undefined;
+    return { items: [], status, error: msg ?? `Helius HTTP ${status}` };
+  }
+  if ((data as { error?: unknown })?.error && typeof (data as { error: string }).error === "string") {
+    return { items: [], status, error: (data as { error: string }).error };
+  }
+  return { items: Array.isArray(data) ? data : [], status };
 }
 
 /** Fetch recent on-chain activity (NEW_MINT, SWAP) from Helius and push to agent log (throttled). */
@@ -260,12 +276,16 @@ export async function runFeedRecentMints(): Promise<{ pushed: number; skipped?: 
 
   let pushed = 0;
   try {
-    const [mintTxs, mintAnyTxs, pumpTxs, swapTxs] = await Promise.all([
+    const [mintRes, anyRes, pumpRes, swapRes] = await Promise.all([
       heliusFetch(apiKey, TOKEN_PROGRAM_ID, "TOKEN_MINT", 6),
       heliusFetch(apiKey, TOKEN_PROGRAM_ID, "", 4).catch(() => []),
       heliusFetch(apiKey, PUMP_FUN_PROGRAM_ID, "", 5).catch(() => []),
       heliusFetch(apiKey, RAYDIUM_AMM_ID, "SWAP", 5).catch(() => []),
     ]);
+    const mintTxs = Array.isArray((mintRes as { items?: unknown[] }).items) ? (mintRes as { items: unknown[] }).items : [];
+    const mintAnyTxs = Array.isArray((anyRes as { items?: unknown[] }).items) ? (anyRes as { items: unknown[] }).items : [];
+    const pumpTxs = Array.isArray((pumpRes as { items?: unknown[] }).items) ? (pumpRes as { items: unknown[] }).items : [];
+    const swapTxs = Array.isArray((swapRes as { items?: unknown[] }).items) ? (swapRes as { items: unknown[] }).items : [];
 
     const seenSig = new Set<string>();
     const pushTx = async (tx: unknown, prefix: string, defaultToken = "SOL") => {
@@ -296,6 +316,30 @@ export async function runFeedRecentMints(): Promise<{ pushed: number; skipped?: 
     for (const tx of swapTxs) await pushTx(tx, "[SWAP]", "SOL");
 
     await withRedisKey((r) => r.set(AGENT_FEED_LAST_KEY, String(now)));
+    if (pushed === 0) {
+      const statuses = [
+        `token_mint:${(mintRes as { status?: number }).status ?? "?"}`,
+        `token_any:${(anyRes as { status?: number }).status ?? "?"}`,
+        `pump_any:${(pumpRes as { status?: number }).status ?? "?"}`,
+        `raydium_swap:${(swapRes as { status?: number }).status ?? "?"}`,
+      ].join(", ");
+      const errors = [
+        (mintRes as { error?: string }).error,
+        (anyRes as { error?: string }).error,
+        (pumpRes as { error?: string }).error,
+        (swapRes as { error?: string }).error,
+      ]
+        .filter((e): e is string => typeof e === "string" && e.length > 0)
+        .slice(0, 2)
+        .join(" | ");
+      return {
+        pushed: 0,
+        error:
+          `No events returned by Helius. Statuses: ${statuses}` +
+          (errors ? `; errors: ${errors}` : "") +
+          `. If your Helius env is a UUID (Key ID), replace it with the actual API Key (copied via the key/copy button in Helius).`,
+      };
+    }
     return { pushed };
   } catch (e) {
     return { pushed: 0, error: e instanceof Error ? e.message : String(e) };
