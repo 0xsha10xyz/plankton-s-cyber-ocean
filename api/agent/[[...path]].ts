@@ -2,7 +2,7 @@
  * Vercel serverless: GET /api/agent/status and GET /api/agent/logs
  * Single function for both routes to stay under Hobby 12-function limit.
  */
-import { getAgentStatus, getAgentLogs } from "../agent-handler.js";
+import { getAgentStatus, getAgentLogs, runFeedRecentMints } from "../agent-handler.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -40,6 +40,7 @@ export default async function handler(
 
   const isStatus = /\/agent\/status$/.test(pathname) || pathname === "status" || pathname === "/status";
   const isLogs = /\/agent\/logs$/.test(pathname) || pathname === "logs" || pathname === "/logs";
+  const isFeed = /\/agent\/feed-recent$/.test(pathname) || pathname === "feed-recent" || pathname === "/feed-recent";
 
   if (isStatus) {
     try {
@@ -59,6 +60,15 @@ export default async function handler(
       return res.status(200).json(data);
     } catch {
       return res.status(200).json({ lines: [] });
+    }
+  }
+
+  if (isFeed) {
+    try {
+      const result = await runFeedRecentMints();
+      return res.status(200).json({ ok: true, pushed: result.pushed, skipped: result.skipped ?? false, error: result.error });
+    } catch {
+      return res.status(200).json({ ok: false, pushed: 0, skipped: false });
     }
   }
 
