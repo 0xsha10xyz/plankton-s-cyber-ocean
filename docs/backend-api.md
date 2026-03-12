@@ -50,7 +50,7 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 ```
 
 **Example:** `GET /api/research/screener`  
-**Response:** `{ "pairs": [ { "symbol": "$PATTIES/SOL", "change24h": 5.8, "volume": "1.2M" }, ... ] }`
+**Response:** `{ "pairs": [ { "symbol": "PAP/SOL", "change24h": 5.8, "volume": "1.2M" }, ... ] }`
 
 ---
 

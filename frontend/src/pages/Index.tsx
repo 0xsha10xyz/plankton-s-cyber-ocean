@@ -110,7 +110,7 @@ const Index = () => {
           </Section>
 
           {/* Tokenomics */}
-          <Section title="$PATTIES Tokenomics" id="tokenomics">
+          <Section title="Tokenomics" id="tokenomics">
             <TokenSection />
           </Section>
 

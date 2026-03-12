@@ -14,7 +14,7 @@ const NAV_CONFIG: { label: string; sectionId?: string; path?: string }[] = [
   { label: "Swap", path: "/swap" },
   { label: "Research", sectionId: "research" },
   { label: "Screener", sectionId: "screener" },
-  { label: "$PATTIES Governance", sectionId: "tokenomics" },
+  { label: "Governance", sectionId: "tokenomics" },
   { label: "Subscription", sectionId: "pricing" },
   { label: "Roadmap", sectionId: "roadmap" },
   { label: "Docs", sectionId: "docs" },

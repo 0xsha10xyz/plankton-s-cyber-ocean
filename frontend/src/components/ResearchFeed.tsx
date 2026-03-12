@@ -22,7 +22,7 @@ const feeds = [
     category: "Volume Spikes",
     icon: BarChart3,
     items: [
-      { text: "$PATTIES/SOL", change: "+580%", positive: true, time: "1m ago" },
+      { text: "PAP/SOL", change: "+580%", positive: true, time: "1m ago" },
       { text: "$CORAL/USDC", change: "-12%", positive: false, time: "15m ago" },
     ],
   },

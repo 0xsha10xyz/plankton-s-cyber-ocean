@@ -14,7 +14,7 @@ const TIERS = [
     id: "pro",
     name: "Pro",
     price: "$29/mo",
-    pattiesPrice: "23,200 $PATTIES",
+    pattiesPrice: "23,200 PAP",
     features: ["Advanced AI Research", "Real-time Alerts", "Full Screener Access", "Priority Support", "Chart Indicators"],
     popular: true,
   },
@@ -22,7 +22,7 @@ const TIERS = [
     id: "autonomous",
     name: "Autonomous",
     price: "$99/mo",
-    pattiesPrice: "79,200 $PATTIES",
+    pattiesPrice: "79,200 PAP",
     features: [
       "Full Web4 Auto-Pilot",
       "Autonomous Trading Agent",

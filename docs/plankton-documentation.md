@@ -56,7 +56,7 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 ### Main features
 
-**Navigation** — Fixed header with logo; links to Dashboard, **Swap**, Research, Screener, $PATTIES Governance, Subscription, Roadmap, Docs; Connect Wallet / connected state; Account (when connected); mobile menu. Dashboard and other section links scroll to content; Swap opens the dedicated swap page.
+**Navigation** — Fixed header with logo; links to Dashboard, **Swap**, Research, Screener, PAP Governance, Subscription, Roadmap, Docs; Connect Wallet / connected state; Account (when connected); mobile menu. Dashboard and other section links scroll to content; Swap opens the dedicated swap page.
 
 **Total Users** — The app displays a **Total Users** count (unique wallets that have connected). It appears in the hero as a prominent card, in a stats strip below the hero, in the footer, and on the Swap page. The count updates when you connect your wallet and refreshes periodically for all visitors.
 
@@ -64,15 +64,15 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 **Account (when connected)** — "Account" opens a sidebar (from the left) with: avatar (upload, stored per wallet); username (edit and save); **Assets** — SOL and all SPL token balances with full decimal precision (smallest amounts visible); connected wallet address; Disconnect. Profile data is stored per wallet in the browser.
 
-**Autonomous Agent Protocols** — In the Command Center: AITerminal (scrolling logs) and the AutoPilot card. The card shows "Autonomous Agent Protocols" and "Auto Pilot - Your Agent Partner." When not connected, it shows a message and "Connect Wallet." When connected, it shows a toggle, P/L (24h, Total), risk slider, and accordions: How to set it up, How it works, Benefits.
+**Autonomous Agent Protocol** — In the Command Center: AITerminal (scrolling logs) and the AutoPilot card. The card shows "Autonomous Agent Protocol" and "Auto Pilot - Your Agent Partner." When not connected, it shows a message and "Connect Wallet." When connected, it shows a toggle, P/L (24h, Total), risk slider, and SOON.
 
-**AI Agent Chat (when connected)** — A floating button (bot icon) at the bottom-right opens the AI Agent Chat panel (from the right). You can send messages and receive replies. Topics include portfolio, risk, market research, the autonomous agent, and $PATTIES. Only visible when the wallet is connected.
+**AI Agent Chat (when connected)** — A floating button (bot icon) at the bottom-right opens the AI Agent Chat panel (from the right). You can send messages and receive replies. Topics include portfolio, risk, market research, the autonomous agent, and PAP. Only visible when the wallet is connected.
 
 **Swap** — The **Swap** link in the header opens the Swap page. There you get a trading chart (time ranges 1H, 4H, 1D, 1W) for the selected pair and a manual swap form. Connect your wallet, choose From/To tokens (SOL, USDC, USDT), enter an amount, click **Get quote** (powered by Jupiter on Solana), then **Swap** to execute. Success links to the transaction on Solscan. This gives users a way to trade manually until the autonomous agent is fully live.
 
 **Real data for Swap:** Quote and execution use **Jupiter** (live). Chart OHLCV uses **Birdeye** when the backend has `BIRDEYE_API_KEY` set; otherwise the chart shows sample data. Wallet balances (SOL and token) come from the Solana RPC. For reliable swap execution in production, set `VITE_SOLANA_RPC_URL` to a dedicated RPC (e.g. Helius, QuickNode).
 
-**Other sections** — Dashboard (hero with Total Users card), stats strip (Total Users), Research & Screening (feeds and screener), $PATTIES Tokenomics (token info and burn dashboard), Subscription Tiers (Free, Pro, Autonomous), Roadmap (Phase 0–8), and this Docs section. Footer shows Total Users and social links (X/Twitter: Planktonomus).
+**Other sections** — Dashboard (hero with Total Users card), stats strip (Total Users), Research & Screening (feeds and screener), PAP Tokenomics (token info and burn dashboard), Subscription Tiers (Free, Pro, Autonomous), Roadmap (Phase 0–8), and this Docs section. Footer shows Total Users and social links (X/Twitter: Planktonomus).
 
 ### Theming
 
@@ -167,9 +167,9 @@ The protocol roadmap is shown on the app and summarized here:
 | 2 | Development | Protocol architecture design. | LIVE |
 | 3 | Pre Launch | MVP, Community building, Agent onboarding program. | SOON |
 | 4 | Security | Security audits. | SOON |
-| 5 | Token Launch | $PATTIES deployment. | SOON |
+| 5 | Token Launch | PAP deployment. | SOON |
 | 6 | Expansion | Marketing & partnerships. | SOON |
-| 7 | Governance | $PATTIES Utility. | SOON |
+| 7 | Governance | PAP Utility. | SOON |
 | 8 | Full Launch | The Autonomous Protocol. | SOON |
 
 ---

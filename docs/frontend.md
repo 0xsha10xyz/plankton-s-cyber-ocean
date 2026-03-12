@@ -18,7 +18,7 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 ### 1. Navigation
 
-- **Header** (fixed): Logo, nav links (Dashboard, **Swap**, Research, Screener, $PATTIES Governance, Subscription, Roadmap, Docs), Connect Wallet / connected state, Account (when connected), mobile menu.
+- **Header** (fixed): Logo, nav links (Dashboard, **Swap**, Research, Screener, PAP (Plankton Autonomous Protocol) Governance, Subscription, Roadmap, Docs), Connect Wallet / connected state, Account (when connected), mobile menu.
 - **Swap** opens the dedicated Swap page (`/swap`). Other nav links scroll to sections on the same page.
 - **Scroll spy** highlights the current section in the header (on the home page).
 
@@ -46,13 +46,13 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
   - **Disconnect** — Disconnects and closes the sidebar.
 - Profile is keyed by wallet address (`plankton_account_<address>` in `localStorage`).
 
-### 5. Autonomous Agent Protocols
+### 5. Autonomous Agent Protocol
 
 - **Command Center** section: **AITerminal** (scrolling logs) and **AutoPilot** (Autonomous Agent card).
 - **AutoPilot** card:
-  - Title: “Autonomous Agent Protocols”; subtitle: “Auto Pilot - Your Agent Partner”.
+  - Title: “Autonomous Agent Protocol”; subtitle: “Auto Pilot - Your Agent Partner”.
   - When **not** connected: message and “Connect Wallet” button.
-  - When **connected**: toggle, P/L (24h, Total), risk slider, and accordions: **How to set it up**, **How it works**, **Benefits**.
+  - When **connected**: toggle, P/L (24h, Total), risk slider, and SOON.
 
 ### 6. AI Agent Chat (when connected)
 
@@ -61,7 +61,7 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
   - Welcome message from the agent.
   - User and agent messages (user right, agent left).
   - Text input + Send; Enter to send, Shift+Enter for new line.
-  - Mock AI replies based on keywords (portfolio, risk, market, agent, PATTIES, help, etc.).
+  - Mock AI replies based on keywords (portfolio, risk, market, agent, PAP, help, etc.).
 - Only visible when the wallet is connected.
 
 ### 7. Swap
@@ -73,7 +73,7 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 ### 8. Other sections
 
-- **Dashboard** — Hero, Total Users card, stats strip, Research & Screening (feeds, screener), $PATTIES Tokenomics, Subscription Tiers, **Roadmap** (Phase 0–8: Narrative, Foundation, Development LIVE; Pre Launch, Security, Token Launch, Expansion, Governance, Full Launch SOON), Docs.
+- **Dashboard** — Hero, Total Users card, stats strip, Research & Screening (feeds, screener), PAP (Plankton Autonomous Protocol) Tokenomics, Subscription Tiers, **Roadmap** (Phase 0–8: Narrative, Foundation, Development LIVE; Pre Launch, Security, Token Launch, Expansion, Governance, Full Launch SOON), Docs.
 - **Footer** — Total Users, social links (X: Planktonomus), copyright.
 
 ## Key files

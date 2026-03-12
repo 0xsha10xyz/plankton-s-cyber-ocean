@@ -1,14 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Power, TrendingUp, TrendingDown, Gauge, Wallet, Settings, Zap, Gift } from "lucide-react";
+import { Power, TrendingUp, TrendingDown, Gauge, Wallet } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@/contexts/WalletModalContext";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 
 type AgentStatus = { active: boolean; riskLevel: number; profit24h: number; totalPnL: number };
 
@@ -49,7 +43,7 @@ const AutoPilot = () => {
     <div className="glass-card rounded-xl p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-bold text-foreground">Autonomous Agent Protocols</h3>
+          <h3 className="text-lg font-bold text-foreground">Autonomous Agent Protocol</h3>
           <p className="text-xs text-muted-foreground mt-1">Auto Pilot - Your Agent Partner</p>
         </div>
         {connected && (
@@ -156,42 +150,10 @@ const AutoPilot = () => {
             </motion.div>
           )}
 
-          {/* Setup, How it works, Benefits — only when connected */}
-          <Accordion type="multiple" className="w-full mt-5 border-t border-border/30 pt-5">
-            <AccordionItem value="setup" className="border-border/30">
-              <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline hover:text-primary">
-                <span className="flex items-center gap-2">
-                  <Settings size={16} className="text-muted-foreground" />
-                  How to set it up
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground text-sm">
-                Connect a Solana wallet (Phantom, Solflare, etc.), fund it with SOL and $PATTIES, then enable the agent with the toggle above. Choose your risk level and the protocol will manage positions and rebalancing automatically.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="how-it-works" className="border-border/30">
-              <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline hover:text-primary">
-                <span className="flex items-center gap-2">
-                  <Zap size={16} className="text-muted-foreground" />
-                  How it works
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground text-sm">
-                The autonomous agent monitors on-chain data, whale activity, and liquidity across DEXs. It executes trades and rebalances within the risk parameters you set. All logic runs on-chain; you stay in control of your wallet and can pause or adjust settings anytime.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="benefits" className="border-border/30 border-b-0">
-              <AccordionTrigger className="text-sm font-semibold text-foreground hover:no-underline hover:text-primary">
-                <span className="flex items-center gap-2">
-                  <Gift size={16} className="text-muted-foreground" />
-                  Benefits
-                </span>
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground text-sm">
-                24/7 automated trading, transparent on-chain execution, configurable risk levels, and a share of protocol fees for $PATTIES holders. Subscription tiers unlock higher allocation and advanced strategies.
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+          {/* SOON — only when connected */}
+          <div className="w-full mt-5 border-t border-border/30 pt-5">
+            <p className="text-sm font-semibold text-primary">SOON</p>
+          </div>
         </>
       )}
     </div>

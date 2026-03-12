@@ -12,7 +12,7 @@ const MOCK_FEEDS = {
     { text: "$DEEPSEA — SPL Token", change: "NEW", positive: true, time: "34m ago" },
   ],
   volumeSpikes: [
-    { text: "$PATTIES/SOL", change: "+580%", positive: true, time: "1m ago" },
+    { text: "PAP/SOL", change: "+580%", positive: true, time: "1m ago" },
     { text: "$CORAL/USDC", change: "-12%", positive: false, time: "15m ago" },
   ],
 };
@@ -27,7 +27,7 @@ const MOCK_PAIRS: Array<{
   marketCap: string;
   marketCapNum: number;
 }> = [
-  { symbol: "$PATTIES/SOL", price: 0.0042, change24h: 5.8, volume: "1.2M", volumeNum: 1_200_000, marketCap: "420K", marketCapNum: 420_000 },
+  { symbol: "PAP/SOL", price: 0.0042, change24h: 5.8, volume: "1.2M", volumeNum: 1_200_000, marketCap: "420K", marketCapNum: 420_000 },
   { symbol: "$CORAL/USDC", price: 0.12, change24h: -0.12, volume: "890K", volumeNum: 890_000, marketCap: "1.2M", marketCapNum: 1_200_000 },
   { symbol: "$KRILL/SOL", price: 0.0018, change24h: 12.4, volume: "2.1M", volumeNum: 2_100_000, marketCap: "180K", marketCapNum: 180_000 },
   { symbol: "$DEEPSEA/USDC", price: 0.08, change24h: -3.2, volume: "450K", volumeNum: 450_000, marketCap: "800K", marketCapNum: 800_000 },
@@ -58,7 +58,7 @@ researchRouter.get("/lookup", (req, res) => {
     return res.json({
       found: false,
       symbol: symbol,
-      message: "No data for this symbol. Try $PATTIES, CORAL, KRILL, DEEPSEA, PLANK, FISH, REEF, WAVE.",
+      message: "No data for this symbol. Try PAP, CORAL, KRILL, DEEPSEA, PLANK, FISH, REEF, WAVE.",
     });
   }
   res.json({

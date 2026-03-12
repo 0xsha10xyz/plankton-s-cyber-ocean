@@ -159,7 +159,7 @@ Your current `research` and `screener` routes use mocks. These APIs replace them
 
 ### 5.2 Subscription / Tier
 
-- **Your backend:** `GET /api/subscription/me?wallet=` already; can be extended with Stripe/Paddle or $PATTIES-hold check.
+- **Your backend:** `GET /api/subscription/me?wallet=` already; can be extended with Stripe/Paddle or PAP-hold check.
 - **Stripe** (or similar): If you add card subscriptions; webhook to update “tier” per wallet in your DB.
 
 ### 5.3 Notifications (Optional)

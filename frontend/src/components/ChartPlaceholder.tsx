@@ -10,7 +10,7 @@ const ChartPlaceholder = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <BarChart3 size={16} className="text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">$PATTIES/SOL</h3>
+          <h3 className="text-sm font-semibold text-foreground">PAP/SOL</h3>
         </div>
         <div className="flex gap-2">
           {["1H", "4H", "1D", "1W"].map((t) => (

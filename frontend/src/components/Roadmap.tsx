@@ -40,7 +40,7 @@ const phases = [
   {
     phase: "Phase 5",
     title: "Token Launch",
-    description: "$PATTIES deployment.",
+    description: "PAP (Plankton Autonomous Protocol) deployment.",
     icon: Coins,
     status: "SOON",
   },
@@ -54,7 +54,7 @@ const phases = [
   {
     phase: "Phase 7",
     title: "Governance",
-    description: "$PATTIES Utility.",
+    description: "PAP (Plankton Autonomous Protocol) Utility.",
     icon: Vote,
     status: "SOON",
   },

@@ -27,7 +27,7 @@ function getAgentReply(userMessage: string): string {
     return "Your portfolio view is available in the Command Center. I can summarize: connect your wallet and enable the Autonomous Agent to see SOL balance and PnL. Want me to walk you through the Agent setup?";
   }
   if (lower.includes("risk") || lower.includes("conservative") || lower.includes("aggressive")) {
-    return "Risk levels are Conservative, Mid, and Aggressive. You can adjust the slider in the Autonomous Agent Protocols panel. Mid is the default—good balance of opportunity and safety.";
+    return "Risk levels are Conservative, Mid, and Aggressive. You can adjust the slider in the Autonomous Agent Protocol panel. Mid is the default—good balance of opportunity and safety.";
   }
   if (lower.includes("market") || lower.includes("research") || lower.includes("whale") || lower.includes("token")) {
     return "Research & Screening shows whale movements, new token launches, and volume spikes. The AI terminal logs real-time scanning. Check the Research section on the dashboard for the latest.";
@@ -35,14 +35,14 @@ function getAgentReply(userMessage: string): string {
   if (lower.includes("agent") || lower.includes("autonomous") || lower.includes("auto-pilot")) {
     return "The Autonomous Agent runs 24/7 once you enable it: go to Command Center, turn the toggle on, and set your risk level. I'll execute and rebalance within your parameters. Any other questions?";
   }
-  if (lower.includes("patties") || lower.includes("tokenomics") || lower.includes("burn")) {
-    return "90% of subscription fees paid in $PATTIES are burned. Check the $PATTIES Tokenomics and Burn Dashboard sections for supply and stats.";
+  if (lower.includes("patties") || lower.includes("pap") || lower.includes("tokenomics") || lower.includes("burn")) {
+    return "50% of subscription fees paid in PAP (Plankton Autonomous Protocol) are burned and the remaining 50% adds liquidity. Check the Tokenomics and Burn Dashboard sections for supply and stats.";
   }
   if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) {
     return "Hello! How can I help you with Plankton today?";
   }
   if (lower.includes("help") || lower.includes("what can you")) {
-    return "I can explain portfolio, risk settings, market research, the autonomous agent, and $PATTIES tokenomics. Just ask in plain language.";
+    return "I can explain portfolio, risk settings, market research, the autonomous agent, and PAP (Plankton Autonomous Protocol) tokenomics. Just ask in plain language.";
   }
   return "I'm focused on Plankton trading, research, and agent controls. Try asking about your portfolio, risk level, market research, or how to enable the autonomous agent.";
 }

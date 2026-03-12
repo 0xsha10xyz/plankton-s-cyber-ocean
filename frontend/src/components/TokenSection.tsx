@@ -11,31 +11,31 @@ const TokenSection = () => {
         viewport={{ once: true }}
         className="glass-card rounded-xl p-6"
       >
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
           <Coins size={18} className="text-primary" />
-          <h3 className="text-lg font-bold text-foreground">$PATTIES</h3>
+          <h3 className="text-lg font-bold text-foreground">PAP</h3>
           <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-mono">
-            Crabby Patty
+            Plankton Autonomous Protocol
           </span>
         </div>
 
         <div className="space-y-4">
           <div className="flex justify-between items-center py-2 border-b border-border/30">
             <span className="text-sm text-muted-foreground">Total Supply</span>
-            <span className="font-mono font-bold text-foreground">1,000,000,000</span>
+            <span className="font-mono font-bold text-foreground">TBA</span>
           </div>
           <div className="flex justify-between items-center py-2 border-b border-border/30">
             <span className="text-sm text-muted-foreground">Network</span>
-            <span className="font-mono text-sm text-primary">Solana (SPL)</span>
+            <span className="font-mono text-sm text-primary">SOLANA</span>
           </div>
           <div className="flex justify-between items-center py-2 border-b border-border/30">
             <span className="text-sm text-muted-foreground">Contract</span>
-            <span className="font-mono text-xs text-muted-foreground">Coming Soon</span>
+            <span className="font-mono text-xs text-muted-foreground">TBA</span>
           </div>
           <div className="flex justify-between items-center py-2">
             <span className="text-sm text-muted-foreground">Status</span>
-            <span className="text-xs px-3 py-1 rounded-full bg-accent/10 text-accent border border-accent/20 font-semibold animate-pulse-glow">
-              SOON
+            <span className="text-xs px-3 py-1 rounded-full bg-accent/10 text-accent border border-accent/20 font-semibold">
+              TBA
             </span>
           </div>
         </div>
@@ -54,7 +54,7 @@ const TokenSection = () => {
         </div>
 
         <p className="text-sm text-muted-foreground mb-6">
-          90% of all subscription fees paid in $PATTIES are permanently burned, reducing supply forever.
+          50% of all subscription fees paid in PAP are permanently burned and the remaining 50% to add liquidity
         </p>
 
         {/* Fire animation - dramatic burn */}
@@ -112,7 +112,7 @@ const TokenSection = () => {
               animate={{ textShadow: ["0 0 12px hsl(var(--destructive)/0.6)", "0 0 24px hsl(var(--destructive))", "0 0 12px hsl(var(--destructive)/0.6)"] }}
               transition={{ duration: 1.2, repeat: Infinity }}
             >
-              90%
+              50%
             </motion.span>
             <p className="text-xs text-muted-foreground mt-1">Tokens Burned</p>
           </div>

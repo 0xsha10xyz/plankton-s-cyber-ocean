@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const sidebarSections = [
   { id: "overview", label: "Overview", icon: Book },
   { id: "protocol", label: "The Protocol", icon: Zap },
-  { id: "tokenomics", label: "$PATTIES Tokenomics", icon: Coins },
+  { id: "tokenomics", label: "Tokenomics", icon: Coins },
   { id: "autonomous", label: "Autonomous Agent", icon: Rocket },
   { id: "security", label: "Security", icon: Shield },
 ];
@@ -126,7 +126,7 @@ const Docs = () => {
               </h1>
               <p className="text-muted-foreground leading-relaxed max-w-2xl">
                 Welcome to the official documentation for Plankton — The Autonomous Protocol, built entirely on Solana. 
-                This guide covers everything from protocol architecture to $PATTIES tokenomics.
+                This guide covers everything from protocol architecture to PAP tokenomics.
               </p>
             </motion.div>
           </section>
@@ -151,7 +151,7 @@ const Docs = () => {
                   <li className="flex items-start gap-2"><Zap size={14} className="text-primary mt-1 flex-shrink-0" /> AI agents scan Solana mainnet blocks in real-time</li>
                   <li className="flex items-start gap-2"><Zap size={14} className="text-primary mt-1 flex-shrink-0" /> Whale movement detection across SPL token markets</li>
                   <li className="flex items-start gap-2"><Zap size={14} className="text-primary mt-1 flex-shrink-0" /> Autonomous execution engine for profitable trades</li>
-                  <li className="flex items-start gap-2"><Zap size={14} className="text-primary mt-1 flex-shrink-0" /> On-chain governance via $PATTIES token holders</li>
+                  <li className="flex items-start gap-2"><Zap size={14} className="text-primary mt-1 flex-shrink-0" /> On-chain governance via PAP token holders</li>
                 </ul>
               </HoloCard>
             </div>
@@ -160,17 +160,17 @@ const Docs = () => {
           {/* Tokenomics */}
           <section id="tokenomics" className="mb-16">
             <h2 className="text-2xl font-bold mb-6 section-title" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              $PATTIES Tokenomics
+              Tokenomics
             </h2>
 
             {/* Holographic tokenomics card */}
             <HoloCard className="p-0">
               <div className="p-6 pb-4">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <Coins size={20} className="text-primary" />
-                  <h3 className="text-lg font-bold text-foreground">$PATTIES</h3>
+                  <h3 className="text-lg font-bold text-foreground">PAP</h3>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-mono">
-                    Crabby Patty
+                    Plankton Autonomous Protocol
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground/70">SPL Token on Solana</p>
@@ -187,15 +187,15 @@ const Docs = () => {
                   <tbody>
                     <tr className="border-b border-border/20">
                       <td className="py-3 text-muted-foreground">Total Supply</td>
-                      <td className="py-3 text-right font-mono font-bold text-foreground">1,000,000,000</td>
+                      <td className="py-3 text-right font-mono font-bold text-foreground">TBA</td>
                     </tr>
                     <tr className="border-b border-border/20">
                       <td className="py-3 text-muted-foreground">Network</td>
-                      <td className="py-3 text-right font-mono text-primary">Solana (SPL)</td>
+                      <td className="py-3 text-right font-mono text-primary">SOLANA</td>
                     </tr>
                     <tr className="border-b border-border/20">
                       <td className="py-3 text-muted-foreground">Contract</td>
-                      <td className="py-3 text-right font-mono text-muted-foreground/60 text-xs">Coming Soon</td>
+                      <td className="py-3 text-right font-mono text-muted-foreground/60 text-xs">TBA</td>
                     </tr>
                     <tr className="border-b border-border/20">
                       <td className="py-3 text-muted-foreground flex items-center gap-1.5">
@@ -209,8 +209,8 @@ const Docs = () => {
                     <tr>
                       <td className="py-3 text-muted-foreground">Status</td>
                       <td className="py-3 text-right">
-                        <span className="text-xs px-3 py-1 rounded-full bg-accent/10 text-accent border border-accent/20 font-semibold animate-pulse-glow">
-                          SOON
+                        <span className="text-xs px-3 py-1 rounded-full bg-accent/10 text-accent border border-accent/20 font-semibold">
+                          TBA
                         </span>
                       </td>
                     </tr>
@@ -226,8 +226,7 @@ const Docs = () => {
                   <FireIcon />
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  90% of all subscription fees paid in $PATTIES are permanently burned, 
-                  creating a deflationary supply curve. The remaining 10% funds protocol development and governance rewards.
+                  50% of all subscription fees paid in PAP are permanently burned, and the remaining 50% is used to add liquidity.
                 </p>
               </div>
             </HoloCard>
