@@ -17,7 +17,7 @@ const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "agent",
   content:
-    "Hi! I'm your Plankton AI Agent. I can help with portfolio summary, risk levels, market research, and agent controls. What would you like to know?",
+    "Hi, im Plankton. How may i assist you?",
   timestamp: new Date(),
 };
 
