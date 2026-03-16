@@ -67,14 +67,7 @@ const Header = () => {
   }, [pathname]);
 
   // Lock body scroll when mobile menu is open
-  useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = "";
-      };
-    }
-  }, [mobileOpen]);
+  // We avoid locking body scroll on mobile to keep touch interactions simple and reliable.
 
   // Close mobile menu on Escape
   useEffect(() => {
@@ -290,7 +283,7 @@ const Header = () => {
               className="lg:hidden overflow-hidden border-t border-border/30"
               aria-label="Main navigation"
             >
-              <div className="px-4 py-3 max-h-[min(70vh,400px)] overflow-y-auto flex flex-col gap-0.5">
+              <div className="px-4 py-3 flex flex-col gap-0.5">
                 {NAV_CONFIG.map((item) => {
                   const sectionId = "sectionId" in item ? item.sectionId : undefined;
                   const path = "path" in item ? item.path : undefined;
