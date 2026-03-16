@@ -168,8 +168,13 @@ marketRouter.get("/ohlcv-pair", async (req: Request, res: Response) => {
         const json = await resp.json();
         const items = json?.data?.items;
         if (Array.isArray(items) && items.length > 0) {
-          const data = items.map((c: { unixTime: number; c: number }) => ({
-            time: formatTime(c.unixTime),
+          const data = items.map((c: { unixTime: number; o?: number; h?: number; l?: number; c: number; v?: number; vBase?: number }) => ({
+            time: c.unixTime,
+            open: Number(c.o ?? c.c),
+            high: Number(c.h ?? c.c),
+            low: Number(c.l ?? c.c),
+            close: Number(c.c),
+            volume: Number(c.v ?? (c as { vBase?: number }).vBase ?? 0),
             price: Number(c.c),
           }));
           res.json({ data });
@@ -219,9 +224,17 @@ marketRouter.get("/ohlcv-pair", async (req: Request, res: Response) => {
             }
             if (solUsd == null || solUsd <= 0 || !Number.isFinite(solUsd)) return null;
             const priceInSol = tokenUsd / solUsd;
-            return { time: formatTime(c.unixTime), price: priceInSol };
+            return {
+            time: c.unixTime,
+            open: priceInSol,
+            high: priceInSol,
+            low: priceInSol,
+            close: priceInSol,
+            volume: 0,
+            price: priceInSol,
+          };
           })
-          .filter((x): x is { time: string; price: number } => x != null && Number.isFinite(x.price) && x.price >= 0);
+          .filter((x): x is { time: number; open: number; high: number; low: number; close: number; volume: number; price: number } => x != null && Number.isFinite(x.close) && x.close >= 0);
 
         if (data.length > 0) {
           res.json({ data });
@@ -358,14 +371,15 @@ marketRouter.get("/ohlcv", async (req: Request, res: Response) => {
       return;
     }
 
-    const data = items.map((c: { unixTime: number; c: number }) => {
-      const date = new Date(c.unixTime * 1000);
-      const timeLabel =
-        rangeParam === "1W" || rangeParam === "1D"
-          ? date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
-          : date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-      return { time: timeLabel, price: Number(c.c) };
-    });
+    const data = items.map((c: { unixTime: number; o?: number; h?: number; l?: number; c: number; v?: number }) => ({
+      time: c.unixTime,
+      open: Number(c.o ?? c.c),
+      high: Number(c.h ?? c.c),
+      low: Number(c.l ?? c.c),
+      close: Number(c.c),
+      volume: Number(c.v ?? 0),
+      price: Number(c.c),
+    }));
 
     res.json({ data });
   } catch (e) {
