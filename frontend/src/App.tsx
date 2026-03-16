@@ -11,7 +11,6 @@ import { AccountProvider } from "@/contexts/AccountContext";
 import { WalletBalancesProvider } from "@/contexts/WalletBalancesContext";
 import { TokenSymbolProvider } from "@/contexts/TokenSymbolContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
-import { WalletReconnectHandler } from "@/components/WalletReconnectHandler";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Swap from "./pages/Swap";
@@ -24,7 +23,6 @@ const App = () => (
       <SolanaWalletProviders>
         <StatsProvider>
           <WalletModalProvider>
-            <WalletReconnectHandler />
             <AccountProvider>
             <WalletBalancesProvider>
             <TokenSymbolProvider>
