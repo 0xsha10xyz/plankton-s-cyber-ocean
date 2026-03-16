@@ -7,7 +7,6 @@ import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { TradingChart } from "@/components/TradingChart";
-import { TokenDetails } from "@/components/TokenDetails";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWalletModal } from "@/contexts/WalletModalContext";
@@ -58,7 +57,7 @@ export default function Swap() {
   const [resolveLoading, setResolveLoading] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
   const [walletTokenOptions, setWalletTokenOptions] = useState<TokenOption[]>([]);
-  const { ensureTokenInfo, getSymbol } = useTokenSymbol();
+  const { ensureTokenInfo, getSymbol, setTokenInfo } = useTokenSymbol();
 
   const {
     solLamports,
@@ -309,13 +308,15 @@ export default function Swap() {
       }
       const token: TokenOption = { symbol, mint: raw, decimals };
       await ensureTokenInfo(raw);
-      // When the user has a balance in this token, save it immediately so it appears in the token list.
       const balance = tokenBalancesByMint[raw] ?? 0;
-      if (balance > 0 && savedTokensStorageKey) {
+      if (balance > 0) {
         const symbolToSave = symbolFromApi && !symbolFromApi.includes("…") ? symbolFromApi : symbol;
-        setCustomTokens((prev) => (prev.some((t) => t.mint === raw) ? prev : [...prev, { ...token, symbol: symbolToSave }]));
-        const next = [...loadSavedTokens().filter((t) => t.mint !== raw), { ...token, symbol: symbolToSave }];
-        persistSavedTokens(next);
+        setTokenInfo(raw, symbolToSave, decimals);
+        if (savedTokensStorageKey) {
+          setCustomTokens((prev) => (prev.some((t) => t.mint === raw) ? prev : [...prev, { ...token, symbol: symbolToSave }]));
+          const next = [...loadSavedTokens().filter((t) => t.mint !== raw), { ...token, symbol: symbolToSave }];
+          persistSavedTokens(next);
+        }
       }
       return token;
     } catch {
@@ -324,7 +325,7 @@ export default function Swap() {
     } finally {
       setResolveLoading(false);
     }
-  }, [tokenOptions, ensureTokenInfo, getSymbol, tokenBalancesByMint, savedTokensStorageKey, loadSavedTokens, persistSavedTokens]);
+  }, [tokenOptions, ensureTokenInfo, getSymbol, setTokenInfo, tokenBalancesByMint, savedTokensStorageKey, loadSavedTokens, persistSavedTokens]);
 
   if (!connected) {
     return (
@@ -353,6 +354,7 @@ export default function Swap() {
       <ParticleBackground />
       <Header />
       <main className="relative z-10 pt-24 container mx-auto px-4 py-8">
+        <div>
         <motion.h1
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -364,25 +366,18 @@ export default function Swap() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Chart + Token details */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2">
             <div className="glass-card rounded-xl p-6">
               <TradingChart
                 pairLabel={pairLabel}
                 inputMint={chartBaseMint}
                 quoteMint={chartQuoteMint}
                 latestPriceFromQuote={latestPriceFromQuote}
+                getSymbol={getSymbol}
               />
             </div>
-            {chartBaseMint && chartBaseMint !== COMMON_MINTS.SOL && (
-              <TokenDetails
-                mint={chartBaseMint}
-                tokenSymbol={chartBaseMint === inputToken.mint ? inputToken.symbol : chartBaseMint === outputToken.mint ? outputToken.symbol : undefined}
-              />
-            )}
           </div>
 
-          {/* Swap form */}
           <div className="glass-card rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4">
               <ArrowDownLeft size={18} className="text-primary" />
@@ -519,8 +514,10 @@ export default function Swap() {
             </div>
           </div>
         </div>
+        </div>
       </main>
       <Footer />
     </div>
   );
 }
+

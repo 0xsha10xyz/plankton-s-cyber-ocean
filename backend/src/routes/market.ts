@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
+import { PublicKey } from "@solana/web3.js";
 
 const BIRDEYE_API = "https://public-api.birdeye.so";
+const MPL_TOKEN_METADATA_PROGRAM_ID_B58 = "metaqbxxuerdq2enqj7ggx8d3ndkbpmwc9j8k4nfp6r2p1";
 
 type Range = "1H" | "4H" | "1D" | "1W";
 
@@ -19,6 +21,9 @@ function rangeToSeconds(range: Range): number {
 }
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
+const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+const USDT_MINT = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB";
+const STABLE_MINTS = new Set([USDC_MINT, USDT_MINT]);
 const COINGECKO_SOL_ID = "solana";
 const JUPITER_QUOTE_BASES = [
   "https://api.jup.ag/swap/v1",
@@ -72,6 +77,58 @@ async function getDecimalsRpc(mint: string): Promise<number | null> {
     // ignore
   }
   return null;
+}
+
+/**
+ * Fetch token name and symbol from Metaplex metadata account on-chain (no API key).
+ * Metadata layout (v1): key(1) + update_authority(32) + mint(32) + name_len(4) + name + symbol_len(4) + symbol + ...
+ */
+async function getMetaplexMetadata(mint: string): Promise<{ name: string; symbol: string } | null> {
+  if (!mint || typeof mint !== "string" || mint.length < 32 || mint.length > 44) return null;
+  try {
+    const mintPk = new PublicKey(mint);
+    const programId = new PublicKey(MPL_TOKEN_METADATA_PROGRAM_ID_B58);
+    const [metadataPda] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("metadata"),
+        programId.toBuffer(),
+        mintPk.toBuffer(),
+      ],
+      programId
+    );
+    const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+    const res = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getAccountInfo",
+        params: [metadataPda.toBase58(), { encoding: "base64" }],
+      }),
+    });
+    const json = await res.json();
+    const b64 = json?.result?.value?.data?.[0];
+    if (!b64 || typeof b64 !== "string") return null;
+    const buf = Buffer.from(b64, "base64");
+    const minLen = 1 + 32 + 32 + 4 + 1 + 4 + 1; // key + update_authority + mint + name_len + name(min 1) + symbol_len + symbol(min 1)
+    if (buf.length < minLen) return null;
+    let off = 1 + 32 + 32; // after key, update_authority, mint
+    const nameLen = buf.readUInt32LE(off);
+    off += 4;
+    if (nameLen > 256 || off + nameLen > buf.length) return null;
+    const name = buf.subarray(off, off + nameLen).toString("utf8").trim();
+    off += nameLen;
+    if (off + 4 > buf.length) return null;
+    const symbolLen = buf.readUInt32LE(off);
+    off += 4;
+    if (symbolLen > 32 || off + symbolLen > buf.length) return null;
+    const symbol = buf.subarray(off, off + symbolLen).toString("utf8").trim();
+    if (!name && !symbol) return null;
+    return { name: name || symbol, symbol: symbol || name || "?" };
+  } catch {
+    return null;
+  }
 }
 
 export const marketRouter = Router();
@@ -244,6 +301,35 @@ marketRouter.get("/ohlcv-pair", async (req: Request, res: Response) => {
         console.warn("OHLCV-pair synthesize fallback error:", e);
       }
     }
+
+    // Fallback for token/USDC or token/USDT: use base token USD OHLCV (price is already in USD)
+    if (STABLE_MINTS.has(quote)) {
+      try {
+        const tokenOhlcvUrl = `${BIRDEYE_API}/defi/ohlcv?address=${encodeURIComponent(base)}&type=${rangeToType(rangeParam)}&time_from=${timeFrom}&time_to=${timeTo}&currency=usd`;
+        const tokenResp = await fetch(tokenOhlcvUrl, {
+          headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
+        });
+        if (tokenResp.ok) {
+          const tokenJson = await tokenResp.json();
+          const tokenItems = tokenJson?.data?.items;
+          if (Array.isArray(tokenItems) && tokenItems.length > 0) {
+            const data = tokenItems.map((c: { unixTime: number; o?: number; h?: number; l?: number; c: number; v?: number }) => ({
+              time: c.unixTime,
+              open: Number(c.o ?? c.c),
+              high: Number(c.h ?? c.c),
+              low: Number(c.l ?? c.c),
+              close: Number(c.c),
+              volume: Number(c.v ?? 0),
+              price: Number(c.c),
+            }));
+            res.json({ data });
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn("OHLCV-pair token/USDC fallback error:", e);
+      }
+    }
   }
 
   res.json({ data: [] });
@@ -325,8 +411,8 @@ marketRouter.get("/price-pair", async (req: Request, res: Response) => {
 
 /**
  * GET /api/market/ohlcv?mint=...&range=1H|4H|1D|1W
- * Proxies Birdeye OHLCV for chart. Returns { data: { time, price }[] }.
- * If BIRDEYE_API_KEY is missing or request fails, returns { data: [] } so frontend can fallback.
+ * Returns full OHLCV for chart (candlestick). Uses Birdeye when BIRDEYE_API_KEY is set.
+ * For SOL mint only, falls back to CoinGecko server-side when Birdeye is missing or returns empty (avoids CORS in browser).
  */
 marketRouter.get("/ohlcv", async (req: Request, res: Response) => {
   const mint = typeof req.query.mint === "string" ? req.query.mint.trim() : "";
@@ -340,58 +426,73 @@ marketRouter.get("/ohlcv", async (req: Request, res: Response) => {
   }
 
   const apiKey = process.env.BIRDEYE_API_KEY;
-  if (!apiKey) {
-    res.json({ data: [] });
-    return;
+
+  if (apiKey) {
+    try {
+      const timeTo = Math.floor(Date.now() / 1000);
+      const timeFrom = timeTo - rangeToSeconds(rangeParam);
+      const url = `${BIRDEYE_API}/defi/ohlcv?address=${encodeURIComponent(mint)}&type=${rangeToType(rangeParam)}&time_from=${timeFrom}&time_to=${timeTo}&currency=usd`;
+
+      const resp = await fetch(url, {
+        headers: {
+          "X-API-KEY": apiKey,
+          "x-chain": "solana",
+        },
+      });
+
+      if (resp.ok) {
+        const json = await resp.json();
+        const items = json?.data?.items;
+        if (Array.isArray(items) && items.length > 0) {
+          const data = items.map((c: { unixTime: number; o?: number; h?: number; l?: number; c: number; v?: number }) => ({
+            time: c.unixTime,
+            open: Number(c.o ?? c.c),
+            high: Number(c.h ?? c.c),
+            low: Number(c.l ?? c.c),
+            close: Number(c.c),
+            volume: Number(c.v ?? 0),
+            price: Number(c.c),
+          }));
+          res.json({ data });
+          return;
+        }
+      } else {
+        console.warn("Birdeye OHLCV error:", resp.status);
+      }
+    } catch (e) {
+      console.warn("Birdeye OHLCV exception:", e);
+    }
   }
 
-  try {
-    const timeTo = Math.floor(Date.now() / 1000);
-    const timeFrom = timeTo - rangeToSeconds(rangeParam);
-    const url = `${BIRDEYE_API}/defi/ohlcv?address=${encodeURIComponent(mint)}&type=${rangeToType(rangeParam)}&time_from=${timeFrom}&time_to=${timeTo}&currency=usd`;
-
-    const resp = await fetch(url, {
-      headers: {
-        "X-API-KEY": apiKey,
-        "x-chain": "solana",
-      },
-    });
-
-    if (!resp.ok) {
-      const errBody = await resp.text();
-      console.warn("Birdeye OHLCV error:", resp.status, errBody.slice(0, 200));
-      res.json({ data: [] });
-      return;
+  // SOL only: fallback to CoinGecko server-side so frontend never hits CORS
+  if (mint === SOL_MINT) {
+    try {
+      const solSeries = await fetchSolUsdOhlcv(rangeParam);
+      if (solSeries.length >= 2) {
+        const data = solSeries.map((s) => ({
+          time: s.unixTime,
+          open: s.price,
+          high: s.price,
+          low: s.price,
+          close: s.price,
+          volume: 0,
+          price: s.price,
+        }));
+        res.json({ data });
+        return;
+      }
+    } catch (e) {
+      console.warn("CoinGecko SOL OHLCV fallback error:", e);
     }
-
-    const json = await resp.json();
-    const items = json?.data?.items;
-    if (!Array.isArray(items) || items.length === 0) {
-      res.json({ data: [] });
-      return;
-    }
-
-    const data = items.map((c: { unixTime: number; o?: number; h?: number; l?: number; c: number; v?: number }) => ({
-      time: c.unixTime,
-      open: Number(c.o ?? c.c),
-      high: Number(c.h ?? c.c),
-      low: Number(c.l ?? c.c),
-      close: Number(c.c),
-      volume: Number(c.v ?? 0),
-      price: Number(c.c),
-    }));
-
-    res.json({ data });
-  } catch (e) {
-    console.warn("Birdeye OHLCV exception:", e);
-    res.json({ data: [] });
   }
+
+  res.json({ data: [] });
 });
 
 /**
  * GET /api/market/token-details?mint=...
  * Returns extended token info for display below chart: symbol, decimals, marketCap, liquidity, totalSupply, holders.
- * Uses Birdeye token_overview when BIRDEYE_API_KEY is set.
+ * Uses Birdeye token_overview when BIRDEYE_API_KEY is set. For SOL mint, returns minimal data when Birdeye unavailable.
  */
 marketRouter.get("/token-details", async (req: Request, res: Response) => {
   const mint = typeof req.query.mint === "string" ? req.query.mint.trim() : "";
@@ -401,44 +502,50 @@ marketRouter.get("/token-details", async (req: Request, res: Response) => {
   }
 
   const apiKey = process.env.BIRDEYE_API_KEY;
-  if (!apiKey) {
-    res.status(404).json({ error: "Token details require BIRDEYE_API_KEY" });
-    return;
+  if (apiKey) {
+    try {
+      const url = `${BIRDEYE_API}/defi/token_overview?address=${encodeURIComponent(mint)}`;
+      const resp = await fetch(url, {
+        headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
+      });
+      if (resp.ok) {
+        const json = await resp.json();
+        const data = json?.data as Record<string, unknown> | undefined;
+        if (data) {
+          const symbol = typeof data.symbol === "string" ? data.symbol : mint.slice(0, 4) + "…" + mint.slice(-4);
+          const decimals = typeof data.decimals === "number" ? data.decimals : null;
+          const mc = typeof data.mc === "number" ? data.mc : typeof data.market_cap === "number" ? data.market_cap : null;
+          const liquidity = typeof data.liquidity === "number" ? data.liquidity : null;
+          const supply = typeof data.total_supply === "number" ? data.total_supply : typeof data.supply === "number" ? data.supply : null;
+          const holders = typeof data.holder === "number" ? data.holder : null;
+          return res.json({
+            symbol,
+            decimals,
+            marketCap: mc != null && Number.isFinite(mc) ? mc : null,
+            liquidity: liquidity != null && Number.isFinite(liquidity) ? liquidity : null,
+            totalSupply: supply != null && Number.isFinite(supply) ? supply : null,
+            holders: holders != null && Number.isFinite(holders) ? holders : null,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Token details error:", e);
+    }
   }
 
-  try {
-    const url = `${BIRDEYE_API}/defi/token_overview?address=${encodeURIComponent(mint)}`;
-    const resp = await fetch(url, {
-      headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
+  // SOL fallback so Swap can show token header + chart for SOL without Birdeye
+  if (mint === SOL_MINT) {
+    return res.json({
+      symbol: "SOL",
+      decimals: 9,
+      marketCap: null,
+      liquidity: null,
+      totalSupply: null,
+      holders: null,
     });
-    if (!resp.ok) {
-      res.status(404).json({ error: "Token not found" });
-      return;
-    }
-    const json = await resp.json();
-    const data = json?.data as Record<string, unknown> | undefined;
-    if (!data) {
-      res.status(404).json({ error: "Token not found" });
-      return;
-    }
-    const symbol = typeof data.symbol === "string" ? data.symbol : mint.slice(0, 4) + "…" + mint.slice(-4);
-    const decimals = typeof data.decimals === "number" ? data.decimals : null;
-    const mc = typeof data.mc === "number" ? data.mc : typeof data.market_cap === "number" ? data.market_cap : null;
-    const liquidity = typeof data.liquidity === "number" ? data.liquidity : null;
-    const supply = typeof data.total_supply === "number" ? data.total_supply : typeof data.supply === "number" ? data.supply : null;
-    const holders = typeof data.holder === "number" ? data.holder : null;
-    res.json({
-      symbol,
-      decimals,
-      marketCap: mc != null && Number.isFinite(mc) ? mc : null,
-      liquidity: liquidity != null && Number.isFinite(liquidity) ? liquidity : null,
-      totalSupply: supply != null && Number.isFinite(supply) ? supply : null,
-      holders: holders != null && Number.isFinite(holders) ? holders : null,
-    });
-  } catch (e) {
-    console.warn("Token details error:", e);
-    res.status(500).json({ error: "Failed to load token details" });
   }
+
+  res.status(404).json({ error: "Token details require BIRDEYE_API_KEY or use SOL" });
 });
 
 /**
@@ -474,7 +581,45 @@ marketRouter.get("/token-info", async (req: Request, res: Response) => {
     }
   }
 
-  // Fallback: RPC getAccountInfo on mint to read decimals (Token Mint layout: decimals at offset 44)
+  // Fallback: Jupiter token search by mint (no API key required for lookup)
+  try {
+    const jupRes = await fetch(
+      `https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`,
+      { headers: { "Accept": "application/json" } }
+    );
+    if (jupRes.ok) {
+      const arr = (await jupRes.json()) as unknown;
+      const list = Array.isArray(arr) ? arr : [];
+      const first = list.find((x: unknown) => x && typeof x === "object" && (x as { id?: string }).id === mint) ?? list[0];
+      const obj = first && typeof first === "object" && (first as { id?: string }).id === mint
+        ? (first as { symbol?: string; name?: string; decimals?: number })
+        : null;
+      if (obj && typeof obj.decimals === "number" && obj.decimals >= 0 && obj.decimals <= 18) {
+        const symbol = typeof obj.symbol === "string" && obj.symbol.trim()
+          ? obj.symbol.trim()
+          : typeof obj.name === "string" && obj.name.trim()
+            ? obj.name.trim().slice(0, 10)
+            : mint.slice(0, 4) + "…" + mint.slice(-4);
+        res.json({ symbol, decimals: obj.decimals });
+        return;
+      }
+    }
+  } catch {
+    // ignore, fall through to Metaplex
+  }
+
+  // Fallback: Metaplex metadata on-chain (name/symbol from chain, no API key)
+  const meta = await getMetaplexMetadata(mint);
+  if (meta && (meta.symbol || meta.name)) {
+    const decimals = await getDecimalsRpc(mint);
+    if (decimals !== null && decimals >= 0 && decimals <= 18) {
+      const symbol = (meta.symbol || meta.name || "").trim().slice(0, 12) || mint.slice(0, 4) + "…" + mint.slice(-4);
+      res.json({ symbol, decimals });
+      return;
+    }
+  }
+
+  // Fallback: RPC getAccountInfo on mint to read decimals only (Token Mint layout: decimals at offset 44)
   try {
     const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
     const getAccountRes = await fetch(rpcUrl, {

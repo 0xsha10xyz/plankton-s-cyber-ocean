@@ -4,43 +4,14 @@ import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { BarChart3 } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { getApiBase } from "@/lib/api";
-import { CandlestickChart, type Candle } from "@/components/CandlestickChart";
-
-const SOL_MINT = "So11111111111111111111111111111111111111112";
-const COINGECKO_SOLANA_ID = "solana";
 
 type TimeRange = "1H" | "4H" | "1D" | "1W";
 
-/** Fetch SOL/USD from CoinGecko (no API key). Fallback when backend returns no OHLCV. */
-async function fetchCoinGeckoOHLCV(range: TimeRange): Promise<{ time: string; price: number }[]> {
-  const days = range === "1H" ? 1 : range === "4H" ? 2 : range === "1D" ? 7 : 14;
-  const url = `https://api.coingecko.com/api/v3/coins/${COINGECKO_SOLANA_ID}/market_chart?vs_currency=usd&days=${days}`;
-  const res = await fetch(url);
-  if (!res.ok) return [];
-  const json = await res.json();
-  const prices = json?.prices as [number, number][] | undefined;
-  if (!Array.isArray(prices) || prices.length < 2) return [];
-  const step = Math.max(1, Math.floor(prices.length / (range === "1H" ? 24 : range === "4H" ? 24 : range === "1D" ? 30 : 14)));
-  const data: { time: string; price: number }[] = [];
-  for (let i = 0; i < prices.length; i += step) {
-    const [ts, p] = prices[i];
-    const d = new Date(ts);
-    data.push({
-      time: range === "1W"
-        ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
-        : d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
-      price: Number(p),
-    });
-  }
-  if (data.length < 2 && prices.length >= 2) {
-    data.push({
-      time: range === "1W"
-        ? new Date(prices[prices.length - 1][0]).toLocaleDateString(undefined, { month: "short", day: "numeric" })
-        : new Date(prices[prices.length - 1][0]).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
-      price: prices[prices.length - 1][1],
-    });
-  }
-  return data;
+/** Build API URL to avoid malformed requests. */
+function marketUrl(path: string, params: Record<string, string>): string {
+  const base = getApiBase();
+  const q = new URLSearchParams({ ...params, _: String(Date.now()) });
+  return `${base.replace(/\/$/, "")}/api/market/${path.replace(/^\//, "")}?${q.toString()}`;
 }
 
 /** Generate sample price series for demo. */
@@ -90,36 +61,26 @@ export interface TradingChartProps {
   quoteMint?: string;
   /** Current price from swap quote (USD per token when no quoteMint; ignored when quoteMint set). */
   latestPriceFromQuote?: number | null;
+  /** Resolved symbol by mint (e.g. from TokenSymbolContext). When provided, chart title uses this so CA is shown as token name. */
+  getSymbol?: (mint: string) => string;
   className?: string;
 }
 
-export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, latestPriceFromQuote, className }: TradingChartProps) {
+export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, latestPriceFromQuote, getSymbol, className }: TradingChartProps) {
   const [range, setRange] = useState<TimeRange>("1D");
-  const sampleData = useSamplePriceData(pairLabel, range);
+  const displayPairLabel =
+    getSymbol && inputMint?.trim()
+      ? quoteMint?.trim() && quoteMint !== inputMint
+        ? `${getSymbol(inputMint)}/${getSymbol(quoteMint)}`
+        : getSymbol(inputMint)
+      : pairLabel;
+  const sampleData = useSamplePriceData(displayPairLabel, range);
   type DataPoint = { time: string | number; price?: number; open?: number; high?: number; low?: number; close?: number; volume?: number };
   const [realData, setRealData] = useState<DataPoint[] | null>(null);
   const [dataSource, setDataSource] = useState<"live" | "coingecko" | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentPriceFromApi, setCurrentPriceFromApi] = useState<number | null>(null);
   const isPairMode = Boolean(quoteMint?.trim() && inputMint?.trim() && quoteMint !== inputMint);
-
-  const isCandleFormat = (d: DataPoint): d is DataPoint & { open: number; high: number; low: number; close: number } =>
-    typeof (d as { open?: number }).open === "number" &&
-    typeof (d as { high?: number }).high === "number" &&
-    typeof (d as { low?: number }).low === "number" &&
-    typeof (d as { close?: number }).close === "number";
-  const candleData: Candle[] = useMemo(() => {
-    if (!realData || realData.length === 0) return [];
-    const first = realData[0];
-    if (!isCandleFormat(first)) return [];
-    return realData
-      .filter((d): d is DataPoint & { time: number; open: number; high: number; low: number; close: number } => typeof d.time === "number" && isCandleFormat(d))
-      .map((d) => ({ time: d.time, open: d.open, high: d.high, low: d.low, close: d.close, volume: d.volume }));
-  }, [realData]);
-  const lastCandle = candleData.length > 0 ? candleData[candleData.length - 1] : null;
-  const prevClose = candleData.length >= 2 ? candleData[candleData.length - 2].close : lastCandle?.close ?? 0;
-  const pctChange = lastCandle && prevClose > 0 ? ((lastCandle.close - prevClose) / prevClose) * 100 : null;
-  const totalVolume = candleData.length > 0 ? candleData.reduce((s, d) => s + (Number(d.volume) || 0), 0) : 0;
 
   useEffect(() => {
     if (!inputMint?.trim()) {
@@ -139,7 +100,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
       const quoteAddr = quoteMint.trim();
       const tryPairOhlcv = () =>
         base
-          ? fetch(`${base}/api/market/ohlcv-pair?base=${encodeURIComponent(baseAddr)}&quote=${encodeURIComponent(quoteAddr)}&range=${range}&_=${Date.now()}`)
+          ? fetch(marketUrl("ohlcv-pair", { base: baseAddr, quote: quoteAddr, range }))
               .then((res) => res.json())
               .then((json) => {
                 if (cancelled) return;
@@ -156,7 +117,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
 
       const fetchPairPrice = () =>
         base
-          ? fetch(`${base}/api/market/price-pair?base=${encodeURIComponent(baseAddr)}&quote=${encodeURIComponent(quoteAddr)}&_=${Date.now()}`)
+          ? fetch(marketUrl("price-pair", { base: baseAddr, quote: quoteAddr }))
               .then((res) => res.json())
               .then((json) => {
                 if (cancelled) return;
@@ -173,12 +134,13 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
       return () => { cancelled = true; };
     }
 
+    const mintParam = inputMint.trim();
     const tryBackend = () =>
       base
-        ? fetch(`${base}/api/market/ohlcv?mint=${encodeURIComponent(inputMint.trim())}&range=${range}&_=${Date.now()}`)
+        ? fetch(marketUrl("ohlcv", { mint: mintParam, range }))
             .then((res) => res.json())
             .then((json) => {
-              if (cancelled) return;
+              if (cancelled) return false;
               const arr = Array.isArray(json?.data) ? json.data : [];
               if (arr.length > 0) {
                 setRealData(arr);
@@ -190,31 +152,21 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
             .catch(() => false)
         : Promise.resolve(false);
 
-    const tryBackendWithRetry = () =>
+    /** Retry up to 3 times with delay so we pick up when backend is slow to start. */
+    const tryBackendWithRetry = (): Promise<boolean> =>
       tryBackend().then((ok) => {
         if (cancelled || ok) return ok;
-        return tryBackend();
+        return new Promise((resolve) => setTimeout(resolve, 1500)).then(() =>
+          tryBackend().then((ok2) => {
+            if (cancelled || ok2) return ok2;
+            return new Promise((r) => setTimeout(r, 1500)).then(() => tryBackend());
+          })
+        );
       });
-
-    const tryCoinGecko = (): Promise<boolean> => {
-      const pairHasSol = /SOL/i.test(pairLabel || "");
-      if (!pairHasSol) return Promise.resolve(false);
-      return fetchCoinGeckoOHLCV(range)
-        .then((arr) => {
-          if (cancelled) return false;
-          if (arr.length >= 2) {
-            setRealData(arr);
-            setDataSource("coingecko");
-            return true;
-          }
-          return false;
-        })
-        .catch(() => false);
-    };
 
     const fetchCurrentPrice = () =>
       base
-        ? fetch(`${base}/api/market/price?mint=${encodeURIComponent(inputMint.trim())}&_=${Date.now()}`)
+        ? fetch(marketUrl("price", { mint: mintParam }))
             .then((res) => res.json())
             .then((json) => {
               if (cancelled) return;
@@ -225,74 +177,63 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
         : Promise.resolve();
 
     fetchCurrentPrice();
-    tryBackendWithRetry()
-      .then((ok) => {
-        if (cancelled) return;
-        if (ok) return;
-        return tryCoinGecko();
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    tryBackendWithRetry().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
 
     return () => { cancelled = true; };
   }, [inputMint, quoteMint, range, isPairMode]);
 
-  // Refetch current price and OHLCV periodically so chart stays Live after swap / without quote
+  // Refetch price + OHLCV every 15s so chart stays Live 24/7; also retry when currently Demo so we recover when backend comes back
   useEffect(() => {
     if (!inputMint?.trim()) return;
-    const base = getApiBase();
-    const isSolPair = /SOL/i.test(pairLabel || "");
+    const mintParam = inputMint.trim();
 
     const refresh = () => {
-      if (isPairMode && quoteMint?.trim() && base) {
+      if (isPairMode && quoteMint?.trim()) {
         const baseAddr = inputMint.trim();
         const quoteAddr = quoteMint.trim();
-        fetch(`${base}/api/market/price-pair?base=${encodeURIComponent(baseAddr)}&quote=${encodeURIComponent(quoteAddr)}&_=${Date.now()}`)
+        fetch(marketUrl("price-pair", { base: baseAddr, quote: quoteAddr }))
           .then((res) => res.json())
           .then((json) => {
             const p = json?.price;
             if (typeof p === "number" && Number.isFinite(p) && p >= 0) setCurrentPriceFromApi(p);
           })
           .catch(() => {});
-        if (dataSource === "live") {
-          fetch(`${base}/api/market/ohlcv-pair?base=${encodeURIComponent(baseAddr)}&quote=${encodeURIComponent(quoteAddr)}&range=${range}&_=${Date.now()}`)
-            .then((res) => res.json())
-            .then((json) => {
-              const arr = Array.isArray(json?.data) ? json.data : [];
-              if (arr.length > 0) setRealData(arr);
-            })
-            .catch(() => {});
-        }
-        return;
-      }
-      if (base) {
-        fetch(`${base}/api/market/price?mint=${encodeURIComponent(inputMint.trim())}&_=${Date.now()}`)
-          .then((res) => res.json())
-          .then((json) => {
-            const p = json?.price;
-            if (typeof p === "number" && Number.isFinite(p) && p >= 0) setCurrentPriceFromApi(p);
-          })
-          .catch(() => {});
-      }
-      if (dataSource === "live" && base) {
-        fetch(`${base}/api/market/ohlcv?mint=${encodeURIComponent(inputMint.trim())}&range=${range}&_=${Date.now()}`)
+        fetch(marketUrl("ohlcv-pair", { base: baseAddr, quote: quoteAddr, range }))
           .then((res) => res.json())
           .then((json) => {
             const arr = Array.isArray(json?.data) ? json.data : [];
-            if (arr.length > 0) setRealData(arr);
+            if (arr.length > 0) {
+              setRealData(arr);
+              setDataSource("live");
+            }
           })
           .catch(() => {});
-      } else if (dataSource === "coingecko" && isSolPair) {
-        fetchCoinGeckoOHLCV(range).then((arr) => {
-          if (arr.length >= 2) setRealData(arr);
-        }).catch(() => {});
+        return;
       }
+      fetch(marketUrl("price", { mint: mintParam }))
+        .then((res) => res.json())
+        .then((json) => {
+          const p = json?.price;
+          if (typeof p === "number" && Number.isFinite(p) && p >= 0) setCurrentPriceFromApi(p);
+        })
+        .catch(() => {});
+      fetch(marketUrl("ohlcv", { mint: mintParam, range }))
+        .then((res) => res.json())
+        .then((json) => {
+          const arr = Array.isArray(json?.data) ? json.data : [];
+          if (arr.length > 0) {
+            setRealData(arr);
+            setDataSource("live");
+          }
+        })
+        .catch(() => {});
     };
 
-    const interval = setInterval(refresh, 30_000);
+    const interval = setInterval(refresh, 15_000);
     return () => clearInterval(interval);
-  }, [inputMint, quoteMint, range, pairLabel, dataSource, isPairMode]);
+  }, [inputMint, quoteMint, range, isPairMode]);
 
   const effectiveLivePrice =
     (latestPriceFromQuote != null && Number.isFinite(latestPriceFromQuote) && latestPriceFromQuote > 0
@@ -301,8 +242,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
 
   const hasQuotePrice = effectiveLivePrice != null;
   const getPrice = (d: DataPoint) => Number((d as { price?: number }).price ?? (d as { close?: number }).close ?? 0);
-  const rawBase =
-    candleData.length > 0 ? [] : (realData && realData.length > 0 ? realData : sampleData);
+  const rawBase = realData && realData.length > 0 ? realData : sampleData;
   const pricesRaw = rawBase
     .map((d) => {
       const n = getPrice(d);
@@ -335,23 +275,28 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
         lastPrice > 0 &&
         effectiveLivePrice >= lastPrice / 5 &&
         effectiveLivePrice <= lastPrice * 5));
+  // When we have live price but no OHLCV from API, show sample curve + latest price so chart is never empty/flat
   const withQuotePoint =
     canAppendNow && baseSeries.length > 0
       ? [...baseSeries.filter((d) => d.time !== "Now"), { time: "Now", price: effectiveLivePrice! }]
-      : hasQuotePrice && !(realData && realData.length > 0)
-        ? [
-            { time: "Now", price: effectiveLivePrice! },
-            { time: "Now", price: effectiveLivePrice! },
-          ]
+      : hasQuotePrice && !(realData && realData.length > 0) && effectiveLivePrice != null
+        ? [...sampleData.slice(0, -1), { time: "Now", price: effectiveLivePrice }]
         : baseSeries.length > 0
           ? baseSeries
           : sampleData;
 
   const data = withQuotePoint;
-  const isLive = dataSource === "live" || dataSource === "coingecko" || hasQuotePrice;
+  const isLive = dataSource === "live";
+  const formatTimeLabel = (t: string | number): string => {
+    if (typeof t === "number" && t > 0) {
+      const d = new Date(t * 1000);
+      return range === "1W" ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    }
+    return String(t ?? "");
+  };
   const safeData = data
     .map((d) => ({
-      time: String(d?.time ?? ""),
+      time: formatTimeLabel((d as DataPoint)?.time ?? ""),
       price: (() => {
         const n = getPrice(d as DataPoint);
         return Number.isFinite(n) ? n : 0;
@@ -374,71 +319,19 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
         ? [safeData[0], { ...safeData[0], time: safeData[0].time + " ", price: safeData[0].price }]
         : [{ time: "-", price: 0 }, { time: "-", price: 0.01 }];
 
-  // GMGN-style candlestick + metrics when we have full OHLCV
-  if (candleData.length > 0) {
-    const o = lastCandle!.open;
-    const h = lastCandle!.high;
-    const l = lastCandle!.low;
-    const c = lastCandle!.close;
-    return (
-      <div className={className}>
-        <div className="flex flex-col gap-3 mb-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <BarChart3 size={18} className="text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">{pairLabel}</h3>
-              {isLive && <span className="text-xs text-muted-foreground">Live</span>}
-            </div>
-            <div className="flex gap-1">
-              {(["1H", "4H", "1D", "1W"] as const).map((r) => (
-                <motion.button
-                  key={r}
-                  type="button"
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setRange(r)}
-                  className={`text-xs px-2.5 py-1.5 rounded-md transition-colors ${
-                    range === r ? "bg-primary/20 text-primary font-medium" : "text-muted-foreground hover:text-primary hover:bg-secondary/50"
-                  }`}
-                >
-                  {r}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs">
-            <span className="text-muted-foreground">O {formatPrice(o, isPairMode)}</span>
-            <span className="text-muted-foreground">H {formatPrice(h, isPairMode)}</span>
-            <span className="text-muted-foreground">L {formatPrice(l, isPairMode)}</span>
-            <span className="text-muted-foreground">C {formatPrice(c, isPairMode)}</span>
-            {pctChange != null && (
-              <span className={pctChange >= 0 ? "text-emerald-400" : "text-red-400"}>
-                {pctChange >= 0 ? "+" : ""}{pctChange.toFixed(2)}%
-              </span>
-            )}
-            {totalVolume > 0 && (
-              <span className="text-muted-foreground">Vol {totalVolume >= 1e6 ? `${(totalVolume / 1e6).toFixed(2)}M` : totalVolume >= 1e3 ? `${(totalVolume / 1e3).toFixed(2)}K` : totalVolume.toFixed(0)}</span>
-            )}
-          </div>
-        </div>
-        <CandlestickChart data={candleData} height={320} className="w-full rounded-lg overflow-hidden" />
-      </div>
-    );
-  }
-
   return (
     <div className={className}>
       <div className="flex flex-col gap-1 mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BarChart3 size={18} className="text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">{pairLabel}</h3>
+            <h3 className="text-sm font-semibold text-foreground">{displayPairLabel}</h3>
             {inputMint && (isLive ? (
-              <span className="text-xs text-muted-foreground">Live</span>
+              <span className="text-xs text-emerald-500/90">Live</span>
             ) : loading ? (
               <span className="text-xs text-muted-foreground">Loading…</span>
             ) : (
-              <span className="text-xs text-muted-foreground" title="Set BIRDEYE_API_KEY on backend or use CoinGecko fallback for SOL">Sample</span>
+              <span className="text-xs text-muted-foreground">Demo</span>
             ))}
           </div>
           <div className="flex gap-1">
