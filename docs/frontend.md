@@ -74,7 +74,7 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 ### 8. Other sections
 
 - **Dashboard** — Hero, Total Users card, stats strip, Research & Screening (feeds, screener), PAP (Plankton Autonomous Protocol) Tokenomics, Subscription Tiers, **Roadmap** (Phase 0–8: Narrative, Foundation, Development LIVE; Pre Launch, Security, Token Launch, Expansion, Governance, Full Launch SOON), Docs.
-- **Footer** — Total Users, social links (X: Planktonomus), copyright.
+- **Footer** — Total Users, social links (X: Planktonomous), copyright.
 
 ## Key files
 

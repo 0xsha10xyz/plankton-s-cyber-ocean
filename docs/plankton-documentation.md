@@ -72,7 +72,7 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 **Real data for Swap:** Quote and execution use **Jupiter** (live). Chart OHLCV uses **Birdeye** when the backend has `BIRDEYE_API_KEY` set; otherwise the chart shows sample data. Wallet balances (SOL and token) come from the Solana RPC. For reliable swap execution in production, set `VITE_SOLANA_RPC_URL` to a dedicated RPC (e.g. Helius, QuickNode).
 
-**Other sections** — Dashboard (hero with Total Users card), stats strip (Total Users), Research & Screening (feeds and screener), PAP Tokenomics (token info and burn dashboard), Subscription Tiers (Free, Pro, Autonomous), Roadmap (Phase 0–8), and this Docs section. Footer shows Total Users and social links (X/Twitter: Planktonomus).
+**Other sections** — Dashboard (hero with Total Users card), stats strip (Total Users), Research & Screening (feeds and screener), PAP Tokenomics (token info and burn dashboard), Subscription Tiers (Free, Pro, Autonomous), Roadmap (Phase 0–8), and this Docs section. Footer shows Total Users and social links (X/Twitter: Planktonomous).
 
 ### Theming
 
@@ -181,7 +181,7 @@ For source code, issue tracking, and the latest documentation and configuration 
 **GitHub:**  
 https://github.com/0xsha10xyz/plankton-s-cyber-ocean
 
-**Social:** X (Twitter) — https://x.com/Planktonomus
+**Social:** X (Twitter) — https://x.com/Planktonomous
 
 Use the repository only for development and updates. Do not store or share environment files or secrets there. Keep all environment configuration private for user and project security.
 

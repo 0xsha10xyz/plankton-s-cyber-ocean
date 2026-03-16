@@ -20,7 +20,7 @@ const DiscordIcon = () => (
 );
 
 const socials = [
-  { name: "X (Twitter)", icon: XIcon, href: "https://x.com/Planktonomus" },
+  { name: "X (Twitter)", icon: XIcon, href: "https://x.com/Planktonomous" },
   { name: "Telegram", icon: TelegramIcon, href: "#" },
   { name: "Discord", icon: DiscordIcon, href: "#" },
 ];
