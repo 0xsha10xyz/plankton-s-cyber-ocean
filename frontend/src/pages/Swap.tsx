@@ -171,13 +171,17 @@ export default function Swap() {
     inputToken.mint === COMMON_MINTS.USDC || inputToken.mint === COMMON_MINTS.USDT
       ? outputToken.mint
       : inputToken.mint;
-  const isChartOutput = chartMint === outputToken.mint;
+  const isStable = (m: string) => m === COMMON_MINTS.USDC || m === COMMON_MINTS.USDT;
+  const pairHasStable = isStable(inputToken.mint) || isStable(outputToken.mint);
   let latestPriceFromQuote: number | null = null;
-  if (quote && quote.outAmount != null) {
+  // Only use quote as "price" when the pair is vs USDC/USDT so the value is USD per token. SOL/SYRA etc. give ratio, not USD.
+  if (quote && quote.outAmount != null && pairHasStable) {
     const inAmt = parseFloat(amount) || 0;
     const outAmt = Number(quote.outAmount) / 10 ** outputToken.decimals;
     if (outAmt > 0 && inAmt > 0) {
-      latestPriceFromQuote = isChartOutput ? inAmt / outAmt : outAmt / inAmt;
+      const stableAmt = isStable(inputToken.mint) ? inAmt : outAmt;
+      const chartMintAmt = chartMint === inputToken.mint ? inAmt : outAmt;
+      latestPriceFromQuote = stableAmt / chartMintAmt;
     }
   }
 
