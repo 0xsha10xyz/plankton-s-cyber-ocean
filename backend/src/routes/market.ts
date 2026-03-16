@@ -78,6 +78,121 @@ marketRouter.get("/price", async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/market/ohlcv-pair?base=...&quote=...&range=1H|4H|1D|1W
+ * OHLCV for a token pair (e.g. token/SOL). Uses Birdeye base_quote. Returns { data: { time, price }[] }.
+ * Price is in quote per base (e.g. SOL per token when base=token, quote=SOL).
+ */
+marketRouter.get("/ohlcv-pair", async (req: Request, res: Response) => {
+  const base = typeof req.query.base === "string" ? req.query.base.trim() : "";
+  const quote = typeof req.query.quote === "string" ? req.query.quote.trim() : "";
+  const range = (typeof req.query.range === "string" ? req.query.range : "1D") as Range;
+  const validRanges: Range[] = ["1H", "4H", "1D", "1W"];
+  const rangeParam = validRanges.includes(range) ? range : "1D";
+
+  if (!base || !quote || base.length > 64 || quote.length > 64) {
+    res.json({ data: [] });
+    return;
+  }
+
+  const apiKey = process.env.BIRDEYE_API_KEY;
+  if (!apiKey) {
+    res.json({ data: [] });
+    return;
+  }
+
+  try {
+    const timeTo = Math.floor(Date.now() / 1000);
+    const timeFrom = timeTo - rangeToSeconds(rangeParam);
+    const url = `${BIRDEYE_API}/defi/ohlcv/base_quote?base_address=${encodeURIComponent(base)}&quote_address=${encodeURIComponent(quote)}&type=${rangeToType(rangeParam)}&time_from=${timeFrom}&time_to=${timeTo}`;
+
+    const resp = await fetch(url, {
+      headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
+    });
+
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      console.warn("Birdeye OHLCV base_quote error:", resp.status, errBody.slice(0, 200));
+      res.json({ data: [] });
+      return;
+    }
+
+    const json = await resp.json();
+    const items = json?.data?.items;
+    if (!Array.isArray(items) || items.length === 0) {
+      res.json({ data: [] });
+      return;
+    }
+
+    const data = items.map((c: { unixTime: number; c: number }) => {
+      const date = new Date(c.unixTime * 1000);
+      const timeLabel =
+        rangeParam === "1W" || rangeParam === "1D"
+          ? date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+          : date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+      return { time: timeLabel, price: Number(c.c) };
+    });
+
+    res.json({ data });
+  } catch (e) {
+    console.warn("Birdeye OHLCV base_quote exception:", e);
+    res.json({ data: [] });
+  }
+});
+
+/**
+ * GET /api/market/price-pair?base=...&quote=...
+ * Current pair price (quote per base). Uses Birdeye base_quote with short range and returns last close.
+ */
+marketRouter.get("/price-pair", async (req: Request, res: Response) => {
+  const base = typeof req.query.base === "string" ? req.query.base.trim() : "";
+  const quote = typeof req.query.quote === "string" ? req.query.quote.trim() : "";
+
+  if (!base || !quote || base.length > 64 || quote.length > 64) {
+    res.status(400).json({ error: "Missing or invalid base/quote" });
+    return;
+  }
+
+  const apiKey = process.env.BIRDEYE_API_KEY;
+  if (!apiKey) {
+    res.status(404).json({ error: "Pair price requires BIRDEYE_API_KEY" });
+    return;
+  }
+
+  try {
+    const timeTo = Math.floor(Date.now() / 1000);
+    const timeFrom = timeTo - 3600; // 1 hour
+    const url = `${BIRDEYE_API}/defi/ohlcv/base_quote?base_address=${encodeURIComponent(base)}&quote_address=${encodeURIComponent(quote)}&type=1H&time_from=${timeFrom}&time_to=${timeTo}`;
+
+    const resp = await fetch(url, {
+      headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
+    });
+
+    if (!resp.ok) {
+      res.status(404).json({ error: "Pair price not available" });
+      return;
+    }
+
+    const json = await resp.json();
+    const items = json?.data?.items;
+    if (!Array.isArray(items) || items.length === 0) {
+      res.status(404).json({ error: "Pair price not available" });
+      return;
+    }
+
+    const last = items[items.length - 1];
+    const price = typeof last?.c === "number" && Number.isFinite(last.c) ? last.c : null;
+    if (price === null || price < 0) {
+      res.status(404).json({ error: "Pair price not available" });
+      return;
+    }
+    res.json({ price });
+  } catch (e) {
+    console.warn("Birdeye price-pair error:", e);
+    res.status(500).json({ error: "Pair price failed" });
+  }
+});
+
+/**
  * GET /api/market/ohlcv?mint=...&range=1H|4H|1D|1W
  * Proxies Birdeye OHLCV for chart. Returns { data: { time, price }[] }.
  * If BIRDEYE_API_KEY is missing or request fails, returns { data: [] } so frontend can fallback.

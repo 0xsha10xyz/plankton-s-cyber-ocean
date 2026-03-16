@@ -71,31 +71,35 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 /** Format price for Y-axis and tooltip so small values (e.g. 0.000078) show accurately. */
-function formatPrice(v: number): string {
+function formatPrice(v: number, inSol = false): string {
   const n = Number(v);
-  if (!Number.isFinite(n)) return "$0";
-  if (n >= 1) return `$${n.toFixed(2)}`;
-  if (n >= 0.01) return `$${n.toFixed(4)}`;
-  if (n >= 0.0001) return `$${n.toFixed(6)}`;
-  return `$${n.toFixed(8)}`;
+  if (!Number.isFinite(n)) return inSol ? "0" : "$0";
+  const prefix = inSol ? "" : "$";
+  if (n >= 1) return `${prefix}${n.toFixed(2)}`;
+  if (n >= 0.01) return `${prefix}${n.toFixed(4)}`;
+  if (n >= 0.0001) return `${prefix}${n.toFixed(6)}`;
+  return `${prefix}${n.toFixed(8)}`;
 }
 
 export interface TradingChartProps {
   pairLabel?: string;
-  /** Token mint for OHLCV (e.g. SOL mint for SOL/USDC). When set, chart uses real data from API. */
+  /** Token mint for OHLCV (base when quoteMint set). */
   inputMint?: string;
-  /** Current price from swap quote (USD per token). When set, chart shows "Live" and uses this as latest point even if OHLCV fails. */
+  /** When set, chart uses token/SOL pair OHLCV and price (base=inputMint, quote=quoteMint) instead of single-token USD. */
+  quoteMint?: string;
+  /** Current price from swap quote (USD per token when no quoteMint; ignored when quoteMint set). */
   latestPriceFromQuote?: number | null;
   className?: string;
 }
 
-export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFromQuote, className }: TradingChartProps) {
+export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, latestPriceFromQuote, className }: TradingChartProps) {
   const [range, setRange] = useState<TimeRange>("1D");
   const sampleData = useSamplePriceData(pairLabel, range);
   const [realData, setRealData] = useState<{ time: string; price: number }[] | null>(null);
   const [dataSource, setDataSource] = useState<"live" | "coingecko" | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentPriceFromApi, setCurrentPriceFromApi] = useState<number | null>(null);
+  const isPairMode = Boolean(quoteMint?.trim() && inputMint?.trim() && quoteMint !== inputMint);
 
   useEffect(() => {
     if (!inputMint?.trim()) {
@@ -109,6 +113,45 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
     setLoading(true);
     setRealData(null);
     setDataSource(null);
+
+    if (isPairMode && quoteMint?.trim()) {
+      const baseAddr = inputMint.trim();
+      const quoteAddr = quoteMint.trim();
+      const tryPairOhlcv = () =>
+        base
+          ? fetch(`${base}/api/market/ohlcv-pair?base=${encodeURIComponent(baseAddr)}&quote=${encodeURIComponent(quoteAddr)}&range=${range}&_=${Date.now()}`)
+              .then((res) => res.json())
+              .then((json) => {
+                if (cancelled) return;
+                const arr = Array.isArray(json?.data) ? json.data : [];
+                if (arr.length > 0) {
+                  setRealData(arr);
+                  setDataSource("live");
+                  return true;
+                }
+                return false;
+              })
+              .catch(() => false)
+          : Promise.resolve(false);
+
+      const fetchPairPrice = () =>
+        base
+          ? fetch(`${base}/api/market/price-pair?base=${encodeURIComponent(baseAddr)}&quote=${encodeURIComponent(quoteAddr)}&_=${Date.now()}`)
+              .then((res) => res.json())
+              .then((json) => {
+                if (cancelled) return;
+                const p = json?.price;
+                if (typeof p === "number" && Number.isFinite(p) && p >= 0) setCurrentPriceFromApi(p);
+              })
+              .catch(() => {})
+          : Promise.resolve();
+
+      fetchPairPrice();
+      tryPairOhlcv().finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+      return () => { cancelled = true; };
+    }
 
     const tryBackend = () =>
       base
@@ -173,7 +216,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
       });
 
     return () => { cancelled = true; };
-  }, [inputMint, range]);
+  }, [inputMint, quoteMint, range, isPairMode]);
 
   // Refetch current price and OHLCV periodically so chart stays Live after swap / without quote
   useEffect(() => {
@@ -182,6 +225,27 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
     const isSolPair = /SOL/i.test(pairLabel || "");
 
     const refresh = () => {
+      if (isPairMode && quoteMint?.trim() && base) {
+        const baseAddr = inputMint.trim();
+        const quoteAddr = quoteMint.trim();
+        fetch(`${base}/api/market/price-pair?base=${encodeURIComponent(baseAddr)}&quote=${encodeURIComponent(quoteAddr)}&_=${Date.now()}`)
+          .then((res) => res.json())
+          .then((json) => {
+            const p = json?.price;
+            if (typeof p === "number" && Number.isFinite(p) && p >= 0) setCurrentPriceFromApi(p);
+          })
+          .catch(() => {});
+        if (dataSource === "live") {
+          fetch(`${base}/api/market/ohlcv-pair?base=${encodeURIComponent(baseAddr)}&quote=${encodeURIComponent(quoteAddr)}&range=${range}&_=${Date.now()}`)
+            .then((res) => res.json())
+            .then((json) => {
+              const arr = Array.isArray(json?.data) ? json.data : [];
+              if (arr.length > 0) setRealData(arr);
+            })
+            .catch(() => {});
+        }
+        return;
+      }
       if (base) {
         fetch(`${base}/api/market/price?mint=${encodeURIComponent(inputMint.trim())}&_=${Date.now()}`)
           .then((res) => res.json())
@@ -208,7 +272,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
 
     const interval = setInterval(refresh, 30_000);
     return () => clearInterval(interval);
-  }, [inputMint, range, pairLabel, dataSource]);
+  }, [inputMint, quoteMint, range, pairLabel, dataSource, isPairMode]);
 
   const effectiveLivePrice =
     (latestPriceFromQuote != null && Number.isFinite(latestPriceFromQuote) && latestPriceFromQuote > 0
@@ -324,7 +388,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
         </div>
         {effectiveLivePrice != null && Number.isFinite(effectiveLivePrice) && (
           <p className="text-lg font-semibold text-primary">
-            {formatPrice(effectiveLivePrice)}
+            {isPairMode ? `${formatPrice(effectiveLivePrice, true)} SOL` : formatPrice(effectiveLivePrice)}
           </p>
         )}
       </div>
@@ -337,8 +401,8 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
             </linearGradient>
           </defs>
           <XAxis dataKey="time" tickLine={false} axisLine={false} />
-          <YAxis domain={[yMin, yMax]} tickLine={false} axisLine={false} tickFormatter={(v) => formatPrice(v)} />
-          <ChartTooltip content={<ChartTooltipContent indicator="line" formatter={(v) => formatPrice(Number(v))} />} />
+          <YAxis domain={[yMin, yMax]} tickLine={false} axisLine={false} tickFormatter={(v) => formatPrice(v, isPairMode)} />
+          <ChartTooltip content={<ChartTooltipContent indicator="line" formatter={(v) => formatPrice(Number(v), isPairMode)} />} />
           <Area type="monotone" dataKey="price" stroke="var(--color-price)" fill="url(#fillPrice)" strokeWidth={2} />
         </AreaChart>
       </ChartContainer>

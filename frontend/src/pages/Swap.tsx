@@ -167,14 +167,26 @@ export default function Swap() {
 
   const pairLabel = `${inputToken.symbol}/${outputToken.symbol}`;
 
+  const isStable = (m: string) => m === COMMON_MINTS.USDC || m === COMMON_MINTS.USDT;
+  const pairHasStable = isStable(inputToken.mint) || isStable(outputToken.mint);
+  const solMint = COMMON_MINTS.SOL;
+  const pairIsTokenSol =
+    !pairHasStable &&
+    (inputToken.mint === solMint || outputToken.mint === solMint);
+
+  // When pair is token/SOL, chart shows token/SOL price (base=token, quote=SOL). Otherwise chart shows single-token USD.
   const chartMint =
     inputToken.mint === COMMON_MINTS.USDC || inputToken.mint === COMMON_MINTS.USDT
       ? outputToken.mint
       : inputToken.mint;
-  const isStable = (m: string) => m === COMMON_MINTS.USDC || m === COMMON_MINTS.USDT;
-  const pairHasStable = isStable(inputToken.mint) || isStable(outputToken.mint);
+  const chartQuoteMint: string | undefined =
+    pairIsTokenSol ? solMint : undefined;
+  const chartBaseMint = pairIsTokenSol
+    ? (inputToken.mint === solMint ? outputToken.mint : inputToken.mint)
+    : chartMint;
+
   let latestPriceFromQuote: number | null = null;
-  // Only use quote as "price" when the pair is vs USDC/USDT so the value is USD per token. SOL/SYRA etc. give ratio, not USD.
+  // Only use quote as "price" when the pair is vs USDC/USDT so the value is USD per token. SOL/SYRA etc. use pair API.
   if (quote && quote.outAmount != null && pairHasStable) {
     const inAmt = parseFloat(amount) || 0;
     const outAmt = Number(quote.outAmount) / 10 ** outputToken.decimals;
@@ -355,7 +367,8 @@ export default function Swap() {
           <div className="lg:col-span-2 glass-card rounded-xl p-6">
             <TradingChart
               pairLabel={pairLabel}
-              inputMint={chartMint}
+              inputMint={chartBaseMint}
+              quoteMint={chartQuoteMint}
               latestPriceFromQuote={latestPriceFromQuote}
             />
           </div>
