@@ -389,6 +389,59 @@ marketRouter.get("/ohlcv", async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/market/token-details?mint=...
+ * Returns extended token info for display below chart: symbol, decimals, marketCap, liquidity, totalSupply, holders.
+ * Uses Birdeye token_overview when BIRDEYE_API_KEY is set.
+ */
+marketRouter.get("/token-details", async (req: Request, res: Response) => {
+  const mint = typeof req.query.mint === "string" ? req.query.mint.trim() : "";
+  if (!mint || mint.length > 64) {
+    res.status(400).json({ error: "Missing or invalid mint" });
+    return;
+  }
+
+  const apiKey = process.env.BIRDEYE_API_KEY;
+  if (!apiKey) {
+    res.status(404).json({ error: "Token details require BIRDEYE_API_KEY" });
+    return;
+  }
+
+  try {
+    const url = `${BIRDEYE_API}/defi/token_overview?address=${encodeURIComponent(mint)}`;
+    const resp = await fetch(url, {
+      headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
+    });
+    if (!resp.ok) {
+      res.status(404).json({ error: "Token not found" });
+      return;
+    }
+    const json = await resp.json();
+    const data = json?.data as Record<string, unknown> | undefined;
+    if (!data) {
+      res.status(404).json({ error: "Token not found" });
+      return;
+    }
+    const symbol = typeof data.symbol === "string" ? data.symbol : mint.slice(0, 4) + "…" + mint.slice(-4);
+    const decimals = typeof data.decimals === "number" ? data.decimals : null;
+    const mc = typeof data.mc === "number" ? data.mc : typeof data.market_cap === "number" ? data.market_cap : null;
+    const liquidity = typeof data.liquidity === "number" ? data.liquidity : null;
+    const supply = typeof data.total_supply === "number" ? data.total_supply : typeof data.supply === "number" ? data.supply : null;
+    const holders = typeof data.holder === "number" ? data.holder : null;
+    res.json({
+      symbol,
+      decimals,
+      marketCap: mc != null && Number.isFinite(mc) ? mc : null,
+      liquidity: liquidity != null && Number.isFinite(liquidity) ? liquidity : null,
+      totalSupply: supply != null && Number.isFinite(supply) ? supply : null,
+      holders: holders != null && Number.isFinite(holders) ? holders : null,
+    });
+  } catch (e) {
+    console.warn("Token details error:", e);
+    res.status(500).json({ error: "Failed to load token details" });
+  }
+});
+
+/**
  * GET /api/market/token-info?mint=...
  * Returns { symbol, decimals } for a token mint. Uses Birdeye token_overview when BIRDEYE_API_KEY is set; else RPC mint account for decimals only.
  */

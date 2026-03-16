@@ -7,6 +7,7 @@ import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { TradingChart } from "@/components/TradingChart";
+import { TokenDetails } from "@/components/TokenDetails";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWalletModal } from "@/contexts/WalletModalContext";
@@ -363,14 +364,22 @@ export default function Swap() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Chart */}
-          <div className="lg:col-span-2 glass-card rounded-xl p-6">
-            <TradingChart
-              pairLabel={pairLabel}
-              inputMint={chartBaseMint}
-              quoteMint={chartQuoteMint}
-              latestPriceFromQuote={latestPriceFromQuote}
-            />
+          {/* Chart + Token details */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="glass-card rounded-xl p-6">
+              <TradingChart
+                pairLabel={pairLabel}
+                inputMint={chartBaseMint}
+                quoteMint={chartQuoteMint}
+                latestPriceFromQuote={latestPriceFromQuote}
+              />
+            </div>
+            {chartBaseMint && chartBaseMint !== COMMON_MINTS.SOL && (
+              <TokenDetails
+                mint={chartBaseMint}
+                tokenSymbol={chartBaseMint === inputToken.mint ? inputToken.symbol : chartBaseMint === outputToken.mint ? outputToken.symbol : undefined}
+              />
+            )}
           </div>
 
           {/* Swap form */}
