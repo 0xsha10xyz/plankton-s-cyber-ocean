@@ -16,7 +16,7 @@ const NAV_CONFIG: { label: string; sectionId?: string; path?: string }[] = [
   { label: "Governance", sectionId: "tokenomics" },
   { label: "Subscription", sectionId: "pricing" },
   { label: "Roadmap", sectionId: "roadmap" },
-  { label: "Docs", path: "/plankton-documentation.html" },
+  { label: "Docs", path: "/docs" },
 ];
 
 const scrollToSection = (sectionId: string) => {

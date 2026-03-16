@@ -78,14 +78,6 @@ const Index = () => {
                   Swap
                 </motion.span>
               </Link>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => document.getElementById("docs")?.scrollIntoView({ behavior: "smooth" })}
-                className="px-6 py-3 rounded-lg bg-secondary/50 text-foreground border border-border/50 hover:border-primary/30 transition-all font-semibold"
-              >
-                Read Docs
-              </motion.button>
             </div>
           </motion.div>
         </section>
