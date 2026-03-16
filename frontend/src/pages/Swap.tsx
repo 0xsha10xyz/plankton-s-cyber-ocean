@@ -83,7 +83,6 @@ export default function Swap() {
           const symbol = typeof (t as { symbol?: unknown }).symbol === "string" ? (t as { symbol: string }).symbol : "";
           const decimals = Number((t as { decimals?: unknown }).decimals);
           if (!mint || !symbol || !Number.isFinite(decimals)) return null;
-          if (symbol.includes("…")) return null; // never persist truncated CA labels
           return { mint, symbol, decimals } satisfies TokenOption;
         })
         .filter((x): x is TokenOption => Boolean(x));
@@ -293,13 +292,12 @@ export default function Swap() {
       }
       const token: TokenOption = { symbol, mint: raw, decimals };
       await ensureTokenInfo(raw);
-      // Only persist/save tokens that the wallet actually holds (balance > 0),
-      // and only when we have a real symbol (never save truncated CA labels).
+      // When the user has a balance in this token, save it immediately so it appears in the token list.
       const balance = tokenBalancesByMint[raw] ?? 0;
-      const hasRealSymbol = Boolean(symbolFromApi) && !symbolFromApi.includes("…");
-      if (balance > 0 && hasRealSymbol && savedTokensStorageKey) {
-        setCustomTokens((prev) => (prev.some((t) => t.mint === raw) ? prev : [...prev, { ...token, symbol: symbolFromApi }]));
-        const next = [...loadSavedTokens().filter((t) => t.mint !== raw), { ...token, symbol: symbolFromApi }];
+      if (balance > 0 && savedTokensStorageKey) {
+        const symbolToSave = symbolFromApi && !symbolFromApi.includes("…") ? symbolFromApi : symbol;
+        setCustomTokens((prev) => (prev.some((t) => t.mint === raw) ? prev : [...prev, { ...token, symbol: symbolToSave }]));
+        const next = [...loadSavedTokens().filter((t) => t.mint !== raw), { ...token, symbol: symbolToSave }];
         persistSavedTokens(next);
       }
       return token;
