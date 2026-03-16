@@ -117,7 +117,12 @@ const Header = () => {
           <div className="flex items-center gap-3">
             <Link
               to="/"
-              onClick={() => setMobileOpen(false)}
+              onClick={() => {
+                setMobileOpen(false);
+                if (pathname === "/") {
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
               className="flex items-center gap-3 outline-none rounded-md focus-visible:ring-2 focus-visible:ring-primary/50"
             >
               <PlanktonLogo status="researching" size={40} />
