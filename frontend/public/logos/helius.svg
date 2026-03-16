@@ -1,0 +1,11 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="32" fill="#020617"/>
+  <radialGradient id="gradHelius" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(64 64) rotate(90) scale(56)">
+    <stop stop-color="#FF9800"/>
+    <stop offset="1" stop-color="#101320"/>
+  </radialGradient>
+  <circle cx="64" cy="64" r="34" fill="url(#gradHelius)"/>
+  <circle cx="64" cy="64" r="18" fill="#020617"/>
+  <circle cx="64" cy="64" r="6" fill="#FF9800"/>
+</svg>
+

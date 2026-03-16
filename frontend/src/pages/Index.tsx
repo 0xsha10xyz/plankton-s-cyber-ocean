@@ -10,6 +10,7 @@ import AutoPilot from "@/components/AutoPilot";
 import ResearchTools from "@/components/ResearchTools";
 import ScreenerTools from "@/components/ScreenerTools";
 import TokenSection from "@/components/TokenSection";
+import IntegrationsSection from "@/components/IntegrationsSection";
 import PricingSection from "@/components/PricingSection";
 import Roadmap from "@/components/Roadmap";
 import Footer from "@/components/Footer";
@@ -124,39 +125,8 @@ const Index = () => {
             <Roadmap />
           </Section>
 
-          {/* Docs */}
-          <section id="docs" className="mb-20 scroll-mt-24">
-            <motion.h2
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="section-title mb-8"
-            >
-              Docs
-            </motion.h2>
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              className="glass-card rounded-xl p-8"
-            >
-              <p className="text-muted-foreground mb-6 text-center">
-                Protocol documentation, API reference, and integration. Open the doc to read in your browser; use your browser&apos;s Print → Save as PDF to download a PDF.
-              </p>
-              <div className="flex justify-center">
-                <motion.a
-                  href="/plankton-documentation.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors"
-                >
-                  Open documentation
-                </motion.a>
-              </div>
-            </motion.div>
-          </section>
+          {/* Partners & Integrations */}
+          <IntegrationsSection />
         </div>
 
         <Footer />

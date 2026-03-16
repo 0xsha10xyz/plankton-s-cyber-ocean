@@ -1,0 +1,11 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="32" fill="#020617"/>
+  <radialGradient id="gradJup" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(32 28) rotate(45) scale(96)">
+    <stop stop-color="#13B5EC"/>
+    <stop offset="1" stop-color="#1E326A"/>
+  </radialGradient>
+  <circle cx="64" cy="64" r="42" fill="url(#gradJup)"/>
+  <path d="M32 60C44 55 52 53 64 53C76 53 84 55 96 60" stroke="#F5F5F5" stroke-width="6" stroke-linecap="round"/>
+  <path d="M32 74C44 79 52 81 64 81C76 81 84 79 96 74" stroke="#F5F5F5" stroke-width="4" stroke-linecap="round" opacity="0.7"/>
+</svg>
+
