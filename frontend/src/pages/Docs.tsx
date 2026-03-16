@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Book, Coins, Flame, Rocket, Shield, Zap, ChevronRight, Menu, X, ExternalLink } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 
 const sidebarSections = [
@@ -296,6 +297,8 @@ const Docs = () => {
           </section>
         </main>
       </div>
+
+      <Footer />
     </div>
   );
 };

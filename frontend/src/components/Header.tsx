@@ -137,10 +137,17 @@ const Header = () => {
               );
               const activeUnderline = active && "after:content-[''] after:absolute after:left-2 after:right-2 after:bottom-0 after:h-0.5 after:bg-primary after:rounded-full after:shadow-[0_0_8px_hsl(180_90%_50%_/_0.6)]";
               if (path) {
-                const isExternalHtml = path.endsWith(".html");
-                if (isExternalHtml) {
+                const isDocs = path === "/docs";
+                // Open docs in a new tab to keep main app state
+                if (isDocs) {
                   return (
-                    <a key={path} href={path} target="_blank" rel="noopener noreferrer" className={cn(linkClass)}>
+                    <a
+                      key={path}
+                      href={path}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(linkClass, activeUnderline)}
+                    >
                       {item.label}
                     </a>
                   );
@@ -294,6 +301,21 @@ const Header = () => {
                   );
                   // Direct route (e.g. /swap, /docs)
                   if (path) {
+                    const isDocs = path === "/docs";
+                    if (isDocs) {
+                      return (
+                        <a
+                          key={path}
+                          href={path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={mobileItemClass}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          {item.label}
+                        </a>
+                      );
+                    }
                     return (
                       <Link
                         key={path}
