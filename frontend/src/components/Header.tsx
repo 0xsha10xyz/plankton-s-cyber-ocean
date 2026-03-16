@@ -66,6 +66,25 @@ const Header = () => {
     setMobileOpen(false);
   }, [pathname]);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [mobileOpen]);
+
+  // Close mobile menu on Escape
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const handleNavClick = (item: (typeof NAV_CONFIG)[number]) => {
     if (item.path) {
       // Route link handled by Link
@@ -107,21 +126,25 @@ const Header = () => {
           </div>
 
           {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center flex-nowrap gap-0.5 xl:gap-1">
             {NAV_CONFIG.map((item) => {
               const sectionId = "sectionId" in item ? item.sectionId : undefined;
               const path = "path" in item ? item.path : undefined;
               const active = isActive(item);
+              const linkClass = cn(
+                "relative px-3 py-2.5 text-sm transition-colors rounded-md hover:bg-secondary/50 min-h-[44px] flex items-center",
+                active
+                  ? "text-primary font-semibold"
+                  : "text-muted-foreground hover:text-primary"
+              );
+              const activeUnderline = active && "after:content-[''] after:absolute after:left-2 after:right-2 after:bottom-0 after:h-0.5 after:bg-primary after:rounded-full after:shadow-[0_0_8px_hsl(180_90%_50%_/_0.6)]";
               if (path) {
                 return (
                   <Link
                     key={path}
                     to={path}
                     onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "px-3 py-2 text-sm transition-colors rounded-md hover:bg-secondary/50",
-                      active ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary"
-                    )}
+                    className={cn(linkClass, activeUnderline)}
                   >
                     {item.label}
                   </Link>
@@ -133,10 +156,7 @@ const Header = () => {
                     key={sectionId}
                     to={`/#${sectionId}`}
                     onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "px-3 py-2 text-sm transition-colors rounded-md hover:bg-secondary/50",
-                      "text-muted-foreground hover:text-primary"
-                    )}
+                    className={linkClass}
                   >
                     {item.label}
                   </Link>
@@ -146,13 +166,10 @@ const Header = () => {
                 <motion.button
                   key={sectionId}
                   type="button"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.97 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => handleNavClick(item)}
-                  className={cn(
-                    "px-3 py-2 text-sm transition-colors rounded-md hover:bg-secondary/50",
-                    active ? "text-primary font-semibold" : "text-muted-foreground hover:text-primary"
-                  )}
+                  className={cn(linkClass, activeUnderline)}
                 >
                   {item.label}
                 </motion.button>
@@ -161,10 +178,10 @@ const Header = () => {
             {connected && (
               <motion.button
                 type="button"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.97 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setAccountSidebarOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary/50 rounded-md transition-colors"
+                className="flex items-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-primary hover:bg-secondary/50 rounded-md transition-colors min-h-[44px]"
               >
                 <User size={16} />
                 Account
@@ -240,7 +257,8 @@ const Header = () => {
             <button
               type="button"
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
-              className="lg:hidden text-foreground"
+              aria-expanded={mobileOpen}
+              className="lg:hidden p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-foreground hover:bg-secondary/50 rounded-md transition-colors"
               onClick={() => setMobileOpen(!mobileOpen)}
             >
               {mobileOpen ? <X size={24} /> : <Menu size={24} />}
@@ -255,23 +273,26 @@ const Header = () => {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
               className="lg:hidden overflow-hidden border-t border-border/30"
+              aria-label="Main navigation"
             >
-              <div className="px-4 py-4 flex flex-col gap-1">
+              <div className="px-4 py-3 max-h-[min(70vh,400px)] overflow-y-auto overscroll-contain flex flex-col gap-0.5">
                 {NAV_CONFIG.map((item) => {
                   const sectionId = "sectionId" in item ? item.sectionId : undefined;
                   const path = "path" in item ? item.path : undefined;
                   const active = isActive(item);
+                  const mobileItemClass = cn(
+                    "min-h-[44px] flex items-center px-3 py-3 text-sm transition-colors text-left rounded-md hover:bg-secondary/50",
+                    active ? "text-primary font-semibold bg-primary/10 border-l-2 border-primary" : "text-muted-foreground hover:text-primary"
+                  );
                   if (path) {
                     return (
                       <Link
                         key={path}
                         to={path}
                         onClick={() => setMobileOpen(false)}
-                        className={cn(
-                          "px-3 py-2 text-sm transition-colors text-left rounded-md hover:bg-secondary/50",
-                          active ? "text-primary font-semibold bg-secondary/30" : "text-muted-foreground hover:text-primary"
-                        )}
+                        className={mobileItemClass}
                       >
                         {item.label}
                       </Link>
@@ -283,7 +304,7 @@ const Header = () => {
                         key={sectionId}
                         to={`/#${sectionId}`}
                         onClick={() => setMobileOpen(false)}
-                        className="px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary/50 text-left rounded-md"
+                        className={mobileItemClass}
                       >
                         {item.label}
                       </Link>
@@ -294,10 +315,7 @@ const Header = () => {
                       key={sectionId}
                       type="button"
                       onClick={() => handleNavClick(item)}
-                      className={cn(
-                        "px-3 py-2 text-sm transition-colors text-left rounded-md hover:bg-secondary/50",
-                        active ? "text-primary font-semibold bg-secondary/30" : "text-muted-foreground hover:text-primary"
-                      )}
+                      className={mobileItemClass}
                     >
                       {item.label}
                     </button>
@@ -307,7 +325,7 @@ const Header = () => {
                   <button
                     type="button"
                     onClick={() => { setMobileOpen(false); setAccountSidebarOpen(true); }}
-                    className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary/50 text-left rounded-md"
+                    className="min-h-[44px] flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground hover:text-primary hover:bg-secondary/50 text-left rounded-md border-t border-border/30 mt-1"
                   >
                     <User size={16} />
                     Account
