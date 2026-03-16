@@ -25,6 +25,29 @@ const JUPITER_QUOTE_BASES = [
   "https://quote-api.jup.ag/v6",
 ];
 
+/** Fetch SOL/USD OHLCV from CoinGecko (no API key). Returns items with unixTime and price for merging. */
+async function fetchSolUsdOhlcv(range: Range): Promise<{ unixTime: number; price: number }[]> {
+  const days = range === "1H" ? 1 : range === "4H" ? 2 : range === "1D" ? 7 : 14;
+  try {
+    const res = await fetch(
+      `https://api.coingecko.com/api/v3/coins/${COINGECKO_SOL_ID}/market_chart?vs_currency=usd&days=${days}`
+    );
+    if (!res.ok) return [];
+    const json = await res.json();
+    const prices = json?.prices as [number, number][] | undefined;
+    if (!Array.isArray(prices) || prices.length < 2) return [];
+    const step = Math.max(1, Math.floor(prices.length / (range === "1H" ? 24 : range === "4H" ? 24 : range === "1D" ? 30 : 14)));
+    const out: { unixTime: number; price: number }[] = [];
+    for (let i = 0; i < prices.length; i += step) {
+      const [tsMs, p] = prices[i];
+      out.push({ unixTime: Math.floor(Number(tsMs) / 1000), price: Number(p) });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
 /** Get decimals for a mint via RPC (no API key). */
 async function getDecimalsRpc(mint: string): Promise<number | null> {
   try {
@@ -109,8 +132,7 @@ marketRouter.get("/price", async (req: Request, res: Response) => {
 
 /**
  * GET /api/market/ohlcv-pair?base=...&quote=...&range=1H|4H|1D|1W
- * OHLCV for a token pair (e.g. token/SOL). Uses Birdeye base_quote. Returns { data: { time, price }[] }.
- * Price is in quote per base (e.g. SOL per token when base=token, quote=SOL).
+ * OHLCV for a token pair (e.g. token/SOL). Uses Birdeye base_quote; when empty and quote is SOL, synthesizes from token USD + SOL USD for real-time chart.
  */
 marketRouter.get("/ohlcv-pair", async (req: Request, res: Response) => {
   const base = typeof req.query.base === "string" ? req.query.base.trim() : "";
@@ -125,48 +147,93 @@ marketRouter.get("/ohlcv-pair", async (req: Request, res: Response) => {
   }
 
   const apiKey = process.env.BIRDEYE_API_KEY;
-  if (!apiKey) {
-    res.json({ data: [] });
-    return;
-  }
+  const timeTo = Math.floor(Date.now() / 1000);
+  const timeFrom = timeTo - rangeToSeconds(rangeParam);
 
-  try {
-    const timeTo = Math.floor(Date.now() / 1000);
-    const timeFrom = timeTo - rangeToSeconds(rangeParam);
-    const url = `${BIRDEYE_API}/defi/ohlcv/base_quote?base_address=${encodeURIComponent(base)}&quote_address=${encodeURIComponent(quote)}&type=${rangeToType(rangeParam)}&time_from=${timeFrom}&time_to=${timeTo}`;
+  const formatTime = (unixTime: number) => {
+    const date = new Date(unixTime * 1000);
+    return rangeParam === "1W" || rangeParam === "1D"
+      ? date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+      : date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  };
 
-    const resp = await fetch(url, {
-      headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
-    });
+  if (apiKey) {
+    try {
+      const url = `${BIRDEYE_API}/defi/ohlcv/base_quote?base_address=${encodeURIComponent(base)}&quote_address=${encodeURIComponent(quote)}&type=${rangeToType(rangeParam)}&time_from=${timeFrom}&time_to=${timeTo}`;
+      const resp = await fetch(url, {
+        headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
+      });
 
-    if (!resp.ok) {
-      const errBody = await resp.text();
-      console.warn("Birdeye OHLCV base_quote error:", resp.status, errBody.slice(0, 200));
-      res.json({ data: [] });
-      return;
+      if (resp.ok) {
+        const json = await resp.json();
+        const items = json?.data?.items;
+        if (Array.isArray(items) && items.length > 0) {
+          const data = items.map((c: { unixTime: number; c: number }) => ({
+            time: formatTime(c.unixTime),
+            price: Number(c.c),
+          }));
+          res.json({ data });
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Birdeye OHLCV base_quote exception:", e);
     }
 
-    const json = await resp.json();
-    const items = json?.data?.items;
-    if (!Array.isArray(items) || items.length === 0) {
-      res.json({ data: [] });
-      return;
+    // Fallback for token/SOL: synthesize from token USD OHLCV + SOL USD so chart shows real movement
+    if (quote === SOL_MINT) {
+      try {
+        const tokenOhlcvUrl = `${BIRDEYE_API}/defi/ohlcv?address=${encodeURIComponent(base)}&type=${rangeToType(rangeParam)}&time_from=${timeFrom}&time_to=${timeTo}&currency=usd`;
+        const tokenResp = await fetch(tokenOhlcvUrl, {
+          headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
+        });
+        if (!tokenResp.ok) {
+          res.json({ data: [] });
+          return;
+        }
+        const tokenJson = await tokenResp.json();
+        const tokenItems = tokenJson?.data?.items;
+        if (!Array.isArray(tokenItems) || tokenItems.length === 0) {
+          res.json({ data: [] });
+          return;
+        }
+        const solSeries = await fetchSolUsdOhlcv(rangeParam);
+        if (solSeries.length === 0) {
+          res.json({ data: [] });
+          return;
+        }
+        const solByTime = new Map<number, number>();
+        for (const s of solSeries) solByTime.set(s.unixTime, s.price);
+        const solTimes = [...solByTime.keys()].sort((a, b) => a - b);
+
+        const data = tokenItems
+          .map((c: { unixTime: number; c: number }) => {
+            const tokenUsd = Number(c.c);
+            if (!Number.isFinite(tokenUsd) || tokenUsd <= 0) return null;
+            let solUsd = solByTime.get(c.unixTime);
+            if (solUsd == null && solTimes.length > 0) {
+              const idx = solTimes.findIndex((t) => t >= c.unixTime);
+              if (idx <= 0) solUsd = solByTime.get(solTimes[0]);
+              else if (idx >= solTimes.length) solUsd = solByTime.get(solTimes[solTimes.length - 1]);
+              else solUsd = solByTime.get(solTimes[idx]) ?? solByTime.get(solTimes[idx - 1]);
+            }
+            if (solUsd == null || solUsd <= 0 || !Number.isFinite(solUsd)) return null;
+            const priceInSol = tokenUsd / solUsd;
+            return { time: formatTime(c.unixTime), price: priceInSol };
+          })
+          .filter((x): x is { time: string; price: number } => x != null && Number.isFinite(x.price) && x.price >= 0);
+
+        if (data.length > 0) {
+          res.json({ data });
+          return;
+        }
+      } catch (e) {
+        console.warn("OHLCV-pair synthesize fallback error:", e);
+      }
     }
-
-    const data = items.map((c: { unixTime: number; c: number }) => {
-      const date = new Date(c.unixTime * 1000);
-      const timeLabel =
-        rangeParam === "1W" || rangeParam === "1D"
-          ? date.toLocaleDateString(undefined, { month: "short", day: "numeric" })
-          : date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-      return { time: timeLabel, price: Number(c.c) };
-    });
-
-    res.json({ data });
-  } catch (e) {
-    console.warn("Birdeye OHLCV base_quote exception:", e);
-    res.json({ data: [] });
   }
+
+  res.json({ data: [] });
 });
 
 /**
