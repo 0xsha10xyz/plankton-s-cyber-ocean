@@ -14,6 +14,7 @@ import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Swap from "./pages/Swap";
+import Docs from "./pages/Docs";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/swap" element={<Swap />} />
+                <Route path="/docs" element={<Docs />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
