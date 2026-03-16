@@ -290,36 +290,43 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, latestPriceFro
 
   return (
     <div className={className}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <BarChart3 size={18} className="text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">{pairLabel}</h3>
-          {inputMint && (isLive ? (
-            <span className="text-xs text-muted-foreground">Live</span>
-          ) : loading ? (
-            <span className="text-xs text-muted-foreground">Loading…</span>
-          ) : (
-            <span className="text-xs text-muted-foreground" title="Set BIRDEYE_API_KEY on backend or use CoinGecko fallback for SOL">Sample</span>
-          ))}
+      <div className="flex flex-col gap-1 mb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BarChart3 size={18} className="text-primary" />
+            <h3 className="text-sm font-semibold text-foreground">{pairLabel}</h3>
+            {inputMint && (isLive ? (
+              <span className="text-xs text-muted-foreground">Live</span>
+            ) : loading ? (
+              <span className="text-xs text-muted-foreground">Loading…</span>
+            ) : (
+              <span className="text-xs text-muted-foreground" title="Set BIRDEYE_API_KEY on backend or use CoinGecko fallback for SOL">Sample</span>
+            ))}
+          </div>
+          <div className="flex gap-1">
+            {(["1H", "4H", "1D", "1W"] as const).map((r) => (
+              <motion.button
+                key={r}
+                type="button"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setRange(r)}
+                className={`text-xs px-2.5 py-1.5 rounded-md transition-colors ${
+                  range === r
+                    ? "bg-primary/20 text-primary font-medium"
+                    : "text-muted-foreground hover:text-primary hover:bg-secondary/50"
+                }`}
+              >
+                {r}
+              </motion.button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-1">
-          {(["1H", "4H", "1D", "1W"] as const).map((r) => (
-            <motion.button
-              key={r}
-              type="button"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => setRange(r)}
-              className={`text-xs px-2.5 py-1.5 rounded-md transition-colors ${
-                range === r
-                  ? "bg-primary/20 text-primary font-medium"
-                  : "text-muted-foreground hover:text-primary hover:bg-secondary/50"
-              }`}
-            >
-              {r}
-            </motion.button>
-          ))}
-        </div>
+        {effectiveLivePrice != null && Number.isFinite(effectiveLivePrice) && (
+          <p className="text-lg font-semibold text-primary">
+            {formatPrice(effectiveLivePrice)}
+          </p>
+        )}
       </div>
       <ChartContainer config={chartConfig} className="h-[260px] w-full">
         <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>

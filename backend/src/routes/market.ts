@@ -18,7 +18,64 @@ function rangeToSeconds(range: Range): number {
   }
 }
 
+const SOL_MINT = "So11111111111111111111111111111111111111112";
+const COINGECKO_SOL_ID = "solana";
+
 export const marketRouter = Router();
+
+/**
+ * GET /api/market/price?mint=...
+ * Returns { price: number } USD for the token. Uses Birdeye when BIRDEYE_API_KEY is set;
+ * for SOL mint only, falls back to CoinGecko when no API key.
+ */
+marketRouter.get("/price", async (req: Request, res: Response) => {
+  const mint = typeof req.query.mint === "string" ? req.query.mint.trim() : "";
+  if (!mint || mint.length > 64) {
+    res.status(400).json({ error: "Missing or invalid mint" });
+    return;
+  }
+
+  const apiKey = process.env.BIRDEYE_API_KEY;
+  if (apiKey) {
+    try {
+      const url = `${BIRDEYE_API}/defi/price?address=${encodeURIComponent(mint)}`;
+      const resp = await fetch(url, {
+        headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
+      });
+      if (resp.ok) {
+        const json = await resp.json();
+        const value = json?.data?.value;
+        if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+          res.json({ price: value });
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn("Birdeye price error:", e);
+    }
+  }
+
+  // Fallback: SOL price from CoinGecko (no key required, rate-limited)
+  if (mint === SOL_MINT) {
+    try {
+      const cgRes = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${COINGECKO_SOL_ID}&vs_currencies=usd`
+      );
+      if (cgRes.ok) {
+        const cg = await cgRes.json();
+        const p = cg?.[COINGECKO_SOL_ID]?.usd;
+        if (typeof p === "number" && Number.isFinite(p) && p >= 0) {
+          res.json({ price: p });
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  res.status(404).json({ error: "Price not available for this token" });
+});
 
 /**
  * GET /api/market/ohlcv?mint=...&range=1H|4H|1D|1W
