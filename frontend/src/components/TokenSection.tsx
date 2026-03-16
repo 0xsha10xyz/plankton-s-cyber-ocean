@@ -54,7 +54,8 @@ const TokenSection = () => {
         </div>
 
         <p className="text-sm text-muted-foreground mb-6">
-          50% of all subscription fees paid in PAP are permanently burned and the remaining 50% to add liquidity
+          50% of all subscription fees paid in PAP are permanently burned and the remaining 50% to add liquidity.
+          PAP utility and supply mechanics will be finalized before the Protocol Value &amp; PAP Utility phase is activated.
         </p>
 
         {/* Fire animation - dramatic burn */}

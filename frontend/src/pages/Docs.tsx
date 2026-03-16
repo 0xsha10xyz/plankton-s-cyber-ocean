@@ -227,6 +227,7 @@ const Docs = () => {
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   50% of all subscription fees paid in PAP are permanently burned, and the remaining 50% is used to add liquidity.
+                  PAP utility and detailed supply mechanics will be finalized and announced ahead of the Protocol Value &amp; PAP Utility phase.
                 </p>
               </div>
             </HoloCard>
