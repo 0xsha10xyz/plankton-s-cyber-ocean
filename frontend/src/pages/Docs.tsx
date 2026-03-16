@@ -146,6 +146,28 @@ const Docs = () => {
                 </p>
               </HoloCard>
               <HoloCard className="p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-3">Ecosystem Integrations</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Plankton integrates with a curated stack of Solana-native infrastructure and data providers to deliver
+                  institutional grade intelligence and execution. The protocol runs entirely on Solana, with routing and
+                  pricing powered by partners including Solana, Jupiter, Birdeye, CoinGecko, Helius, Phantom, and Ankr.
+                  Solana provides the base layer for all on-chain activity, Jupiter handles routing for swaps, Birdeye
+                  and CoinGecko supply market data and pricing, Helius and Ankr provide RPC and webhook infrastructure,
+                  and Phantom serves as the primary wallet integration for connecting users to the protocol.
+                </p>
+              </HoloCard>
+              <HoloCard className="p-6">
+                <h3 className="text-lg font-semibold text-foreground mb-3">Market Data &amp; Charting</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  The trading interface includes a live price chart that refreshes automatically and is designed to stay
+                  on real-time data rather than falling back to demo mode. OHLCV and price feeds are sourced from Birdeye
+                  where available, with CoinGecko used as a fallback for core assets. When users paste a token contract
+                  address and hold a balance, Plankton resolves the token name via on-chain metadata and market APIs,
+                  then caches it locally so the correct symbol is displayed consistently across the swap view, account
+                  sidebar, and chart pair labels.
+                </p>
+              </HoloCard>
+              <HoloCard className="p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-3">How It Works</h3>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-start gap-2"><Zap size={14} className="text-primary mt-1 flex-shrink-0" /> AI agents scan Solana mainnet blocks in real-time</li>
