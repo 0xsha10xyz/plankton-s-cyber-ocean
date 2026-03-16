@@ -290,7 +290,7 @@ const Header = () => {
               className="lg:hidden overflow-hidden border-t border-border/30"
               aria-label="Main navigation"
             >
-              <div className="px-4 py-3 max-h-[min(70vh,400px)] overflow-y-auto overscroll-contain flex flex-col gap-0.5">
+              <div className="px-4 py-3 max-h-[min(70vh,400px)] overflow-y-auto flex flex-col gap-0.5">
                 {NAV_CONFIG.map((item) => {
                   const sectionId = "sectionId" in item ? item.sectionId : undefined;
                   const path = "path" in item ? item.path : undefined;
@@ -299,6 +299,7 @@ const Header = () => {
                     "min-h-[44px] flex items-center px-3 py-3 text-sm transition-colors text-left rounded-md hover:bg-secondary/50",
                     active ? "text-primary font-semibold bg-primary/10 border-l-2 border-primary" : "text-muted-foreground hover:text-primary"
                   );
+                  // Direct route (e.g. /swap, /docs)
                   if (path) {
                     return (
                       <Link
@@ -311,27 +312,17 @@ const Header = () => {
                       </Link>
                     );
                   }
-                  if (pathname !== "/") {
-                    return (
-                      <Link
-                        key={sectionId}
-                        to={`/#${sectionId}`}
-                        onClick={() => setMobileOpen(false)}
-                        className={mobileItemClass}
-                      >
-                        {item.label}
-                      </Link>
-                    );
-                  }
+                  // Section on the landing page: always navigate via hash,
+                  // Index.tsx will handle smooth scrolling based on the hash.
                   return (
-                    <button
+                    <Link
                       key={sectionId}
-                      type="button"
-                      onClick={() => handleNavClick(item)}
+                      to={`/#${sectionId}`}
+                      onClick={() => setMobileOpen(false)}
                       className={mobileItemClass}
                     >
                       {item.label}
-                    </button>
+                    </Link>
                   );
                 })}
                 {connected && (
