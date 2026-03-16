@@ -20,6 +20,36 @@ function rangeToSeconds(range: Range): number {
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const COINGECKO_SOL_ID = "solana";
+const JUPITER_QUOTE_BASES = [
+  "https://api.jup.ag/swap/v1",
+  "https://quote-api.jup.ag/v6",
+];
+
+/** Get decimals for a mint via RPC (no API key). */
+async function getDecimalsRpc(mint: string): Promise<number | null> {
+  try {
+    const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+    const res = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getAccountInfo",
+        params: [mint, { encoding: "base64" }],
+      }),
+    });
+    const json = await res.json();
+    const b64 = json?.result?.value?.data?.[0];
+    if (b64 && typeof b64 === "string") {
+      const buf = Buffer.from(b64, "base64");
+      if (buf.length >= 45) return buf.readUInt8(44);
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
 
 export const marketRouter = Router();
 
@@ -141,7 +171,7 @@ marketRouter.get("/ohlcv-pair", async (req: Request, res: Response) => {
 
 /**
  * GET /api/market/price-pair?base=...&quote=...
- * Current pair price (quote per base). Uses Birdeye base_quote with short range and returns last close.
+ * Current pair price (quote per base). Tries Birdeye first; falls back to Jupiter quote for live price when Birdeye is unavailable.
  */
 marketRouter.get("/price-pair", async (req: Request, res: Response) => {
   const base = typeof req.query.base === "string" ? req.query.base.trim() : "";
@@ -153,43 +183,64 @@ marketRouter.get("/price-pair", async (req: Request, res: Response) => {
   }
 
   const apiKey = process.env.BIRDEYE_API_KEY;
-  if (!apiKey) {
-    res.status(404).json({ error: "Pair price requires BIRDEYE_API_KEY" });
-    return;
+  if (apiKey) {
+    try {
+      const timeTo = Math.floor(Date.now() / 1000);
+      const timeFrom = timeTo - 3600;
+      const url = `${BIRDEYE_API}/defi/ohlcv/base_quote?base_address=${encodeURIComponent(base)}&quote_address=${encodeURIComponent(quote)}&type=1H&time_from=${timeFrom}&time_to=${timeTo}`;
+
+      const resp = await fetch(url, {
+        headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
+      });
+
+      if (resp.ok) {
+        const json = await resp.json();
+        const items = json?.data?.items;
+        if (Array.isArray(items) && items.length > 0) {
+          const last = items[items.length - 1];
+          const price = typeof last?.c === "number" && Number.isFinite(last.c) ? last.c : null;
+          if (price !== null && price >= 0) {
+            res.json({ price });
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Birdeye price-pair error:", e);
+    }
   }
 
+  // Fallback: live price from Jupiter quote (1 base token -> quote)
   try {
-    const timeTo = Math.floor(Date.now() / 1000);
-    const timeFrom = timeTo - 3600; // 1 hour
-    const url = `${BIRDEYE_API}/defi/ohlcv/base_quote?base_address=${encodeURIComponent(base)}&quote_address=${encodeURIComponent(quote)}&type=1H&time_from=${timeFrom}&time_to=${timeTo}`;
-
-    const resp = await fetch(url, {
-      headers: { "X-API-KEY": apiKey, "x-chain": "solana" },
-    });
-
-    if (!resp.ok) {
-      res.status(404).json({ error: "Pair price not available" });
+    const baseDecimals = await getDecimalsRpc(base);
+    const quoteDecimals = await getDecimalsRpc(quote);
+    if (baseDecimals === null || quoteDecimals === null) {
+      res.status(404).json({ error: "Could not get token decimals" });
       return;
     }
-
-    const json = await resp.json();
-    const items = json?.data?.items;
-    if (!Array.isArray(items) || items.length === 0) {
-      res.status(404).json({ error: "Pair price not available" });
-      return;
+    const oneBaseRaw = String(BigInt(10) ** BigInt(baseDecimals));
+    for (const jupiterBase of JUPITER_QUOTE_BASES) {
+      try {
+        const quoteUrl = `${jupiterBase}/quote?inputMint=${encodeURIComponent(base)}&outputMint=${encodeURIComponent(quote)}&amount=${encodeURIComponent(oneBaseRaw)}&slippageBps=100`;
+        const quoteRes = await fetch(quoteUrl);
+        if (!quoteRes.ok) continue;
+        const data = await quoteRes.json();
+        const outRaw = data?.outAmount;
+        if (outRaw == null) continue;
+        const outNum = Number(outRaw);
+        if (!Number.isFinite(outNum) || outNum < 0) continue;
+        const price = outNum / 10 ** quoteDecimals;
+        res.json({ price });
+        return;
+      } catch {
+        continue;
+      }
     }
-
-    const last = items[items.length - 1];
-    const price = typeof last?.c === "number" && Number.isFinite(last.c) ? last.c : null;
-    if (price === null || price < 0) {
-      res.status(404).json({ error: "Pair price not available" });
-      return;
-    }
-    res.json({ price });
   } catch (e) {
-    console.warn("Birdeye price-pair error:", e);
-    res.status(500).json({ error: "Pair price failed" });
+    console.warn("Jupiter price-pair fallback error:", e);
   }
+
+  res.status(404).json({ error: "Pair price not available" });
 });
 
 /**
