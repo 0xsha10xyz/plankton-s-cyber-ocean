@@ -204,6 +204,12 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [context, setContext] = useState<ChatContext>({});
 
+  const quickActions = [
+    "Ask whale signals",
+    "Analyze liquidity flow",
+    "Set timeframe 24h",
+  ];
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
@@ -316,24 +322,43 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
         </div>
 
         <div className="p-4 border-t border-border/50">
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap gap-2">
+              {quickActions.map((a) => (
+                <Button
+                  key={a}
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 px-3 text-xs"
+                  disabled={sending}
+                  onClick={() => handleSendWithText(a)}
+                >
+                  {a}
+                </Button>
+              ))}
+            </div>
+
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about portfolio, risk, research..."
+              placeholder="Paste mint/wallet + timeframe (1h/24h/7d/30d)"
               className="min-h-[44px] max-h-32 resize-none"
               rows={1}
               disabled={sending}
             />
-            <Button
-              size="icon"
-              className="shrink-0 h-11 w-11"
-              onClick={handleSend}
-              disabled={sending || !input.trim()}
-            >
-              <Send size={18} />
-            </Button>
+
+            <div className="flex gap-2 items-center">
+              <Button
+                size="icon"
+                className="shrink-0 h-11 w-11"
+                onClick={handleSend}
+                disabled={sending || !input.trim()}
+              >
+                <Send size={18} />
+              </Button>
+            </div>
           </div>
         </div>
       </SheetContent>
