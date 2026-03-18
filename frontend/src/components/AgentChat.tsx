@@ -13,38 +13,100 @@ export type ChatMessage = {
   timestamp: Date;
 };
 
+type AgentJsonResponse = {
+  insight: string;
+  additional_insight: string;
+  actions: string[];
+};
+
 const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "agent",
-  content:
-    "Hi, im Plankton. How may i assist you?",
+  content: JSON.stringify({
+    insight: "Send a Solana token mint or wallet address. I’ll surface whale signals, liquidity shifts, and anomalies.",
+    additional_insight:
+      "If you share your timeframe (e.g. 1h/24h/7d), I’ll prioritize the freshest smart-money behavior and flow patterns.",
+    actions: ["Send token mint", "Paste wallet address", "Choose timeframe"],
+  } satisfies AgentJsonResponse),
   timestamp: new Date(),
 };
 
-function getAgentReply(userMessage: string): string {
+function buildAgentResponse(userMessage: string): AgentJsonResponse {
   const lower = userMessage.toLowerCase().trim();
-  if (lower.includes("portfolio") || lower.includes("balance") || lower.includes("holdings")) {
-    return "Your portfolio view is available in the Command Center. I can summarize: connect your wallet and enable the Autonomous Agent to see SOL balance and PnL. Want me to walk you through the Agent setup?";
+
+  if (lower.includes("portfolio") || lower.includes("balance") || lower.includes("holdings") || lower.includes("pnl")) {
+    return {
+      insight: "Open Command Center after connecting your wallet to view SOL balance and PnL. I can also guide how to enable autonomous execution.",
+      additional_insight:
+        "Smart-money alpha usually arrives faster than manual checks. Once the Agent is enabled, use the Research screen to confirm whale flow alignment before you size trades.",
+      actions: ["Open Command Center", "Connect wallet", "Enable Autonomous Agent"],
+    };
   }
-  if (lower.includes("risk") || lower.includes("conservative") || lower.includes("aggressive")) {
-    return "Risk levels are Conservative, Mid, and Aggressive. You can adjust the slider in the Autonomous Agent Protocol panel. Mid is the default—good balance of opportunity and safety.";
+
+  if (lower.includes("risk") || lower.includes("conservative") || lower.includes("aggressive") || lower.includes("mid")) {
+    return {
+      insight: "Risk profiles are Conservative, Mid, and Aggressive. Mid is the default balance for opportunity vs. safety.",
+      additional_insight:
+        "If you’re seeing choppy price action, switch down a tier first—whales often distribute during volatility spikes, and aggressive settings can chase noise.",
+      actions: ["Set risk to Mid", "Review stop-loss", "Lower on volatility"],
+    };
   }
-  if (lower.includes("market") || lower.includes("research") || lower.includes("whale") || lower.includes("token")) {
-    return "Research & Screening shows whale movements, new token launches, and volume spikes. The AI terminal logs real-time scanning. Check the Research section on the dashboard for the latest.";
+
+  if (lower.includes("market") || lower.includes("research") || lower.includes("whale") || lower.includes("token") || lower.includes("volume")) {
+    return {
+      insight: "Use Research & Screening to track whale movements and volume spikes, then validate with the live chart before swapping.",
+      additional_insight:
+        "The earliest confirmation is usually: rising volume + stable/expanding liquidity + whale accumulation across related routes (same pool/route family).",
+      actions: ["Open Research", "Track whale wallets", "Check volume spikes"],
+    };
   }
-  if (lower.includes("agent") || lower.includes("autonomous") || lower.includes("auto-pilot")) {
-    return "The Autonomous Agent runs 24/7 once you enable it: go to Command Center, turn the toggle on, and set your risk level. I'll execute and rebalance within your parameters. Any other questions?";
+
+  if (lower.includes("agent") || lower.includes("autonomous") || lower.includes("auto-pilot") || lower.includes("autopilot")) {
+    return {
+      insight: "Enable the Autonomous Agent in Command Center (toggle on) and set your risk level. The Agent is designed for 24/7 execution and rebalancing.",
+      additional_insight:
+        "Watch the AI terminal logs for execution timing. If execution keeps triggering during sideways markets, tighten risk first.",
+      actions: ["Toggle Agent ON", "Set risk level", "Monitor terminal logs"],
+    };
   }
+
   if (lower.includes("patties") || lower.includes("pap") || lower.includes("tokenomics") || lower.includes("burn")) {
-    return "50% of subscription fees paid in PAP (Plankton Autonomous Protocol) are burned and the remaining 50% adds liquidity. Check the Tokenomics and Burn Dashboard sections for supply and stats.";
+    return {
+      insight: "PAP tokenomics: 50% of subscription fees paid in PAP are permanently burned, and the remaining 50% is used to add liquidity.",
+      additional_insight:
+        "When the protocol moves to deeper PAP utility phases, supply dynamics matter most. Track burn/liquidity cadence to anticipate volatility regime changes.",
+      actions: ["Open Tokenomics", "Review Burn Mechanism", "Check PAP utility"],
+    };
   }
+
   if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) {
-    return "Hello! How can I help you with Plankton today?";
+    return {
+      insight: "Hi—paste a token mint or wallet address and I’ll generate a Solana smart-money read.",
+      additional_insight:
+        "If you include timeframe (1h/24h/7d), I’ll prioritize anomalies and flow shifts from the most relevant window.",
+      actions: ["Send token mint", "Paste wallet address", "Choose timeframe"],
+    };
   }
-  if (lower.includes("help") || lower.includes("what can you")) {
-    return "I can explain portfolio, risk settings, market research, the autonomous agent, and PAP (Plankton Autonomous Protocol) tokenomics. Just ask in plain language.";
+
+  if (lower.includes("help") || lower.includes("what can you") || lower.includes("commands")) {
+    return {
+      insight: "I can analyze: portfolio/balance, risk settings, research signals, autonomous agent behavior, and PAP tokenomics.",
+      additional_insight:
+        "For actionable alpha, share a mint and a timeframe—then I’ll focus on whale accumulation/distribution and liquidity/volume anomalies.",
+      actions: ["Ask about portfolio", "Ask about risk", "Ask about whales"],
+    };
   }
-  return "I'm focused on Plankton trading, research, and agent controls. Try asking about your portfolio, risk level, market research, or how to enable the autonomous agent.";
+
+  return {
+    insight: "Send a token mint or wallet address. I’ll surface whale signals, liquidity shifts, and market anomalies.",
+    additional_insight:
+      "If you’re unsure what to paste, start with the token you’re watching in Swap and I’ll map it to the on-chain analysis flow.",
+    actions: ["Send token mint", "Paste wallet address", "Choose timeframe"],
+  };
+}
+
+function getAgentReply(userMessage: string): string {
+  return JSON.stringify(buildAgentResponse(userMessage));
 }
 
 type AgentChatProps = {
@@ -57,19 +119,20 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [lastActions, setLastActions] = useState<string[]>([]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = () => {
-    const text = input.trim();
-    if (!text || sending) return;
+  const handleSendWithText = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || sending) return;
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
-      content: text,
+      content: trimmed,
       timestamp: new Date(),
     };
     setMessages((prev) => [...prev, userMsg]);
@@ -78,16 +141,32 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
 
     // Simulate agent typing delay
     setTimeout(() => {
-      const reply = getAgentReply(text);
+      const reply = getAgentReply(trimmed);
       const agentMsg: ChatMessage = {
         id: `agent-${Date.now()}`,
         role: "agent",
         content: reply,
         timestamp: new Date(),
       };
+
       setMessages((prev) => [...prev, agentMsg]);
+
+      // Cache parsed actions for UI button rendering if possible
+      try {
+        const parsed = JSON.parse(reply) as AgentJsonResponse;
+        if (Array.isArray(parsed?.actions)) setLastActions(parsed.actions);
+      } catch {
+        // ignore
+      }
+
       setSending(false);
-    }, 600 + Math.min(text.length * 20, 800));
+    }, 600 + Math.min(trimmed.length * 20, 800));
+  };
+
+  const handleSend = () => {
+    const text = input.trim();
+    if (!text || sending) return;
+    handleSendWithText(text);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -126,16 +205,12 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
                   <Bot size={14} className="text-primary" />
                 </div>
               )}
-              <div
-                className={cn(
-                  "max-w-[85%] rounded-xl px-4 py-2.5 text-sm",
-                  msg.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary/60 text-foreground border border-border/50"
-                )}
-              >
-                <p className="whitespace-pre-wrap">{msg.content}</p>
-              </div>
+              <AgentMessageBubble
+                msg={msg}
+                sending={sending}
+                lastActions={lastActions}
+                onAction={(action) => handleSendWithText(action)}
+              />
               {msg.role === "user" && (
                 <div className="shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                   <User size={14} className="text-primary" />
@@ -186,5 +261,64 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function AgentMessageBubble({
+  msg,
+  lastActions,
+  onAction,
+}: {
+  msg: ChatMessage;
+  sending: boolean;
+  lastActions: string[];
+  onAction: (action: string) => void;
+}) {
+  let parsed: AgentJsonResponse | null = null;
+  if (msg.role === "agent") {
+    try {
+      const maybe = JSON.parse(msg.content) as AgentJsonResponse;
+      if (maybe && typeof maybe.insight === "string" && Array.isArray(maybe.actions)) parsed = maybe;
+    } catch {
+      parsed = null;
+    }
+  }
+
+  return (
+    <div
+      className={cn(
+        "max-w-[85%] rounded-xl px-4 py-2.5 text-sm",
+        msg.role === "user"
+          ? "bg-primary text-primary-foreground"
+          : "bg-secondary/60 text-foreground border border-border/50"
+      )}
+    >
+      {msg.role === "agent" && parsed ? (
+        <div className="space-y-2">
+          <p className="whitespace-pre-wrap">{parsed.insight}</p>
+          {parsed.additional_insight ? (
+            <p className="text-xs opacity-80">{parsed.additional_insight}</p>
+          ) : null}
+          {parsed.actions?.length ? (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {parsed.actions.map((a) => (
+                <Button
+                  key={a}
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="h-8 px-3 text-xs"
+                  onClick={() => onAction(a)}
+                >
+                  {a}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <p className="whitespace-pre-wrap">{msg.content}</p>
+      )}
+    </div>
   );
 }
