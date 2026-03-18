@@ -23,6 +23,12 @@ const ParticleBackground = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+    const coarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches ?? false;
+    const isMobile = window.innerWidth <= 640;
+    // On touch devices, the full-screen animation can cause noticeable input lag.
+    const lowPower = reduceMotion || coarsePointer || isMobile;
+
     const resize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -31,7 +37,7 @@ const ParticleBackground = () => {
     window.addEventListener("resize", resize);
 
     // Initialize particles
-    const count = Math.min(80, Math.floor(window.innerWidth / 15));
+    const count = lowPower ? Math.min(45, Math.floor(window.innerWidth / 25)) : Math.min(80, Math.floor(window.innerWidth / 15));
     particlesRef.current = Array.from({ length: count }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
@@ -45,9 +51,18 @@ const ParticleBackground = () => {
     const handleMouse = (e: MouseEvent) => {
       mouseRef.current = { x: e.clientX, y: e.clientY };
     };
-    window.addEventListener("mousemove", handleMouse);
+    if (!coarsePointer) window.addEventListener("mousemove", handleMouse);
 
-    const animate = () => {
+    let lastDrawTs = 0;
+    const animate = (ts: number) => {
+      if (lowPower) {
+        // Throttle draw rate on low-power devices to keep taps responsive.
+        if (ts - lastDrawTs < 60) {
+          animationRef.current = requestAnimationFrame(animate);
+          return;
+        }
+        lastDrawTs = ts;
+      }
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       particlesRef.current.forEach((p) => {
@@ -87,28 +102,30 @@ const ParticleBackground = () => {
       });
 
       // Draw connections
-      particlesRef.current.forEach((a, i) => {
-        particlesRef.current.slice(i + 1).forEach((b) => {
-          const d = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-          if (d < 120) {
-            ctx.strokeStyle = `hsla(180, 80%, 50%, ${(1 - d / 120) * 0.15})`;
-            ctx.lineWidth = 0.5;
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.stroke();
-          }
+      if (!lowPower) {
+        particlesRef.current.forEach((a, i) => {
+          particlesRef.current.slice(i + 1).forEach((b) => {
+            const d = Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+            if (d < 120) {
+              ctx.strokeStyle = `hsla(180, 80%, 50%, ${(1 - d / 120) * 0.15})`;
+              ctx.lineWidth = 0.5;
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.stroke();
+            }
+          });
         });
-      });
+      }
 
       animationRef.current = requestAnimationFrame(animate);
     };
 
-    animate();
+    animationRef.current = requestAnimationFrame(animate);
 
     return () => {
       window.removeEventListener("resize", resize);
-      window.removeEventListener("mousemove", handleMouse);
+      if (!coarsePointer) window.removeEventListener("mousemove", handleMouse);
       cancelAnimationFrame(animationRef.current);
     };
   }, []);
