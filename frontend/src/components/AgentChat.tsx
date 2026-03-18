@@ -19,6 +19,12 @@ type AgentJsonResponse = {
   actions: string[];
 };
 
+type ChatContext = {
+  tokenMint?: string;
+  wallet?: string;
+  timeframe?: "1h" | "24h" | "7d" | "30d";
+};
+
 const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "agent",
@@ -26,17 +32,82 @@ const WELCOME_MESSAGE: ChatMessage = {
     insight: "Send a Solana token mint or wallet address. I’ll surface whale signals, liquidity shifts, and anomalies.",
     additional_insight:
       "If you share your timeframe (e.g. 1h/24h/7d), I’ll prioritize the freshest smart-money behavior and flow patterns.",
-    actions: ["Send token mint", "Paste wallet address", "Choose timeframe"],
+    actions: ["Send token mint", "Paste wallet address", "Set timeframe 24h"],
   } satisfies AgentJsonResponse),
   timestamp: new Date(),
 };
 
-function buildAgentResponse(userMessage: string): AgentJsonResponse {
+const BASE58_RE = /[1-9A-HJ-NP-Za-km-z]{32,44}/g;
+function detectBase58(text: string): string[] {
+  const matches = text.match(BASE58_RE);
+  return matches ?? [];
+}
+
+function shortenAddress(address: string, chars = 4): string {
+  return `${address.slice(0, chars)}...${address.slice(-chars)}`;
+}
+
+function detectTimeframe(text: string): ChatContext["timeframe"] {
+  const lower = text.toLowerCase();
+  if (/(^|\D)1\s*h($|\D)/.test(lower) || /\b1h\b/.test(lower)) return "1h";
+  if (/(^|\D)24\s*h($|\D)/.test(lower) || /\b24h\b/.test(lower)) return "24h";
+  if (/(^|\D)7\s*d($|\D)/.test(lower) || /\b7d\b/.test(lower)) return "7d";
+  if (/(^|\D)30\s*d($|\D)/.test(lower) || /\b30d\b/.test(lower)) return "30d";
+  return undefined;
+}
+
+function applyContextFromUserMessage(userMessage: string, ctx: ChatContext): ChatContext {
   const lower = userMessage.toLowerCase().trim();
+  const bases = detectBase58(userMessage);
+  const timeframe = detectTimeframe(lower);
+
+  let next: ChatContext = { ...ctx };
+  if (timeframe) next.timeframe = timeframe;
+
+  if (bases.length > 0) {
+    const candidate = bases[0];
+    if (lower.includes("wallet") || lower.includes("address")) {
+      next.wallet = candidate;
+    } else if (lower.includes("mint") || lower.includes("token")) {
+      next.tokenMint = candidate;
+    } else if (!next.tokenMint) {
+      next.tokenMint = candidate;
+    } else {
+      next.wallet = candidate;
+    }
+  }
+
+  // Lightweight affordances for guided actions
+  if (lower.includes("set timeframe 1h")) next.timeframe = "1h";
+  if (lower.includes("set timeframe 24h")) next.timeframe = "24h";
+  if (lower.includes("set timeframe 7d")) next.timeframe = "7d";
+  if (lower.includes("set timeframe 30d")) next.timeframe = "30d";
+
+  return next;
+}
+
+function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonResponse {
+  const lower = userMessage.toLowerCase().trim();
+  const tf = ctx.timeframe ?? "24h";
+
+  const mintLabel = ctx.tokenMint ? shortenAddress(ctx.tokenMint) : undefined;
+  const walletLabel = ctx.wallet ? shortenAddress(ctx.wallet) : undefined;
+
+  // Guided chat: proactively ask for missing core context
+  if (!ctx.tokenMint && !ctx.wallet) {
+    return {
+      insight: "Paste a Solana mint or wallet so I can start the alpha scan.",
+      additional_insight:
+        "Tell me timeframe if you have it (1h/24h/7d). I’ll prioritize anomalies and smart-money flow in that window.",
+      actions: ["Send token mint", "Paste wallet address", `Set timeframe ${tf}`],
+    };
+  }
 
   if (lower.includes("portfolio") || lower.includes("balance") || lower.includes("holdings") || lower.includes("pnl")) {
     return {
-      insight: "Open Command Center after connecting your wallet to view SOL balance and PnL. I can also guide how to enable autonomous execution.",
+      insight: walletLabel
+        ? `Portfolio read for ${walletLabel} — focus on flow-supported moves in ${tf}.`
+        : "Open Command Center after connecting your wallet to view SOL balance and PnL. I can also guide how to enable autonomous execution.",
       additional_insight:
         "Smart-money alpha usually arrives faster than manual checks. Once the Agent is enabled, use the Research screen to confirm whale flow alignment before you size trades.",
       actions: ["Open Command Center", "Connect wallet", "Enable Autonomous Agent"],
@@ -45,7 +116,7 @@ function buildAgentResponse(userMessage: string): AgentJsonResponse {
 
   if (lower.includes("risk") || lower.includes("conservative") || lower.includes("aggressive") || lower.includes("mid")) {
     return {
-      insight: "Risk profiles are Conservative, Mid, and Aggressive. Mid is the default balance for opportunity vs. safety.",
+      insight: `Risk profiles: Conservative, Mid, Aggressive. Default is Mid for ${tf}.`,
       additional_insight:
         "If you’re seeing choppy price action, switch down a tier first—whales often distribute during volatility spikes, and aggressive settings can chase noise.",
       actions: ["Set risk to Mid", "Review stop-loss", "Lower on volatility"],
@@ -53,6 +124,14 @@ function buildAgentResponse(userMessage: string): AgentJsonResponse {
   }
 
   if (lower.includes("market") || lower.includes("research") || lower.includes("whale") || lower.includes("token") || lower.includes("volume")) {
+    if (ctx.tokenMint) {
+      return {
+        insight: `Alpha scan for ${mintLabel} on ${tf}: watch whale accumulation/distribution + liquidity shifts.`,
+        additional_insight:
+          "First confirmation pattern: rising volume with stable/expanding liquidity, plus coordinated wallet behavior across correlated routes.",
+        actions: ["Track whale wallets", "Analyze liquidity flow", "Check volume spikes"],
+      };
+    }
     return {
       insight: "Use Research & Screening to track whale movements and volume spikes, then validate with the live chart before swapping.",
       additional_insight:
@@ -63,7 +142,7 @@ function buildAgentResponse(userMessage: string): AgentJsonResponse {
 
   if (lower.includes("agent") || lower.includes("autonomous") || lower.includes("auto-pilot") || lower.includes("autopilot")) {
     return {
-      insight: "Enable the Autonomous Agent in Command Center (toggle on) and set your risk level. The Agent is designed for 24/7 execution and rebalancing.",
+      insight: "Enable the Autonomous Agent in Command Center and set your risk level. It’s built for 24/7 rebalancing.",
       additional_insight:
         "Watch the AI terminal logs for execution timing. If execution keeps triggering during sideways markets, tighten risk first.",
       actions: ["Toggle Agent ON", "Set risk level", "Monitor terminal logs"],
@@ -84,7 +163,7 @@ function buildAgentResponse(userMessage: string): AgentJsonResponse {
       insight: "Hi—paste a token mint or wallet address and I’ll generate a Solana smart-money read.",
       additional_insight:
         "If you include timeframe (1h/24h/7d), I’ll prioritize anomalies and flow shifts from the most relevant window.",
-      actions: ["Send token mint", "Paste wallet address", "Choose timeframe"],
+      actions: ["Send token mint", "Paste wallet address", `Set timeframe ${tf}`],
     };
   }
 
@@ -98,15 +177,19 @@ function buildAgentResponse(userMessage: string): AgentJsonResponse {
   }
 
   return {
-    insight: "Send a token mint or wallet address. I’ll surface whale signals, liquidity shifts, and market anomalies.",
+    insight: ctx.tokenMint
+      ? `For ${mintLabel}: I’ll surface whale signals + liquidity shifts (default ${tf}).`
+      : "Send a token mint or wallet address. I’ll surface whale signals, liquidity shifts, and market anomalies.",
     additional_insight:
       "If you’re unsure what to paste, start with the token you’re watching in Swap and I’ll map it to the on-chain analysis flow.",
-    actions: ["Send token mint", "Paste wallet address", "Choose timeframe"],
+    actions: ctx.timeframe
+      ? ["Track whale wallets", "Analyze liquidity flow", "Check volume spikes"]
+      : ["Set timeframe 24h", "Set timeframe 7d", "Set timeframe 1h"],
   };
 }
 
-function getAgentReply(userMessage: string): string {
-  return JSON.stringify(buildAgentResponse(userMessage));
+function getAgentReply(userMessage: string, ctx: ChatContext): string {
+  return JSON.stringify(buildAgentResponse(userMessage, ctx));
 }
 
 type AgentChatProps = {
@@ -119,7 +202,7 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [lastActions, setLastActions] = useState<string[]>([]);
+  const [context, setContext] = useState<ChatContext>({});
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -128,6 +211,9 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
   const handleSendWithText = (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
+
+    const nextContext = applyContextFromUserMessage(trimmed, context);
+    setContext(nextContext);
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -141,7 +227,7 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
 
     // Simulate agent typing delay
     setTimeout(() => {
-      const reply = getAgentReply(trimmed);
+      const reply = getAgentReply(trimmed, nextContext);
       const agentMsg: ChatMessage = {
         id: `agent-${Date.now()}`,
         role: "agent",
@@ -150,14 +236,6 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
       };
 
       setMessages((prev) => [...prev, agentMsg]);
-
-      // Cache parsed actions for UI button rendering if possible
-      try {
-        const parsed = JSON.parse(reply) as AgentJsonResponse;
-        if (Array.isArray(parsed?.actions)) setLastActions(parsed.actions);
-      } catch {
-        // ignore
-      }
 
       setSending(false);
     }, 600 + Math.min(trimmed.length * 20, 800));
@@ -208,7 +286,6 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
               <AgentMessageBubble
                 msg={msg}
                 sending={sending}
-                lastActions={lastActions}
                 onAction={(action) => handleSendWithText(action)}
               />
               {msg.role === "user" && (
@@ -266,12 +343,10 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
 
 function AgentMessageBubble({
   msg,
-  lastActions,
   onAction,
 }: {
   msg: ChatMessage;
   sending: boolean;
-  lastActions: string[];
   onAction: (action: string) => void;
 }) {
   let parsed: AgentJsonResponse | null = null;
