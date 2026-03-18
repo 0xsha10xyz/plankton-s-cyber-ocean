@@ -4,6 +4,8 @@ type Integration = {
   name: string;
   role: string;
   logoUrl: string;
+  logoObjectFit?: "contain" | "cover";
+  logoObjectPosition?: string; // CSS object-position
 };
 
 const INTEGRATIONS: Integration[] = [
@@ -36,6 +38,20 @@ const INTEGRATIONS: Integration[] = [
     name: "Phantom",
     role: "Primary wallet integration for connecting users to Plankton.",
     logoUrl: "/logos/phantom.png",
+  },
+  {
+    name: "OKX Wallet",
+    role: "Wallet for connecting and swapping on Solana via OKX Wallet.",
+    logoUrl: "/logos/wallets-modal-snapshot.png",
+    logoObjectFit: "cover",
+    logoObjectPosition: "15% 30%",
+  },
+  {
+    name: "Solflare",
+    role: "Wallet for connecting and swapping on Solana via Solflare.",
+    logoUrl: "/logos/wallets-modal-snapshot.png",
+    logoObjectFit: "cover",
+    logoObjectPosition: "15% 78%",
   },
   {
     name: "Ankr",
@@ -77,7 +93,11 @@ export function IntegrationsSection() {
                 <img
                   src={item.logoUrl}
                   alt={`${item.name} logo`}
-                  className="max-w-full max-h-full object-contain"
+                  style={item.logoObjectPosition ? { objectPosition: item.logoObjectPosition } : undefined}
+                  className={[
+                    "w-full h-full",
+                    item.logoObjectFit === "cover" ? "object-cover" : "object-contain",
+                  ].join(" ")}
                   loading="lazy"
                 />
               </div>
