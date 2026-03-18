@@ -151,10 +151,11 @@ const Docs = () => {
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Plankton integrates with a curated stack of Solana-native infrastructure and data providers to deliver
                   institutional grade intelligence and execution. The protocol runs entirely on Solana, with routing and
-                  pricing powered by partners including Solana, Jupiter, Birdeye, CoinGecko, Helius, Phantom, and Ankr.
+                  pricing powered by partners including Solana, Jupiter, Birdeye, CoinGecko, Helius, Ankr, and wallet providers
+                  including Phantom, OKX Wallet, and Solflare.
                   Solana provides the base layer for all on-chain activity, Jupiter handles routing for swaps, Birdeye
                   and CoinGecko supply market data and pricing, Helius and Ankr provide RPC and webhook infrastructure,
-                  and Phantom serves as the primary wallet integration for connecting users to the protocol.
+                  and Phantom/OKX Wallet/Solflare serve as wallet integrations for connecting users to the protocol.
                 </p>
               </HoloCard>
               <HoloCard className="p-6">
