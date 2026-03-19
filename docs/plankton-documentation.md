@@ -66,7 +66,11 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 **Autonomous Agent Protocol** — In the Command Center: AITerminal (scrolling logs) and the AutoPilot card. The card shows "Autonomous Agent Protocol" and "Auto Pilot - Your Agent Partner." When not connected, it shows a message and "Connect Wallet." When connected, it shows a toggle, P/L (24h, Total), risk slider, and SOON.
 
-**AI Agent Chat (when connected)** — A floating button (bot icon) at the bottom-right opens the AI Agent Chat panel (from the right). You can send messages and receive replies. Topics include portfolio, risk, market research, the autonomous agent, and PAP. Only visible when the wallet is connected.
+**AI Agent Chat (under Command Center)** — In the Command Center area, a small chat teaser/entry appears; when your wallet is connected, it opens the AI Agent Chat as a true full-screen page (not a modal/sheet). You can send messages and receive replies. Topics include portfolio, risk, market research, the autonomous agent, and PAP.
+
+Quick actions supported in-chat:
+- `Check Balance` / `Check another wallet` → shows `Balance details` with `SOL <amount>` and SPL token lines as `TOKEN_NAME <amount>` (mint/contract not shown).
+- `Buy` / `Sell` → also shows `Balance details`, but each SPL token line includes the token contract (mint) in short form: `TOKEN_NAME <amount> | <mint>`.
 
 **Swap** — The **Swap** link in the header opens the Swap page. There you get a trading chart (time ranges 1H, 4H, 1D, 1W) for the selected pair and a manual swap form. Connect your wallet, choose From/To tokens (SOL, USDC, USDT), enter an amount, click **Get quote** (powered by Jupiter on Solana), then **Swap** to execute. Success links to the transaction on Solscan. This gives users a way to trade manually until the autonomous agent is fully live.
 
