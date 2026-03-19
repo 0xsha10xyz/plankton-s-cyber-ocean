@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import HeroPlankton from "@/components/HeroPlankton";
@@ -14,9 +13,8 @@ import IntegrationsSection from "@/components/IntegrationsSection";
 import PricingSection from "@/components/PricingSection";
 import Roadmap from "@/components/Roadmap";
 import Footer from "@/components/Footer";
-import { AgentChat } from "@/components/AgentChat";
 import { TotalUsersStat } from "@/components/TotalUsersStat";
-import { Bot } from "lucide-react";
+import { AgentChatInlinePreview } from "@/components/AgentChatInlinePreview";
 
 const Section = ({ title, id, children }: { title: string; id: string; children: React.ReactNode }) => (
   <section id={id} className="mb-20 scroll-mt-24">
@@ -33,9 +31,6 @@ const Section = ({ title, id, children }: { title: string; id: string; children:
 );
 
 const Index = () => {
-  const { connected } = useWallet();
-  const [agentChatOpen, setAgentChatOpen] = useState(false);
-
   useEffect(() => {
     const hash = window.location.hash.replace(/^#/, "");
     if (hash) {
@@ -89,6 +84,11 @@ const Index = () => {
               <AITerminal />
               <AutoPilot />
             </div>
+
+            {/* Agent Chat preview (pict 3) below Command Center */}
+            <div className="mt-6">
+              <AgentChatInlinePreview />
+            </div>
           </Section>
 
           {/* Research & Screening — manual tools, wallet-gated, tier limits */}
@@ -124,22 +124,6 @@ const Index = () => {
         <Footer />
       </main>
 
-      {/* AI Agent Chat - only when wallet connected */}
-      {connected && (
-        <>
-          <motion.button
-            type="button"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
-            onClick={() => setAgentChatOpen(true)}
-            aria-label="Open AI Agent Chat"
-          >
-            <Bot size={24} />
-          </motion.button>
-          <AgentChat open={agentChatOpen} onOpenChange={setAgentChatOpen} />
-        </>
-      )}
     </div>
   );
 };

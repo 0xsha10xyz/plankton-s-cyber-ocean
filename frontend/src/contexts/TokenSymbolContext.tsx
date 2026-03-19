@@ -30,6 +30,17 @@ function truncateMint(mint: string, chars = 4): string {
   return `${mint.slice(0, chars)}…${mint.slice(-chars)}`;
 }
 
+function looksLikeMintFallback(mint: string, symbol: string): boolean {
+  const first = mint.slice(0, 4);
+  const last = mint.slice(-4);
+  if (!first || !last) return false;
+  const hasEllipsis = symbol.includes("…") || symbol.includes("...");
+  if (!hasEllipsis) return false;
+  const startsWithFirst = symbol.startsWith(first);
+  const endsWithLast = symbol.endsWith(last);
+  return startsWithFirst && endsWithLast;
+}
+
 function loadPersistedTokenNames(): Record<string, TokenInfo> {
   try {
     const raw = localStorage.getItem(TOKEN_NAMES_STORAGE_KEY);
@@ -103,7 +114,7 @@ export function TokenSymbolProvider({ children }: { children: ReactNode }) {
       return { symbol: KNOWN_MINT_SYMBOLS[mint], decimals };
     }
     const cached = cache[mint];
-    if (cached && !cached.symbol.includes("…")) return cached;
+    if (cached && !looksLikeMintFallback(mint, cached.symbol)) return cached;
     const base = getApiBase();
     if (!base) return null;
     try {

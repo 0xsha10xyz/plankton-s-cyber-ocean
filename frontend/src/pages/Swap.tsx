@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { VersionedTransaction, PublicKey } from "@solana/web3.js";
@@ -10,6 +10,7 @@ import { TradingChart } from "@/components/TradingChart";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWalletModal } from "@/contexts/WalletModalContext";
+import { useSearchParams } from "react-router-dom";
 import {
   COMMON_MINTS,
   getQuote,
@@ -42,7 +43,9 @@ export default function Swap() {
   const { connection } = useConnection();
   const { publicKey, connected, signTransaction } = useWallet();
   const { openWalletModal } = useWalletModal();
+  const [searchParams] = useSearchParams();
   const walletAddress = publicKey?.toBase58() ?? "";
+  const didAgentAutoExecuteRef = useRef(false);
 
   const [inputToken, setInputToken] = useState(TOKEN_OPTIONS[0]);
   const [outputToken, setOutputToken] = useState(TOKEN_OPTIONS[1]);
@@ -231,14 +234,15 @@ export default function Swap() {
     }
   }, [inputToken, outputToken, amount, slippageBps]);
 
-  const executeSwap = useCallback(async () => {
-    if (!quote || !publicKey || !signTransaction) return;
+  const executeSwap = useCallback(async (quoteOverride?: JupiterQuoteResponse | null) => {
+    const q = quoteOverride ?? quote;
+    if (!q || !publicKey || !signTransaction) return;
     setError(null);
     setTxSuccess(null);
     setSwapLoading(true);
     try {
       const swapRes = await getSwapTransaction({
-        quoteResponse: quote,
+        quoteResponse: q,
         userPublicKey: publicKey.toBase58(),
         wrapAndUnwrapSol: true,
       });
@@ -326,6 +330,49 @@ export default function Swap() {
       setResolveLoading(false);
     }
   }, [tokenOptions, ensureTokenInfo, getSymbol, setTokenInfo, tokenBalancesByMint, savedTokensStorageKey, loadSavedTokens, persistSavedTokens]);
+
+  // Agent autopilot execution: when the chat navigates here with query params,
+  // build a quote and immediately execute so the wallet confirmation popup appears.
+  useEffect(() => {
+    const autoExecute = searchParams.get("autoExecute") === "1";
+    const inMint = searchParams.get("inMint") ?? "";
+    const outMint = searchParams.get("outMint") ?? "";
+    const amountParam = searchParams.get("amount") ?? "";
+
+    if (!autoExecute) return;
+    if (didAgentAutoExecuteRef.current) return;
+    if (!connected || !publicKey || !signTransaction) return;
+    if (!inMint || !outMint || !amountParam) return;
+
+    didAgentAutoExecuteRef.current = true;
+
+    (async () => {
+      const inTok = await resolveAndAddToken(inMint);
+      const outTok = await resolveAndAddToken(outMint);
+      if (!inTok || !outTok) return;
+
+      // Update UI state for clarity.
+      setInputToken(inTok);
+      setOutputToken(outTok);
+      setAmount(amountParam);
+      setError(null);
+      setQuote(null);
+
+      const rawAmount = toRawAmount(amountParam, inTok.decimals);
+      if (rawAmount === "0") return;
+
+      const q = await getQuote({
+        inputMint: inTok.mint,
+        outputMint: outTok.mint,
+        amount: rawAmount,
+        slippageBps,
+      });
+
+      if (!q) return;
+      setQuote(q);
+      await executeSwap(q);
+    })();
+  }, [searchParams, connected, publicKey, signTransaction, resolveAndAddToken, executeSwap, slippageBps]);
 
   if (!connected) {
     return (

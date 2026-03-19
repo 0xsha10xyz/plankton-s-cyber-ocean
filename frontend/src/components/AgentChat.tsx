@@ -61,7 +61,7 @@ function applyContextFromUserMessage(userMessage: string, ctx: ChatContext): Cha
   const bases = detectBase58(userMessage);
   const timeframe = detectTimeframe(lower);
 
-  let next: ChatContext = { ...ctx };
+  const next: ChatContext = { ...ctx };
   if (timeframe) next.timeframe = timeframe;
 
   if (bases.length > 0) {
@@ -205,9 +205,10 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
   const [context, setContext] = useState<ChatContext>({});
 
   const quickActions = [
-    "Ask whale signals",
-    "Analyze liquidity flow",
-    "Set timeframe 24h",
+    "Check Balance",
+    "Send Balance",
+    "Buy",
+    "Sell",
   ];
 
   useEffect(() => {
@@ -343,7 +344,7 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Paste mint/wallet + timeframe (1h/24h/7d/30d)"
+              placeholder="glad to help you..."
               className="min-h-[44px] max-h-32 resize-none"
               rows={1}
               disabled={sending}

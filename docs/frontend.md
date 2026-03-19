@@ -62,6 +62,9 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
   - User and agent messages (user right, agent left).
   - Text input + Send; Enter to send, Shift+Enter for new line.
   - Mock AI replies based on keywords (portfolio, risk, market, agent, PAP, help, etc.).
+- **Quick actions**:
+  - `Check Balance` / `Check another wallet` → shows **Balance details** with `SOL <amount>` and lines like `TOKEN_NAME <amount>` (mint/contract not shown).
+  - `Buy` / `Sell` → also shows **Balance details**, but each SPL token line includes the token contract (mint) in short form: `TOKEN_NAME <amount> | <mint>`.
 - Only visible when the wallet is connected.
 
 ### 7. Swap
