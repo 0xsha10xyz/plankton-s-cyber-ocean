@@ -2,6 +2,9 @@
   "buildCommand": "npm run build:backend && npm run build && npm run vercel-build",
   "outputDirectory": "dist",
   "functions": {
+    "api/**/*.ts": {
+      "includeFiles": "api/**"
+    },
     "api/[[...path]].ts": {
       "includeFiles": "api/**"
     }
