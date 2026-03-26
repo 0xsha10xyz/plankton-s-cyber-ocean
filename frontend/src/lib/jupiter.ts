@@ -118,6 +118,8 @@ export async function getSwapTransaction(
   };
 
   const proxyBase = getJupiterProxyBase();
+  let lastStatus: number | undefined;
+  let lastErrorMessage: string | undefined;
 
   for (const base of getJupiterBases()) {
     try {
@@ -135,6 +137,12 @@ export async function getSwapTransaction(
           const errJson = data as { hint?: string; error?: string };
           throw new Error(errJson.hint || errJson.error || "Swap build failed. Configure JUPITER_API_KEY on the server.");
         }
+        lastStatus = res.status;
+        const msg =
+          (data && typeof data === "object" ? (data as { error?: string; message?: string; hint?: string }).error : undefined) ??
+          (data && typeof data === "object" ? (data as { error?: string; message?: string; hint?: string }).message : undefined) ??
+          (data && typeof data === "object" ? (data as { error?: string; message?: string; hint?: string }).hint : undefined);
+        lastErrorMessage = typeof msg === "string" && msg.trim() ? msg.trim() : undefined;
         continue;
       }
       if (data?.swapTransaction && typeof data.lastValidBlockHeight === "number") {
@@ -145,7 +153,8 @@ export async function getSwapTransaction(
       continue;
     }
   }
-  return null;
+  const suffix = lastErrorMessage ? `: ${lastErrorMessage}` : lastStatus ? ` (HTTP ${lastStatus})` : "";
+  throw new Error(`Jupiter swap build failed${suffix}`);
 }
 
 /** Convert human amount to raw amount (e.g. SOL 1 -> lamports). decimals = token decimals (SOL = 9, USDC = 6). */

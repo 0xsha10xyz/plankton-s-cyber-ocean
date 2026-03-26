@@ -277,7 +277,7 @@ export default function Swap() {
           wrapAndUnwrapSol: true,
         });
         if (!swapRes?.swapTransaction) {
-          throw new Error("Failed to build swap from quote");
+          throw new Error("Swap transaction build failed (missing swapTransaction from Jupiter).");
         }
         const txBuf = base64ToUint8Array(swapRes.swapTransaction);
         const tx = VersionedTransaction.deserialize(txBuf);
