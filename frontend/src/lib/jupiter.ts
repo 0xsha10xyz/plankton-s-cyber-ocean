@@ -82,6 +82,9 @@ export async function getQuote(params: JupiterQuoteParams): Promise<JupiterQuote
 
       const res = await fetch(url.toString());
       if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          throw new Error("Jupiter quote requires JUPITER_API_KEY. Add it in Vercel env vars and redeploy.");
+        }
         if (proxyBase && base === proxyBase && (res.status === 503 || res.status === 502)) {
           const errJson = (await res.json().catch(() => ({}))) as { hint?: string; error?: string };
           throw new Error(errJson.hint || errJson.error || "Swap quoting failed. Configure JUPITER_API_KEY on the server.");
@@ -125,6 +128,9 @@ export async function getSwapTransaction(
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          throw new Error("Jupiter swap requires JUPITER_API_KEY. Add it in Vercel env vars and redeploy.");
+        }
         if (proxyBase && base === proxyBase && (res.status === 503 || res.status === 502)) {
           const errJson = data as { hint?: string; error?: string };
           throw new Error(errJson.hint || errJson.error || "Swap build failed. Configure JUPITER_API_KEY on the server.");
