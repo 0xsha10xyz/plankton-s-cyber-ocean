@@ -47,6 +47,11 @@ export interface JupiterQuoteResponse {
   routePlan: Array<{ swapInfo: unknown; percent: number }>;
   contextSlot?: number;
   timeTaken?: number;
+  /**
+   * Internal: records which Jupiter base URL produced this quote.
+   * Used to keep quote->swap consistent and reduce swap build failures.
+   */
+  __sourceBase?: string;
 }
 
 export interface JupiterSwapParams {
@@ -93,6 +98,7 @@ export async function getQuote(params: JupiterQuoteParams): Promise<JupiterQuote
       }
       const data = await res.json();
       if (data && typeof data.outAmount === "string" && data.inputMint && data.outputMint) {
+        (data as JupiterQuoteResponse).__sourceBase = base;
         return data as JupiterQuoteResponse;
       }
     } catch (e) {
@@ -121,7 +127,10 @@ export async function getSwapTransaction(
   let lastStatus: number | undefined;
   let lastErrorMessage: string | undefined;
 
-  for (const base of getJupiterBases()) {
+  const sourceBase = (params.quoteResponse as JupiterQuoteResponse & { __sourceBase?: string }).__sourceBase;
+  const orderedBases = sourceBase ? [sourceBase, ...getJupiterBases().filter((b) => b !== sourceBase)] : getJupiterBases();
+
+  for (const base of orderedBases) {
     try {
       const res = await fetch(`${base}/swap`, {
         method: "POST",
