@@ -26,10 +26,13 @@ jupiterRouter.get("/quote", async (req: Request, res: Response) => {
     return;
   }
 
+  let lastStatus = 0;
   for (const base of JUPITER_BASES) {
     try {
-      const url = `${base}/quote?inputMint=${encodeURIComponent(inputMint)}&outputMint=${encodeURIComponent(outputMint)}&amount=${encodeURIComponent(amount)}&slippageBps=${encodeURIComponent(slippageBps)}`;
+      const v1Extra = base.includes("/swap/v1") ? "&restrictIntermediateTokens=true" : "";
+      const url = `${base}/quote?inputMint=${encodeURIComponent(inputMint)}&outputMint=${encodeURIComponent(outputMint)}&amount=${encodeURIComponent(amount)}&slippageBps=${encodeURIComponent(slippageBps)}${v1Extra}`;
       const resp = await fetch(url, { headers: getJupiterHeaders() });
+      lastStatus = resp.status;
       if (!resp.ok) continue;
       const data = await resp.json();
       if (data?.outAmount != null) {
@@ -39,6 +42,13 @@ jupiterRouter.get("/quote", async (req: Request, res: Response) => {
     } catch {
       continue;
     }
+  }
+  if (!process.env.JUPITER_API_KEY && (lastStatus === 401 || lastStatus === 403)) {
+    res.status(503).json({
+      error: "Jupiter quote requires an API key on this deployment.",
+      hint: "Add JUPITER_API_KEY (see https://portal.jup.ag), restart the server, and try again.",
+    });
+    return;
   }
   res.status(502).json({ error: "Jupiter quote unavailable" });
 });
@@ -58,6 +68,7 @@ jupiterRouter.post("/swap", async (req: Request, res: Response) => {
     dynamicComputeUnitLimit: true,
   };
 
+  let swapLastStatus = 0;
   for (const base of JUPITER_BASES) {
     try {
       const resp = await fetch(`${base}/swap`, {
@@ -65,6 +76,7 @@ jupiterRouter.post("/swap", async (req: Request, res: Response) => {
         headers: { "Content-Type": "application/json", ...getJupiterHeaders() },
         body: JSON.stringify(payload),
       });
+      swapLastStatus = resp.status;
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) continue;
       if (data?.swapTransaction && typeof data.lastValidBlockHeight === "number") {
@@ -74,6 +86,13 @@ jupiterRouter.post("/swap", async (req: Request, res: Response) => {
     } catch {
       continue;
     }
+  }
+  if (!process.env.JUPITER_API_KEY && (swapLastStatus === 401 || swapLastStatus === 403)) {
+    res.status(503).json({
+      error: "Jupiter swap requires an API key on this deployment.",
+      hint: "Add JUPITER_API_KEY (see https://portal.jup.ag), restart the server, and try again.",
+    });
+    return;
   }
   res.status(502).json({ error: "Jupiter swap build unavailable" });
 });

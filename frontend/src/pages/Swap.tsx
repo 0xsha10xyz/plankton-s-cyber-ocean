@@ -227,7 +227,7 @@ export default function Swap() {
       setQuote(q ?? null);
       if (!q) setError("Could not get quote. Check connection and try again.");
     } catch (e) {
-      setError("Failed to get quote. Try again.");
+      setError(e instanceof Error ? e.message : "Failed to get quote. Try again.");
       setQuote(null);
     } finally {
       setQuoteLoading(false);

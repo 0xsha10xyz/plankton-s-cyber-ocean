@@ -12,9 +12,13 @@ const JUPITER_PUBLIC_BASES = [
   "https://quote-api.jup.ag/v6",
 ];
 
-function getJupiterBases(): string[] {
+function getJupiterProxyBase(): string {
   const api = getApiBase();
-  const proxy = api ? `${api.replace(/\/$/, "")}/api/jupiter` : "";
+  return api ? `${api.replace(/\/$/, "")}/api/jupiter` : "";
+}
+
+function getJupiterBases(): string[] {
+  const proxy = getJupiterProxyBase();
   return proxy ? [proxy, ...JUPITER_PUBLIC_BASES] : JUPITER_PUBLIC_BASES;
 }
 
@@ -63,6 +67,8 @@ export async function getQuote(params: JupiterQuoteParams): Promise<JupiterQuote
   const raw = String(amount).trim();
   if (!raw || raw === "0") return null;
 
+  const proxyBase = getJupiterProxyBase();
+
   for (const base of getJupiterBases()) {
     try {
       const url = new URL(`${base}/quote`);
@@ -70,14 +76,24 @@ export async function getQuote(params: JupiterQuoteParams): Promise<JupiterQuote
       url.searchParams.set("outputMint", outputMint);
       url.searchParams.set("amount", raw);
       url.searchParams.set("slippageBps", String(slippageBps));
+      if (base.includes("/swap/v1")) {
+        url.searchParams.set("restrictIntermediateTokens", "true");
+      }
 
       const res = await fetch(url.toString());
-      if (!res.ok) continue;
+      if (!res.ok) {
+        if (proxyBase && base === proxyBase && (res.status === 503 || res.status === 502)) {
+          const errJson = (await res.json().catch(() => ({}))) as { hint?: string; error?: string };
+          throw new Error(errJson.hint || errJson.error || "Swap quoting failed. Configure JUPITER_API_KEY on the server.");
+        }
+        continue;
+      }
       const data = await res.json();
       if (data && typeof data.outAmount === "string" && data.inputMint && data.outputMint) {
         return data as JupiterQuoteResponse;
       }
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && /JUPITER_API_KEY|portal\.jup\.ag/i.test(e.message)) throw e;
       continue;
     }
   }
@@ -98,6 +114,8 @@ export async function getSwapTransaction(
     dynamicComputeUnitLimit: true,
   };
 
+  const proxyBase = getJupiterProxyBase();
+
   for (const base of getJupiterBases()) {
     try {
       const res = await fetch(`${base}/swap`, {
@@ -106,11 +124,18 @@ export async function getSwapTransaction(
         body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) continue;
+      if (!res.ok) {
+        if (proxyBase && base === proxyBase && (res.status === 503 || res.status === 502)) {
+          const errJson = data as { hint?: string; error?: string };
+          throw new Error(errJson.hint || errJson.error || "Swap build failed. Configure JUPITER_API_KEY on the server.");
+        }
+        continue;
+      }
       if (data?.swapTransaction && typeof data.lastValidBlockHeight === "number") {
         return data as JupiterSwapResponse;
       }
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && /JUPITER_API_KEY|portal\.jup\.ag/i.test(e.message)) throw e;
       continue;
     }
   }

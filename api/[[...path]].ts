@@ -24,13 +24,59 @@ function sendJson(res: ServerResponse, statusCode: number, body: unknown): void 
   res.end(JSON.stringify(body));
 }
 
-export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const url = (req.url || "/").split("#")[0];
-  let pathname = url.split("?")[0] || "/";
-  if (!pathname.startsWith("/api")) {
-    (req as { url?: string }).url = "/api" + (url.startsWith("/") ? url : "/" + url);
-    pathname = "/api" + (pathname.startsWith("/") ? pathname : "/" + pathname);
+/** Normalize pathname so /api/jupiter/quote matches regardless of Vercel quirks (missing prefix, double /api, trailing slash). */
+function normalizeApiPathname(url: string): string {
+  const raw = (url.split("#")[0].split("?")[0] || "/").replace(/\/+/g, "/");
+  let p = raw;
+  if (!p.startsWith("/")) p = `/${p}`;
+  while (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
+  if (p === "" || p === "/") p = "/api";
+  else if (!p.startsWith("/api")) p = `/api${p}`;
+  while (p.startsWith("/api/api")) p = p.slice(4);
+  return p;
+}
+
+function jupiterQuoteSearchParams(
+  inputMint: string,
+  outputMint: string,
+  amount: string,
+  slippageBps: string
+): string {
+  const q = new URLSearchParams({
+    inputMint,
+    outputMint,
+    amount,
+    slippageBps,
+    restrictIntermediateTokens: "true",
+  });
+  return q.toString();
+}
+
+function buildJupiterQuoteQuery(
+  base: string,
+  inputMint: string,
+  outputMint: string,
+  amount: string,
+  slippageBps: string
+): string {
+  if (base.includes("/swap/v1")) {
+    return jupiterQuoteSearchParams(inputMint, outputMint, amount, slippageBps);
   }
+  return new URLSearchParams({
+    inputMint,
+    outputMint,
+    amount,
+    slippageBps,
+  }).toString();
+}
+
+export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  let url = (req.url || "/").split("#")[0];
+  if (!url.startsWith("/")) {
+    url = `/${url}`;
+    (req as { url?: string }).url = url;
+  }
+  const pathname = normalizeApiPathname(url);
   const { searchParams } = parseUrl(url);
   const method = (req.method || "GET").toUpperCase();
 
@@ -117,10 +163,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const bases = ["https://api.jup.ag/swap/v1", "https://lite-api.jup.ag/swap/v1", "https://quote-api.jup.ag/v6"];
     const headers: Record<string, string> = {};
     if (jupiterKey) headers["x-api-key"] = jupiterKey;
+    let lastStatus = 0;
     for (const base of bases) {
       try {
-        const qUrl = `${base}/quote?inputMint=${encodeURIComponent(inputMint)}&outputMint=${encodeURIComponent(outputMint)}&amount=${encodeURIComponent(amount)}&slippageBps=${encodeURIComponent(slippageBps)}`;
+        const qUrl = `${base}/quote?${buildJupiterQuoteQuery(base, inputMint, outputMint, amount, slippageBps)}`;
         const resp = await fetch(qUrl, { headers });
+        lastStatus = resp.status;
         if (!resp.ok) continue;
         const data = await resp.json();
         if (data && typeof (data as { outAmount?: string }).outAmount === "string") {
@@ -133,6 +181,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       } catch {
         continue;
       }
+    }
+    if (!jupiterKey && (lastStatus === 401 || lastStatus === 403)) {
+      sendJson(res, 503, {
+        error: "Jupiter quote requires an API key on this deployment.",
+        hint: "Add JUPITER_API_KEY in Vercel (see https://portal.jup.ag), redeploy, and try again.",
+      });
+      return;
     }
     sendJson(res, 502, { error: "Jupiter quote unavailable" });
     return;
@@ -167,6 +222,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       wrapAndUnwrapSol: body.wrapAndUnwrapSol ?? true,
       dynamicComputeUnitLimit: true,
     };
+    let swapLastStatus = 0;
     for (const base of bases) {
       try {
         const resp = await fetch(`${base}/swap`, {
@@ -174,6 +230,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           headers,
           body: JSON.stringify(payload),
         });
+        swapLastStatus = resp.status;
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok) continue;
         if (data?.swapTransaction && typeof data.lastValidBlockHeight === "number") {
@@ -185,6 +242,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       } catch {
         continue;
       }
+    }
+    if (!jupiterKey && (swapLastStatus === 401 || swapLastStatus === 403)) {
+      sendJson(res, 503, {
+        error: "Jupiter swap requires an API key on this deployment.",
+        hint: "Add JUPITER_API_KEY in Vercel (see https://portal.jup.ag), redeploy, and try again.",
+      });
+      return;
     }
     sendJson(res, 502, { error: "Jupiter swap build unavailable" });
     return;
@@ -338,7 +402,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   }
 
   // GET /api/subscription/me – stub when Express not loaded (same shape as backend)
-  if (method === "GET" && pathname === "/api/subscription/me") {
+  // Also accept /mc (common typo / bad link) so production never 404s.
+  if (method === "GET" && (pathname === "/api/subscription/me" || pathname === "/api/subscription/mc")) {
     const wallet = searchParams.get("wallet")?.trim();
     if (!wallet) {
       sendJson(res, 400, { error: "wallet query required" });
