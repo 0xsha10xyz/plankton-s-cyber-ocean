@@ -1,6 +1,7 @@
 /**
- * Vercel build: copy frontend/dist -> dist and backend/dist -> api/__backend.
- * Backend in api/__backend is imported by the serverless handler so it gets bundled.
+ * Vercel build: copy frontend/dist -> dist and backend/dist -> vercel-express-bundle/.
+ * The Express bundle must NOT live under api/: Vercel treats nested .js files under api/ as
+ * extra serverless entrypoints, which breaks deployment when helper bundles sit next to handlers.
  */
 const fs = require("fs");
 const path = require("path");
@@ -27,4 +28,4 @@ if (!fs.existsSync(backSrc)) {
 }
 if (fs.existsSync(backDest)) fs.rmSync(backDest, { recursive: true });
 fs.cpSync(backSrc, backDest, { recursive: true });
-console.log("Copied backend/dist -> api/__backend");
+console.log("Copied backend/dist -> vercel-express-bundle");

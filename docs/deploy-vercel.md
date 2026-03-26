@@ -97,10 +97,10 @@ Done. After redeploying, connect a wallet in the app → Total Users on the dash
 
 ## 5. If the build fails
 
-- **“Cannot find module './__backend/index.js'” or module not found**  
-  The build copies the backend into `api/__backend` so the serverless handler can load it. Ensure **Build Command** is exactly:
+- **“Cannot find module … vercel-express-bundle” or module not found**  
+  The build copies the backend into `vercel-express-bundle/` at the **repo root** (not under `api/`, so Vercel does not treat those `.js` files as extra serverless functions). Ensure **Build Command** is exactly:
   `npm run build:backend && npm run build && npm run vercel-build`
-  (so `backend/dist` is built first, then `vercel-build` copies it to `api/__backend`).
+  (so `backend/dist` is built first, then `vercel-build` copies it into `vercel-express-bundle/`).
 
 - **“Missing frontend/dist”**  
   The frontend build must complete. Check the build log for errors in `npm run build --workspace=frontend`. Fix any frontend build errors and redeploy.

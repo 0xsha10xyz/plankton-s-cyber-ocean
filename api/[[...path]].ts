@@ -1,7 +1,7 @@
 /**
  * Vercel Serverless: all /api/* requests.
  * A few routes are handled inline (wallet/balances, stats, agent). All other /api/* (including
- * /api/market/*) are forwarded to the Express backend (api/__backend) so localhost and live match.
+ * /api/market/*) are forwarded to the Express backend (vercel-express-bundle/) so localhost and live match.
  */
 import type { IncomingMessage, ServerResponse } from "http";
 import { getWalletBalancesData } from "./wallet/balances-handler.js";
@@ -418,7 +418,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (!(req as { url?: string }).url) {
       (req as { url?: string }).url = url;
     }
-    const { app } = await import("./__backend/index.js");
+    const { app } = await import("../vercel-express-bundle/index.js");
     return app(req, res);
   } catch (err) {
     res.statusCode = 500;

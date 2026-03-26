@@ -36,7 +36,8 @@ backend/data
 backend/data/*
 **/connected-wallets.json
 
-# Vercel build output (backend copied here at build time)
+# Vercel build output (Express copy at repo root — not under api/)
+vercel-express-bundle
 api/__backend
 
 # Editor directories and files
