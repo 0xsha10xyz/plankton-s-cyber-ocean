@@ -323,13 +323,7 @@ export default function Swap() {
         // Tx was sent; confirmation timeout is non-fatal
       }
     } catch (e) {
-      const msg =
-        e instanceof Error
-          ? e.message.includes("Failed to build swap")
-            ? "Failed to build swap. The quote may have expired — try Get quote again."
-            : e.message
-          : "Swap failed. Try again.";
-      setError(msg);
+      setError(e instanceof Error ? e.message : "Swap failed. Try again.");
     } finally {
       setSwapLoading(false);
     }
