@@ -154,10 +154,10 @@ export default function Swap() {
   const solBalance = solLamports != null ? solLamports / 1e9 : 0;
   const tokenBalances = tokenBalancesByMint;
 
-  const getBalanceForToken = (token: TokenOption) => {
+  const getBalanceForToken = useCallback((token: TokenOption) => {
     if (token.symbol === "SOL" && token.mint === COMMON_MINTS.SOL) return solBalance;
     return tokenBalances[token.mint] ?? 0;
-  };
+  }, [solBalance, tokenBalances]);
 
   /** Max spendable: for SOL leave ~0.005 for tx fees; for SPL use full balance */
   const getMaxAmount = (token: TokenOption) => {
@@ -232,32 +232,81 @@ export default function Swap() {
     } finally {
       setQuoteLoading(false);
     }
-  }, [inputToken, outputToken, amount, slippageBps]);
+  }, [inputToken, outputToken, amount, slippageBps, getBalanceForToken]);
 
   const executeSwap = useCallback(async (quoteOverride?: JupiterQuoteResponse | null) => {
-    const q = quoteOverride ?? quote;
-    if (!q || !publicKey || !signTransaction) return;
+    // Always prefer a fresh quote unless the caller explicitly passes one.
+    let finalQuote = quoteOverride ?? null;
+
+    if (!publicKey || !signTransaction) return;
     setError(null);
     setTxSuccess(null);
     setSwapLoading(true);
     try {
-      const swapRes = await getSwapTransaction({
-        quoteResponse: q,
-        userPublicKey: publicKey.toBase58(),
-        wrapAndUnwrapSol: true,
-      });
-      if (!swapRes?.swapTransaction) {
-        setError("Failed to build swap. Quote may have expired — try Get quote again.");
+      if (!finalQuote) {
+        const rawAmount = toRawAmount(amount, inputToken.decimals);
+        if (rawAmount === "0") {
+          setError("Enter an amount");
+          return;
+        }
+
+        const balance = getBalanceForToken(inputToken);
+        const amountNum = parseFloat(amount);
+        if (Number.isFinite(amountNum) && amountNum > balance) {
+          setError("Insufficient balance");
+          return;
+        }
+
+        finalQuote = await getQuote({
+          inputMint: inputToken.mint,
+          outputMint: outputToken.mint,
+          amount: rawAmount,
+          slippageBps,
+        });
+      }
+
+      if (!finalQuote) {
+        setError("Could not get quote. Try Get quote again.");
         return;
       }
-      const txBuf = base64ToUint8Array(swapRes.swapTransaction);
-      const tx = VersionedTransaction.deserialize(txBuf);
-      const signed = await signTransaction(tx);
-      const sig = await sendRawTransactionWithFallback(connection, signed.serialize(), {
-        skipPreflight: false,
-        maxRetries: 5,
-        preflightCommitment: "confirmed",
-      });
+
+      const buildAndSend = async (q: JupiterQuoteResponse) => {
+        const swapRes = await getSwapTransaction({
+          quoteResponse: q,
+          userPublicKey: publicKey.toBase58(),
+          wrapAndUnwrapSol: true,
+        });
+        if (!swapRes?.swapTransaction) {
+          throw new Error("Failed to build swap from quote");
+        }
+        const txBuf = base64ToUint8Array(swapRes.swapTransaction);
+        const tx = VersionedTransaction.deserialize(txBuf);
+        const signed = await signTransaction(tx);
+        const sig = await sendRawTransactionWithFallback(connection, signed.serialize(), {
+          skipPreflight: false,
+          maxRetries: 5,
+          preflightCommitment: "confirmed",
+        });
+        return sig;
+      };
+
+      let sig: string;
+      try {
+        sig = await buildAndSend(finalQuote);
+      } catch (e) {
+        // If a quote expires between fetch and build, retry once with a fresh quote.
+        if (quoteOverride) throw e;
+
+        const rawAmount = toRawAmount(amount, inputToken.decimals);
+        const freshQuote = await getQuote({
+          inputMint: inputToken.mint,
+          outputMint: outputToken.mint,
+          amount: rawAmount,
+          slippageBps,
+        });
+        if (!freshQuote) throw e;
+        sig = await buildAndSend(freshQuote);
+      }
       setTxSuccess(sig);
       setQuote(null);
       setAmount("");
@@ -274,12 +323,17 @@ export default function Swap() {
         // Tx was sent; confirmation timeout is non-fatal
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Swap failed. Try again.";
+      const msg =
+        e instanceof Error
+          ? e.message.includes("Failed to build swap")
+            ? "Failed to build swap. The quote may have expired — try Get quote again."
+            : e.message
+          : "Swap failed. Try again.";
       setError(msg);
     } finally {
       setSwapLoading(false);
     }
-  }, [quote, publicKey, signTransaction, connection, refetchBalances]);
+  }, [publicKey, signTransaction, connection, refetchBalances, amount, inputToken, outputToken, slippageBps, getBalanceForToken]);
 
   const switchTokens = () => {
     setInputToken(outputToken);
