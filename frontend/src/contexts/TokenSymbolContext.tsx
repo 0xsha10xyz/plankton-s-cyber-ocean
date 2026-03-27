@@ -41,6 +41,15 @@ function looksLikeMintFallback(mint: string, symbol: string): boolean {
   return startsWithFirst && endsWithLast;
 }
 
+function chooseTokenLabel(mint: string, symbolRaw: unknown, nameRaw: unknown): string {
+  const fallback = `${mint.slice(0, 4)}…${mint.slice(-4)}`;
+  const symbol = typeof symbolRaw === "string" ? symbolRaw.trim() : "";
+  const name = typeof nameRaw === "string" ? nameRaw.trim() : "";
+  if (name && !looksLikeMintFallback(mint, name)) return name;
+  if (symbol && !looksLikeMintFallback(mint, symbol)) return symbol;
+  return symbol || name || fallback;
+}
+
 function loadPersistedTokenNames(): Record<string, TokenInfo> {
   try {
     const raw = localStorage.getItem(TOKEN_NAMES_STORAGE_KEY);
@@ -154,7 +163,7 @@ export function TokenSymbolProvider({ children }: { children: ReactNode }) {
         });
         return info;
       }
-      const symbol = typeof data.symbol === "string" ? data.symbol : `${mint.slice(0, 4)}…${mint.slice(-4)}`;
+      const symbol = chooseTokenLabel(mint, (data as { symbol?: unknown }).symbol, (data as { name?: unknown }).name);
       const decimals = Number(data.decimals);
       if (!Number.isFinite(decimals) || decimals < 0 || decimals > 18) return null;
       const info: TokenInfo = { symbol, decimals };

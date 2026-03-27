@@ -15,7 +15,7 @@ function asTrimmedString(x: unknown): string | null {
   return typeof x === "string" ? (x.trim() || null) : null;
 }
 
-async function lookupTokenViaJupiter(mint: string): Promise<{ symbol: string; decimals: number } | null> {
+async function lookupTokenViaJupiter(mint: string): Promise<{ symbol: string; name?: string; decimals: number } | null> {
   const truncated = `${mint.slice(0, 4)}…${mint.slice(-4)}`;
   const urls = [
     // lite-api often works without x-api-key (but not guaranteed for all endpoints/mints)
@@ -45,11 +45,12 @@ async function lookupTokenViaJupiter(mint: string): Promise<{ symbol: string; de
         // Response shape is usually { symbol, decimals, ... } but be tolerant.
         const obj = (j as any)?.data ?? j;
         const symbolFromApi = asTrimmedString((obj as any)?.symbol) ?? asTrimmedString((j as any)?.symbol);
+        const nameFromApi = asTrimmedString((obj as any)?.name) ?? asTrimmedString((j as any)?.name);
         const decimalsRaw = (obj as any)?.decimals ?? (j as any)?.decimals ?? (obj as any)?.data?.decimals;
         const decimals = typeof decimalsRaw === "number" ? decimalsRaw : Number(decimalsRaw);
 
         if (typeof symbolFromApi === "string" && Number.isFinite(decimals) && decimals >= 0 && decimals <= 18) {
-          return { symbol: symbolFromApi, decimals };
+          return { symbol: symbolFromApi, name: nameFromApi ?? undefined, decimals };
         }
         if (Number.isFinite(decimals) && decimals >= 0 && decimals <= 18) {
           // Allow truncated symbol fallback; decimals are what block swaps.
@@ -131,9 +132,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         const json = await resp.json();
         const data = json?.data;
         const symbol = typeof data?.symbol === "string" ? data.symbol : undefined;
+        const name = typeof data?.name === "string" ? data.name : undefined;
         const decimals = typeof data?.decimals === "number" ? data.decimals : undefined;
         if (decimals !== undefined) {
-          sendJson(res, 200, { symbol: symbol || truncated, decimals });
+          sendJson(res, 200, { symbol: symbol || truncated, name, decimals });
           return;
         }
       }

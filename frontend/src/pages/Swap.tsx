@@ -74,6 +74,15 @@ async function getDecimalsViaRpcProxy(base: string, mint: string): Promise<numbe
   }
 }
 
+function chooseTokenLabel(mint: string, symbolRaw: unknown, nameRaw: unknown): string {
+  const fallback = `${mint.slice(0, 4)}…${mint.slice(-4)}`;
+  const symbol = typeof symbolRaw === "string" ? symbolRaw.trim() : "";
+  const name = typeof nameRaw === "string" ? nameRaw.trim() : "";
+  if (name && !name.includes("…")) return name;
+  if (symbol && !symbol.includes("…")) return symbol;
+  return name || symbol || fallback;
+}
+
 export default function Swap() {
   const { connection } = useConnection();
   const { publicKey, connected, signTransaction } = useWallet();
@@ -427,7 +436,11 @@ export default function Swap() {
         setTokenInfo(raw, fallbackSymbol, decimalsFromRpc);
         return fallbackToken;
       }
-      const symbolFromApi = typeof data.symbol === "string" ? data.symbol.trim() : "";
+      const symbolFromApi = chooseTokenLabel(
+        raw,
+        (data as { symbol?: unknown }).symbol,
+        (data as { name?: unknown }).name
+      );
       const symbol = symbolFromApi || getSymbol(raw);
       const decimals = Number(data.decimals);
       if (!Number.isFinite(decimals) || decimals < 0 || decimals > 18) {
