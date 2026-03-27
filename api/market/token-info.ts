@@ -85,6 +85,24 @@ async function tryRpcDecimalsViaJsonParsed(mint: string, rpcUrl: string): Promis
   return decimals;
 }
 
+async function tryRpcDecimalsViaTokenSupply(mint: string, rpcUrl: string): Promise<number | null> {
+  const rpcRes = await fetch(rpcUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "getTokenSupply",
+      params: [mint],
+    }),
+  });
+  const rpcJson = await rpcRes.json();
+  const decimalsRaw = rpcJson?.result?.value?.decimals;
+  const decimals = typeof decimalsRaw === "number" ? decimalsRaw : Number(decimalsRaw);
+  if (!Number.isFinite(decimals) || decimals < 0 || decimals > 18) return null;
+  return decimals;
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if ((req.method || "GET").toUpperCase() !== "GET") {
     sendJson(res, 405, { error: "Method not allowed" });
@@ -148,7 +166,19 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     // ignore
   }
 
-  // 3) As a last resort, keep the older base64 layout parsing (may still work for standard SPL mints).
+  // 3) Try getTokenSupply (another reliable decimals source for mint accounts).
+  try {
+    const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+    const decimals = await tryRpcDecimalsViaTokenSupply(mint, rpcUrl);
+    if (decimals != null) {
+      sendJson(res, 200, { symbol: truncated, decimals });
+      return;
+    }
+  } catch {
+    // ignore
+  }
+
+  // 4) As a last resort, keep the older base64 layout parsing (may still work for standard SPL mints).
   try {
     const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
     const rpcRes = await fetch(rpcUrl, {

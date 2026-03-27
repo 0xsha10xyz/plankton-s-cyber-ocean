@@ -105,6 +105,31 @@ async function getDecimalsRpcJsonParsed(mint: string): Promise<number | null> {
   return null;
 }
 
+/** Get decimals for a mint via RPC getTokenSupply (robust fallback for some RPC/account parser edge cases). */
+async function getDecimalsRpcTokenSupply(mint: string): Promise<number | null> {
+  try {
+    const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+    const res = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getTokenSupply",
+        params: [mint],
+      }),
+    });
+    const json = await res.json();
+    const decimalsRaw = json?.result?.value?.decimals;
+    const decimals = typeof decimalsRaw === "number" ? decimalsRaw : Number(decimalsRaw);
+    if (!Number.isFinite(decimals) || decimals < 0 || decimals > 18) return null;
+    return decimals;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 /**
  * Fetch token name and symbol from Metaplex metadata account on-chain (no API key).
  * Metadata layout (v1): key(1) + update_authority(32) + mint(32) + name_len(4) + name + symbol_len(4) + symbol + ...
@@ -678,6 +703,17 @@ marketRouter.get("/token-info", async (req: Request, res: Response) => {
   // Most reliable decimals fallback: jsonParsed (avoid base64 layout/offset assumptions)
   try {
     const decimals = await getDecimalsRpcJsonParsed(mint);
+    if (decimals !== null) {
+      res.json({ symbol: mint.slice(0, 4) + "…" + mint.slice(-4), decimals });
+      return;
+    }
+  } catch {
+    // ignore
+  }
+
+  // Robust fallback: getTokenSupply returns decimals for valid mint accounts.
+  try {
+    const decimals = await getDecimalsRpcTokenSupply(mint);
     if (decimals !== null) {
       res.json({ symbol: mint.slice(0, 4) + "…" + mint.slice(-4), decimals });
       return;
