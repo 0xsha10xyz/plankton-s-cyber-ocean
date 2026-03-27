@@ -1,8 +1,12 @@
 /**
  * Vercel serverless: GET /api/market/token-info?mint=...
- * Resolves token symbol + decimals (Birdeye or RPC fallback).
+ * Resolves token name/symbol + decimals (Birdeye/Jupiter/RPC fallback).
+ *
+ * UI expects a readable "token name" (not CA-like truncation). To achieve that reliably,
+ * we also parse Metaplex on-chain metadata as a last-resort.
  */
 import type { IncomingMessage, ServerResponse } from "http";
+import { PublicKey } from "@solana/web3.js";
 
 function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
   res.statusCode = statusCode;
@@ -104,6 +108,62 @@ async function tryRpcDecimalsViaTokenSupply(mint: string, rpcUrl: string): Promi
   return decimals;
 }
 
+const MPL_TOKEN_METADATA_PROGRAM_ID_B58 = "metaqbxxuerdq2enqj7ggx8d3ndkbpmwc9j8k4nfp6r2p1";
+
+async function getMetaplexMetadata(
+  mint: string
+): Promise<{ name?: string; symbol?: string } | null> {
+  if (!mint || typeof mint !== "string" || mint.length < 32 || mint.length > 44) return null;
+  try {
+    const mintPk = new PublicKey(mint);
+    const programId = new PublicKey(MPL_TOKEN_METADATA_PROGRAM_ID_B58);
+    const [metadataPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("metadata"), programId.toBuffer(), mintPk.toBuffer()],
+      programId
+    );
+
+    const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+    const res = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getAccountInfo",
+        params: [metadataPda.toBase58(), { encoding: "base64" }],
+      }),
+    });
+
+    const json = await res.json();
+    const b64 = json?.result?.value?.data?.[0];
+    if (!b64 || typeof b64 !== "string") return null;
+
+    const buf = Buffer.from(b64, "base64");
+    const minLen = 1 + 32 + 32 + 4 + 1 + 4 + 1; // minimal heuristic (same as backend)
+    if (buf.length < minLen) return null;
+
+    let off = 1 + 32 + 32; // after key, update_authority, mint
+    const nameLen = buf.readUInt32LE(off);
+    off += 4;
+    if (nameLen > 256 || off + nameLen > buf.length) return null;
+    const name = buf.subarray(off, off + nameLen).toString("utf8").trim();
+    off += nameLen;
+
+    if (off + 4 > buf.length) return null;
+    const symbolLen = buf.readUInt32LE(off);
+    off += 4;
+    if (symbolLen > 32 || off + symbolLen > buf.length) return null;
+    const symbol = buf.subarray(off, off + symbolLen).toString("utf8").trim();
+
+    return {
+      name: name || undefined,
+      symbol: symbol || undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if ((req.method || "GET").toUpperCase() !== "GET") {
     sendJson(res, 405, { error: "Method not allowed" });
@@ -121,6 +181,9 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   const apiKey = process.env.BIRDEYE_API_KEY;
   const truncated = `${mint.slice(0, 4)}…${mint.slice(-4)}`;
+  const metaplex = await getMetaplexMetadata(mint).catch(() => null);
+  const metaplexName = metaplex?.name;
+  const metaplexSymbol = metaplex?.symbol;
 
   if (apiKey) {
     try {
@@ -135,7 +198,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         const name = typeof data?.name === "string" ? data.name : undefined;
         const decimals = typeof data?.decimals === "number" ? data.decimals : undefined;
         if (decimals !== undefined) {
-          sendJson(res, 200, { symbol: symbol || truncated, name, decimals });
+          sendJson(res, 200, {
+            symbol: symbol || metaplexSymbol || truncated,
+            name: name || metaplexName,
+            decimals,
+          });
           return;
         }
       }
@@ -148,7 +215,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   try {
     const jup = await lookupTokenViaJupiter(mint);
     if (jup) {
-      sendJson(res, 200, jup);
+      sendJson(res, 200, {
+        symbol: jup.symbol || metaplexSymbol || truncated,
+        name: jup.name || metaplexName,
+        decimals: jup.decimals,
+      });
       return;
     }
   } catch {
@@ -161,7 +232,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const decimals = await tryRpcDecimalsViaJsonParsed(mint, rpcUrl);
     if (decimals != null) {
       // Symbol is nice-to-have; swaps only truly require correct decimals.
-      sendJson(res, 200, { symbol: truncated, decimals });
+      sendJson(res, 200, {
+        symbol: metaplexSymbol || truncated,
+        name: metaplexName,
+        decimals,
+      });
       return;
     }
   } catch {
@@ -173,7 +248,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
     const decimals = await tryRpcDecimalsViaTokenSupply(mint, rpcUrl);
     if (decimals != null) {
-      sendJson(res, 200, { symbol: truncated, decimals });
+      sendJson(res, 200, {
+        symbol: metaplexSymbol || truncated,
+        name: metaplexName,
+        decimals,
+      });
       return;
     }
   } catch {
@@ -201,7 +280,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       if (buf.length >= 45) {
         const decimals = buf.readUInt8(44);
         if (Number.isFinite(decimals) && decimals >= 0 && decimals <= 18) {
-          sendJson(res, 200, { symbol: truncated, decimals });
+            sendJson(res, 200, {
+              symbol: metaplexSymbol || truncated,
+              name: metaplexName,
+              decimals,
+            });
           return;
         }
       }
