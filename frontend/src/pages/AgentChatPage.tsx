@@ -256,7 +256,7 @@ export default function AgentChatPage() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [awaitingWalletAddress, setAwaitingWalletAddress] = useState(false);
-  type SendTokenInfo = { mint: string; symbol: string; decimals: number };
+  type SendTokenInfo = { mint: string; symbol: string; decimals: number; rawAmount: string };
   const [pendingSendBalance, setPendingSendBalance] = useState<{ tokens: SendTokenInfo[] } | null>(null);
   const [placeholderMode, setPlaceholderMode] = useState<"help" | "see">("help");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -543,10 +543,15 @@ export default function AgentChatPage() {
           });
 
           const sendTokens: SendTokenInfo[] = [
-            { mint: COMMON_MINTS.SOL, symbol: "SOL", decimals: 9 },
+            { mint: COMMON_MINTS.SOL, symbol: "SOL", decimals: 9, rawAmount: String(Math.max(0, Math.floor(balances.sol))) },
             ...tokenBalances.map((t, idx) => {
               const info = resolvedInfos[idx];
-              return { mint: t.mint, symbol: info?.symbol ?? getSymbol(t.mint), decimals: t.decimals };
+              return {
+                mint: t.mint,
+                symbol: info?.symbol ?? getSymbol(t.mint),
+                decimals: t.decimals,
+                rawAmount: String(balances.tokens.find((b) => b.mint === t.mint)?.rawAmount ?? "0"),
+              };
             }),
           ];
           setPendingSendBalance({ tokens: sendTokens });
@@ -833,6 +838,19 @@ export default function AgentChatPage() {
 
       const amountRaw = uiAmountToRawBigInt(amountInput, tokenEntry.decimals);
       if (amountRaw <= 0n) throw new Error("Amount must be greater than 0");
+      const availableRaw = (() => {
+        try {
+          return BigInt(tokenEntry.rawAmount);
+        } catch {
+          return 0n;
+        }
+      })();
+      if (amountRaw > availableRaw) {
+        const uiAvail = Number(availableRaw) / 10 ** tokenEntry.decimals;
+        throw new Error(
+          `Insufficient ${tokenEntry.symbol} balance. Available: ${uiAvail.toLocaleString(undefined, { maximumFractionDigits: 8 })}`
+        );
+      }
 
       const sender = publicKey;
       const recipientPk = new PublicKey(recipient);

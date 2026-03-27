@@ -30,7 +30,7 @@ const AITerminal = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { connected } = useWallet();
 
-  // Kalau wallet connect: kosongkan placeholder, tampilkan hanya "[ACTION] Agent ready." + data on-chain nyata
+  // When wallet is connected, hide placeholders and keep only real on-chain logs + ready state.
   const displayLines = connected
     ? lines.filter(
         (entry) =>
