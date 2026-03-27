@@ -11,6 +11,12 @@ const LEGACY_REDIS_KEYS = [
   "plankton_connected_wallets",
   "stats:connected_wallets",
 ];
+const FALLBACK_BASELINE_COUNT = (() => {
+  const raw = process.env.STATS_BASELINE_COUNT ?? "109";
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 109;
+})();
+const memoryWallets = new Set<string>();
 
 function stripEnvQuotes(s: string | undefined): string {
   if (s == null) return "";
@@ -77,7 +83,10 @@ export async function getStatsUsers(): Promise<{ count: number }> {
     }
     return max;
   });
-  return { count: count ?? 0 };
+  if (typeof count === "number" && Number.isFinite(count)) {
+    return { count: Math.max(count, FALLBACK_BASELINE_COUNT + memoryWallets.size) };
+  }
+  return { count: FALLBACK_BASELINE_COUNT + memoryWallets.size };
 }
 
 export async function statsConnect(wallet: string): Promise<{ count: number; isNew: boolean }> {
@@ -91,5 +100,11 @@ export async function statsConnect(wallet: string): Promise<{ count: number; isN
     const count = counts.reduce((max, n) => (typeof n === "number" && Number.isFinite(n) && n > max ? n : max), 0);
     return { count, isNew: added === 1 };
   });
-  return result ?? { count: 0, isNew: false };
+  if (result) {
+    return { count: Math.max(result.count, FALLBACK_BASELINE_COUNT + memoryWallets.size), isNew: result.isNew };
+  }
+
+  const isNew = !memoryWallets.has(trimmed);
+  if (isNew) memoryWallets.add(trimmed);
+  return { count: FALLBACK_BASELINE_COUNT + memoryWallets.size, isNew };
 }
