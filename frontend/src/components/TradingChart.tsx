@@ -303,7 +303,12 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
           : sampleData;
 
   const data = withQuotePoint;
-  const isLive = dataSource === "live";
+  const isLive =
+    dataSource === "live" ||
+    (currentPriceFromApi != null && Number.isFinite(currentPriceFromApi) && currentPriceFromApi > 0);
+  const quoteSymbol = quoteMint?.trim()
+    ? (getSymbol ? getSymbol(quoteMint.trim()) : quoteMint.trim().slice(0, 4))
+    : "SOL";
   const formatTimeLabel = (t: string | number): string => {
     if (typeof t === "number" && t > 0) {
       const d = new Date(t * 1000);
@@ -372,7 +377,7 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
         </div>
         {effectiveLivePrice != null && Number.isFinite(effectiveLivePrice) && (
           <p className="text-lg font-semibold text-primary">
-            {isPairMode ? `${formatPrice(effectiveLivePrice, true)} SOL` : formatPrice(effectiveLivePrice)}
+            {isPairMode ? `${formatPrice(effectiveLivePrice, true)} ${quoteSymbol}` : formatPrice(effectiveLivePrice)}
           </p>
         )}
       </div>

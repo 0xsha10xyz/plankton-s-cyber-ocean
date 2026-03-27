@@ -51,6 +51,29 @@ function isJupiterQuoteResponse(x: unknown): x is JupiterQuoteResponse {
   );
 }
 
+async function getDecimalsViaRpcProxy(base: string, mint: string): Promise<number | null> {
+  try {
+    const res = await fetch(`${base}/api/rpc`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getTokenSupply",
+        params: [mint],
+      }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const raw = json?.result?.value?.decimals;
+    const decimals = typeof raw === "number" ? raw : Number(raw);
+    if (!Number.isFinite(decimals) || decimals < 0 || decimals > 18) return null;
+    return decimals;
+  } catch {
+    return null;
+  }
+}
+
 export default function Swap() {
   const { connection } = useConnection();
   const { publicKey, connected, signTransaction } = useWallet();
@@ -391,10 +414,18 @@ export default function Swap() {
     try {
       const base = getApiBase();
       const res = await fetch(`${base}/api/market/token-info?mint=${encodeURIComponent(raw)}`);
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setResolveError(data?.error || "Token not found");
-        return null;
+        // Fallback path for production incidents: get decimals directly via RPC proxy.
+        const decimalsFromRpc = await getDecimalsViaRpcProxy(base, raw);
+        if (decimalsFromRpc == null) {
+          setResolveError((data as { error?: string })?.error || "Token not found");
+          return null;
+        }
+        const fallbackSymbol = getSymbol(raw);
+        const fallbackToken: TokenOption = { symbol: fallbackSymbol, mint: raw, decimals: decimalsFromRpc };
+        setTokenInfo(raw, fallbackSymbol, decimalsFromRpc);
+        return fallbackToken;
       }
       const symbolFromApi = typeof data.symbol === "string" ? data.symbol.trim() : "";
       const symbol = symbolFromApi || getSymbol(raw);

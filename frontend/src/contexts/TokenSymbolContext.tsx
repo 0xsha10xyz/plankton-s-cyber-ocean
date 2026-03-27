@@ -70,6 +70,29 @@ function persistTokenNames(map: Record<string, TokenInfo>) {
   }
 }
 
+async function getDecimalsViaRpcProxy(base: string, mint: string): Promise<number | null> {
+  try {
+    const res = await fetch(`${base}/api/rpc`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getTokenSupply",
+        params: [mint],
+      }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const raw = json?.result?.value?.decimals;
+    const decimals = typeof raw === "number" ? raw : Number(raw);
+    if (!Number.isFinite(decimals) || decimals < 0 || decimals > 18) return null;
+    return decimals;
+  } catch {
+    return null;
+  }
+}
+
 const TokenSymbolContext = createContext<TokenSymbolContextValue | null>(null);
 
 export function TokenSymbolProvider({ children }: { children: ReactNode }) {
@@ -119,8 +142,18 @@ export function TokenSymbolProvider({ children }: { children: ReactNode }) {
     if (!base) return null;
     try {
       const res = await fetch(`${base}/api/market/token-info?mint=${encodeURIComponent(mint)}`);
-      const data = await res.json();
-      if (!res.ok) return null;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const decimals = await getDecimalsViaRpcProxy(base, mint);
+        if (decimals == null) return null;
+        const info: TokenInfo = { symbol: `${mint.slice(0, 4)}…${mint.slice(-4)}`, decimals };
+        setCache((prev) => {
+          const next = { ...prev, [mint]: info };
+          persistTokenNames(next);
+          return next;
+        });
+        return info;
+      }
       const symbol = typeof data.symbol === "string" ? data.symbol : `${mint.slice(0, 4)}…${mint.slice(-4)}`;
       const decimals = Number(data.decimals);
       if (!Number.isFinite(decimals) || decimals < 0 || decimals > 18) return null;
