@@ -418,8 +418,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (!(req as { url?: string }).url) {
       (req as { url?: string }).url = url;
     }
-    const { app } = await import("../vercel-express-bundle/index.js");
-    return app(req, res);
+    // Keep this path dynamic so Vercel's TypeScript checker doesn't require it at compile time.
+    const backendEntry = "../vercel-express-bundle/index.js";
+    const backendMod = (await import(backendEntry)) as { app?: (r: IncomingMessage, s: ServerResponse) => void };
+    if (!backendMod.app) {
+      throw new Error("Express app export not found in vercel-express-bundle");
+    }
+    return backendMod.app(req, res);
   } catch (err) {
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json");
