@@ -2,7 +2,7 @@
  * Vercel serverless: POST /api/stats/connect
  */
 import type { IncomingMessage, ServerResponse } from "http";
-import { statsConnect } from "../stats-handler.js";
+import { statsConnect } from "../../server-lib/stats-handler.js";
 
 function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
   res.statusCode = statusCode;

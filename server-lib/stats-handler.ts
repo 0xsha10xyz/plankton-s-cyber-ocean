@@ -63,9 +63,7 @@ async function withRedis<T>(fn: (redis: RedisOps) => Promise<T>): Promise<T | nu
     const redis = new m.Redis({ url, token });
     return fn({
       sadd: (key: string, ...members: string[]) =>
-        members.length === 0
-          ? Promise.resolve(0)
-          : redis.sadd(key, ...(members as [string, ...string[]])),
+        members.length === 0 ? Promise.resolve(0) : redis.sadd(key, ...(members as [string, ...string[]])),
       scard: (key: string) => redis.scard(key),
     });
   } catch {
@@ -108,3 +106,4 @@ export async function statsConnect(wallet: string): Promise<{ count: number; isN
   if (isNew) memoryWallets.add(trimmed);
   return { count: FALLBACK_BASELINE_COUNT + memoryWallets.size, isNew };
 }
+

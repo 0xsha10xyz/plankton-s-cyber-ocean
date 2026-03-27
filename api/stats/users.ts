@@ -2,7 +2,7 @@
  * Vercel serverless: GET /api/stats/users
  */
 import type { IncomingMessage, ServerResponse } from "http";
-import { getStatsUsers } from "../stats-handler.js";
+import { getStatsUsers } from "../../server-lib/stats-handler.js";
 
 function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
   res.statusCode = statusCode;
