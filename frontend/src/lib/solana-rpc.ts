@@ -12,18 +12,20 @@ function getEnvRpcUrl(): string | null {
  *   never posts directly to public RPCs (common 403 / CORS from deployed origins).
  */
 export function getPrimaryRpcEndpoint(): string {
-  const fromEnv = getEnvRpcUrl();
-  if (fromEnv) return fromEnv;
-
   if (typeof window !== "undefined" && typeof import.meta !== "undefined") {
     const origin = window.location.origin;
     const isLocal = /localhost|127\.0\.0\.1/.test(origin);
     const dev = import.meta.env.DEV;
     const prod = import.meta.env.PROD;
+    // In browser environments, force same-origin RPC proxy so we never depend on third-party CORS policy.
+    // This avoids recurring 403 failures in wallet flows when public RPC providers block browser POSTs.
     if ((dev && isLocal) || (prod && !isLocal)) {
       return `${origin}/api/rpc`;
     }
   }
+
+  const fromEnv = getEnvRpcUrl();
+  if (fromEnv) return fromEnv;
 
   return "https://rpc.ankr.com/solana";
 }
