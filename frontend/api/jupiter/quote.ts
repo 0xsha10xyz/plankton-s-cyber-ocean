@@ -39,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   const headers: Record<string, string> = {};
   if (jupiterKey) headers["x-api-key"] = jupiterKey;
 
-  const bases = ["https://api.jup.ag/swap/v1", "https://lite-api.jup.ag/swap/v1", "https://quote-api.jup.ag/v6"];
+  const bases = ["https://lite-api.jup.ag/swap/v1", "https://api.jup.ag/swap/v1", "https://quote-api.jup.ag/v6"];
 
   let lastStatus = 0;
   for (const base of bases) {

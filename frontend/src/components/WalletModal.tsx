@@ -1,8 +1,17 @@
 import { useCallback, useEffect } from "react";
+import { flushSync } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Wallet, ExternalLink } from "lucide-react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet, WalletNotSelectedError } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@/contexts/WalletModalContext";
+
+function nextPaint(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+}
 
 const WALLET_COLORS: Record<string, string> = {
   Phantom: "hsl(270, 80%, 60%)",
@@ -33,21 +42,40 @@ const WalletModal = ({
   }, [connected, open, closeWalletModal, onClose]);
 
   const handleWalletClick = useCallback(
-    async (wallet: { adapter: { name: string; url?: string; icon?: string }; readyState: string }) => {
+    async (wallet: {
+      adapter: { name: string; url?: string; icon?: string; connected?: boolean; connect(): Promise<void> };
+      readyState: string;
+    }) => {
       const isInstalled = wallet.readyState === "Installed" || wallet.readyState === "Loadable";
       if (isInstalled) {
         try {
-          select(wallet.adapter.name);
-          await new Promise((r) => setTimeout(r, 100));
-          await connect();
+          // select() updates WalletProvider state; connect() looks up an internal `wallet` that can
+          // lag one frame behind the new adapter — that throws WalletNotSelectedError. flushSync + wait
+          // for paint lets WalletProviderBase sync before connect().
+          flushSync(() => {
+            select(wallet.adapter.name);
+          });
+
+          if (!wallet.adapter.connected) {
+            try {
+              await nextPaint();
+              await connect();
+            } catch (inner: unknown) {
+              const isNotSelected =
+                inner instanceof WalletNotSelectedError ||
+                (inner instanceof Error && inner.name === "WalletNotSelectedError");
+              if (isNotSelected) {
+                await wallet.adapter.connect();
+              } else {
+                throw inner;
+              }
+            }
+          }
+
           closeWalletModal();
           onClose();
         } catch (err: unknown) {
           const msg = err && typeof (err as Error).message === "string" ? (err as Error).message : "";
-          if (msg.includes("WalletNotSelected") || msg.includes("Wallet not selected")) {
-            select(wallet.adapter.name);
-            await connect().catch(() => {});
-          }
           if (!msg.includes("User rejected")) {
             console.error("Wallet connect error:", err);
           }

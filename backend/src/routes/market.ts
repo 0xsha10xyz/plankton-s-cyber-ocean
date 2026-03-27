@@ -26,6 +26,7 @@ const USDT_MINT = "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB";
 const STABLE_MINTS = new Set([USDC_MINT, USDT_MINT]);
 const COINGECKO_SOL_ID = "solana";
 const JUPITER_QUOTE_BASES = [
+  "https://lite-api.jup.ag/swap/v1",
   "https://api.jup.ag/swap/v1",
   "https://quote-api.jup.ag/v6",
 ];
@@ -175,6 +176,34 @@ marketRouter.get("/price", async (req: Request, res: Response) => {
         const cg = await cgRes.json();
         const p = cg?.[COINGECKO_SOL_ID]?.usd;
         if (typeof p === "number" && Number.isFinite(p) && p >= 0) {
+          res.json({ price: p });
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      const binance = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT");
+      if (binance.ok) {
+        const j = (await binance.json()) as { price?: string };
+        const p = j?.price != null ? parseFloat(String(j.price)) : NaN;
+        if (Number.isFinite(p) && p >= 0) {
+          res.json({ price: p });
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      const coincap = await fetch("https://api.coincap.io/v2/assets/solana");
+      if (coincap.ok) {
+        const j = (await coincap.json()) as { data?: { priceUsd?: string } };
+        const p = j?.data?.priceUsd != null ? parseFloat(String(j.data.priceUsd)) : NaN;
+        if (Number.isFinite(p) && p >= 0) {
           res.json({ price: p });
           return;
         }
@@ -581,13 +610,15 @@ marketRouter.get("/token-info", async (req: Request, res: Response) => {
     }
   }
 
-  // Fallback: Jupiter token search by mint (no API key required for lookup)
-  try {
-    const jupRes = await fetch(
-      `https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`,
-      { headers: { "Accept": "application/json" } }
-    );
-    if (jupRes.ok) {
+  // Fallback: Jupiter token search by mint (try multiple hosts; some networks block one CDN)
+  const jupiterSearchUrls = [
+    `https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`,
+    `https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`,
+  ];
+  for (const jupUrl of jupiterSearchUrls) {
+    try {
+      const jupRes = await fetch(jupUrl, { headers: { Accept: "application/json" } });
+      if (!jupRes.ok) continue;
       const arr = (await jupRes.json()) as unknown;
       const list = Array.isArray(arr) ? arr : [];
       const first = list.find((x: unknown) => x && typeof x === "object" && (x as { id?: string }).id === mint) ?? list[0];
@@ -603,9 +634,9 @@ marketRouter.get("/token-info", async (req: Request, res: Response) => {
         res.json({ symbol, decimals: obj.decimals });
         return;
       }
+    } catch {
+      // try next URL
     }
-  } catch {
-    // ignore, fall through to Metaplex
   }
 
   // Fallback: Metaplex metadata on-chain (name/symbol from chain, no API key)

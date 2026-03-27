@@ -5,10 +5,25 @@
 
 import { getApiBase } from "./api.js";
 
-/** Public Jupiter base URLs; try api.jup.ag first (current), then fallbacks. */
+function jupiterDebug(label: string, detail: Record<string, unknown>): void {
+  if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
+    console.debug(`[jupiter] ${label}`, detail);
+  }
+}
+
+/** Strip client-only fields before POSTing to Jupiter (avoids strict-JSON rejections). */
+function quoteResponseForRequest(q: JupiterQuoteResponse): Omit<JupiterQuoteResponse, "__sourceBase"> {
+  const { __sourceBase: _s, ...rest } = q as JupiterQuoteResponse & { __sourceBase?: string };
+  return rest;
+}
+
+/**
+ * Public Jupiter bases. lite-api works without x-api-key; api.jup.ag often returns 401 unauthenticated.
+ * Keep lite first so quote/swap succeed in dev without JUPITER_API_KEY.
+ */
 const JUPITER_PUBLIC_BASES = [
-  "https://api.jup.ag/swap/v1",
   "https://lite-api.jup.ag/swap/v1",
+  "https://api.jup.ag/swap/v1",
   "https://quote-api.jup.ag/v6",
 ];
 
@@ -38,6 +53,19 @@ function getJupiterProxyBase(): string {
 function getJupiterBases(): string[] {
   const proxy = getJupiterProxyBase();
   return proxy ? [proxy, ...JUPITER_PUBLIC_BASES] : JUPITER_PUBLIC_BASES;
+}
+
+/** Deduplicate while preserving order (first occurrence wins). */
+function uniqueJupiterBases(bases: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const b of bases) {
+    const k = b.trim();
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push(k);
+  }
+  return out;
 }
 
 export const COMMON_MINTS: Record<string, string> = {
@@ -132,22 +160,39 @@ export async function getQuote(params: JupiterQuoteParams): Promise<JupiterQuote
 export async function getSwapTransaction(
   params: JupiterSwapParams
 ): Promise<JupiterSwapResponse | null> {
+  const quoteForBody = quoteResponseForRequest(params.quoteResponse);
   const body = {
     quoteResponse: {
-      ...params.quoteResponse,
-      slippageBps: params.quoteResponse.slippageBps ?? 50,
+      ...quoteForBody,
+      slippageBps: quoteForBody.slippageBps ?? 50,
     },
     userPublicKey: params.userPublicKey,
     wrapAndUnwrapSol: params.wrapAndUnwrapSol ?? true,
     dynamicComputeUnitLimit: true,
   };
 
+  jupiterDebug("swap:request", {
+    userPublicKey: params.userPublicKey,
+    inAmount: quoteForBody.inAmount,
+    outAmount: quoteForBody.outAmount,
+    inputMint: quoteForBody.inputMint,
+    outputMint: quoteForBody.outputMint,
+  });
+
   const proxyBase = getJupiterProxyBase();
   let lastStatus: number | undefined;
   let lastErrorMessage: string | undefined;
+  let lastNetworkError: string | undefined;
 
   const sourceBase = (params.quoteResponse as JupiterQuoteResponse & { __sourceBase?: string }).__sourceBase;
-  const orderedBases = sourceBase ? [sourceBase, ...getJupiterBases().filter((b) => b !== sourceBase)] : getJupiterBases();
+  // Always try same-origin /api/jupiter first when configured. Browser POST to Jupiter is often blocked by CORS
+  // even when GET /quote works; putting sourceBase (e.g. lite-api) first made swap fail with a bare
+  // "Jupiter swap build failed" after silent fetch errors.
+  const orderedBases = uniqueJupiterBases([
+    ...(proxyBase ? [proxyBase] : []),
+    ...(sourceBase ? [sourceBase] : []),
+    ...getJupiterBases(),
+  ]);
 
   for (const base of orderedBases) {
     try {
@@ -179,17 +224,39 @@ export async function getSwapTransaction(
           (data && typeof data === "object" ? (data as { error?: string; message?: string; hint?: string }).message : undefined) ??
           (data && typeof data === "object" ? (data as { error?: string; message?: string; hint?: string }).hint : undefined);
         lastErrorMessage = typeof msg === "string" && msg.trim() ? msg.trim() : undefined;
+        jupiterDebug("swap:attempt_failed", {
+          base,
+          status: res.status,
+          message: lastErrorMessage,
+          bodySnippet: typeof raw === "string" ? raw.replace(/\s+/g, " ").trim().slice(0, 280) : undefined,
+        });
         continue;
       }
-      if (data?.swapTransaction && typeof data.lastValidBlockHeight === "number") {
-        return data as JupiterSwapResponse;
+      if (data?.swapTransaction && typeof data.swapTransaction === "string") {
+        const raw = (data as { lastValidBlockHeight?: unknown }).lastValidBlockHeight;
+        const n =
+          typeof raw === "number"
+            ? raw
+            : typeof raw === "string"
+              ? parseInt(raw, 10)
+              : NaN;
+        return {
+          ...(data as JupiterSwapResponse),
+          lastValidBlockHeight: Number.isFinite(n) ? n : 0,
+        };
       }
     } catch (e) {
       if (e instanceof Error && /JUPITER_API_KEY|portal\.jup\.ag/i.test(e.message)) throw e;
+      if (e instanceof Error && e.message) {
+        lastNetworkError = e.message.includes("Failed to fetch")
+          ? "Network/CORS block or API unreachable. Run the backend so /api/jupiter/swap can proxy the request."
+          : e.message;
+      }
       continue;
     }
   }
-  const suffix = lastErrorMessage ? `: ${lastErrorMessage}` : lastStatus ? ` (HTTP ${lastStatus})` : "";
+  const detail = lastErrorMessage ?? lastNetworkError;
+  const suffix = detail ? `: ${detail}` : lastStatus ? ` (HTTP ${lastStatus})` : "";
   throw new Error(`Jupiter swap build failed${suffix}`);
 }
 

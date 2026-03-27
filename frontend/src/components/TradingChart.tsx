@@ -8,9 +8,13 @@ import { getApiBase } from "@/lib/api";
 type TimeRange = "1H" | "4H" | "1D" | "1W";
 
 /** Build API URL to avoid malformed requests. */
-function marketUrl(path: string, params: Record<string, string>): string {
+function marketUrl(path: string, params: Record<string, string | undefined>): string {
   const base = getApiBase();
-  const q = new URLSearchParams({ ...params, _: String(Date.now()) });
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v != null && v !== "") q.set(k, String(v));
+  }
+  q.set("_", String(Date.now()));
   return `${base.replace(/\/$/, "")}/api/market/${path.replace(/^\//, "")}?${q.toString()}`;
 }
 

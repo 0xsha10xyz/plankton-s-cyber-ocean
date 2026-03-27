@@ -30,7 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     dynamicComputeUnitLimit: true,
   };
 
-  const bases = ["https://api.jup.ag/swap/v1", "https://lite-api.jup.ag/swap/v1", "https://quote-api.jup.ag/v6"];
+  const bases = ["https://lite-api.jup.ag/swap/v1", "https://api.jup.ag/swap/v1", "https://quote-api.jup.ag/v6"];
 
   let lastStatus = 0;
   for (const base of bases) {
@@ -41,11 +41,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         body: JSON.stringify(payload),
       });
       lastStatus = resp.status;
-      const data = await resp.json().catch(() => ({}));
+      const data = (await resp.json().catch(() => ({}))) as {
+        swapTransaction?: string;
+        lastValidBlockHeight?: unknown;
+        [k: string]: unknown;
+      };
       if (!resp.ok) continue;
-      if (data?.swapTransaction && typeof data.lastValidBlockHeight === "number") {
+      if (data?.swapTransaction && typeof data.swapTransaction === "string") {
+        const raw = data.lastValidBlockHeight;
+        const n =
+          typeof raw === "number" ? raw : typeof raw === "string" ? parseInt(raw, 10) : NaN;
+        const out = { ...data, lastValidBlockHeight: Number.isFinite(n) ? n : 0 };
         res.status(200).setHeader("Content-Type", "application/json");
-        res.send(JSON.stringify(data));
+        res.send(JSON.stringify(out));
         return;
       }
     } catch {

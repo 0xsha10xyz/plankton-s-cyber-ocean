@@ -160,7 +160,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return;
     }
     const jupiterKey = process.env.JUPITER_API_KEY;
-    const bases = ["https://api.jup.ag/swap/v1", "https://lite-api.jup.ag/swap/v1", "https://quote-api.jup.ag/v6"];
+    const bases = ["https://lite-api.jup.ag/swap/v1", "https://api.jup.ag/swap/v1", "https://quote-api.jup.ag/v6"];
     const headers: Record<string, string> = {};
     if (jupiterKey) headers["x-api-key"] = jupiterKey;
     let lastStatus = 0;
@@ -213,7 +213,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return;
     }
     const jupiterKey = process.env.JUPITER_API_KEY;
-    const bases = ["https://api.jup.ag/swap/v1", "https://lite-api.jup.ag/swap/v1", "https://quote-api.jup.ag/v6"];
+    const bases = ["https://lite-api.jup.ag/swap/v1", "https://api.jup.ag/swap/v1", "https://quote-api.jup.ag/v6"];
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (jupiterKey) headers["x-api-key"] = jupiterKey;
     const payload = {
@@ -231,12 +231,20 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           body: JSON.stringify(payload),
         });
         swapLastStatus = resp.status;
-        const data = await resp.json().catch(() => ({}));
+        const data = (await resp.json().catch(() => ({}))) as {
+          swapTransaction?: string;
+          lastValidBlockHeight?: unknown;
+          [k: string]: unknown;
+        };
         if (!resp.ok) continue;
-        if (data?.swapTransaction && typeof data.lastValidBlockHeight === "number") {
+        if (data?.swapTransaction && typeof data.swapTransaction === "string") {
+          const raw = data.lastValidBlockHeight;
+          const n =
+            typeof raw === "number" ? raw : typeof raw === "string" ? parseInt(raw, 10) : NaN;
+          const out = { ...data, lastValidBlockHeight: Number.isFinite(n) ? n : 0 };
           res.statusCode = 200;
           res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify(data));
+          res.end(JSON.stringify(out));
           return;
         }
       } catch {

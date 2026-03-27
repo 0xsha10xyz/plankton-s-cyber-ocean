@@ -1,8 +1,8 @@
 import { Router, Request, Response } from "express";
 
 const JUPITER_BASES = [
-  "https://api.jup.ag/swap/v1",
   "https://lite-api.jup.ag/swap/v1",
+  "https://api.jup.ag/swap/v1",
   "https://quote-api.jup.ag/v6",
 ];
 
@@ -77,10 +77,17 @@ jupiterRouter.post("/swap", async (req: Request, res: Response) => {
         body: JSON.stringify(payload),
       });
       swapLastStatus = resp.status;
-      const data = await resp.json().catch(() => ({}));
+      const data = (await resp.json().catch(() => ({}))) as {
+        swapTransaction?: string;
+        lastValidBlockHeight?: unknown;
+        [k: string]: unknown;
+      };
       if (!resp.ok) continue;
-      if (data?.swapTransaction && typeof data.lastValidBlockHeight === "number") {
-        res.json(data);
+      if (data?.swapTransaction && typeof data.swapTransaction === "string") {
+        const raw = data.lastValidBlockHeight;
+        const n =
+          typeof raw === "number" ? raw : typeof raw === "string" ? parseInt(raw, 10) : NaN;
+        res.json({ ...data, lastValidBlockHeight: Number.isFinite(n) ? n : 0 });
         return;
       }
     } catch {

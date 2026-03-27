@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Terminal } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { getApiBase } from "@/lib/api";
 
 const FALLBACK_MESSAGES = [
   "[SCANNING] Solana Mainnet...",
@@ -40,7 +41,7 @@ const AITerminal = () => {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const base = typeof window !== "undefined" ? window.location.origin : "";
+        const base = getApiBase();
         const res = await fetch(`${base}/api/agent/logs?limit=80`, { cache: "no-store" });
         const data = await res.json();
         if (Array.isArray(data?.lines) && data.lines.length > 0) {

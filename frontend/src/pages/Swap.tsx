@@ -39,6 +39,18 @@ function base64ToUint8Array(base64: string): Uint8Array {
   return bytes;
 }
 
+/** Use before using `quoteOverride` — `onClick={fn}` passes a React mouse event as the first arg. */
+function isJupiterQuoteResponse(x: unknown): x is JupiterQuoteResponse {
+  if (x === null || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  return (
+    typeof o.inAmount === "string" &&
+    typeof o.outAmount === "string" &&
+    typeof o.inputMint === "string" &&
+    typeof o.outputMint === "string"
+  );
+}
+
 export default function Swap() {
   const { connection } = useConnection();
   const { publicKey, connected, signTransaction } = useWallet();
@@ -235,10 +247,16 @@ export default function Swap() {
   }, [inputToken, outputToken, amount, slippageBps, getBalanceForToken]);
 
   const executeSwap = useCallback(async (quoteOverride?: JupiterQuoteResponse | null) => {
-    // Always prefer a fresh quote unless the caller explicitly passes one.
-    let finalQuote = quoteOverride ?? null;
+    // Callers may pass a quote, or the Swap button passes a React click event — never treat events as quotes.
+    const override = isJupiterQuoteResponse(quoteOverride) ? quoteOverride : null;
+    let finalQuote = override;
 
-    if (!publicKey || !signTransaction) return;
+    if (!publicKey || !signTransaction) {
+      setError(
+        "Wallet is not ready to sign transactions. Open the wallet menu, reconnect, then try again."
+      );
+      return;
+    }
     setError(null);
     setTxSuccess(null);
     setSwapLoading(true);
@@ -295,7 +313,7 @@ export default function Swap() {
         sig = await buildAndSend(finalQuote);
       } catch (e) {
         // If a quote expires between fetch and build, retry once with a fresh quote.
-        if (quoteOverride) throw e;
+        if (override) throw e;
 
         const rawAmount = toRawAmount(amount, inputToken.decimals);
         const freshQuote = await getQuote({
@@ -323,11 +341,27 @@ export default function Swap() {
         // Tx was sent; confirmation timeout is non-fatal
       }
     } catch (e) {
+      if (import.meta.env.DEV) {
+        console.debug("[swap] failed", {
+          message: e instanceof Error ? e.message : String(e),
+          wallet: publicKey?.toBase58(),
+        });
+      }
       setError(e instanceof Error ? e.message : "Swap failed. Try again.");
     } finally {
       setSwapLoading(false);
     }
-  }, [publicKey, signTransaction, connection, refetchBalances, amount, inputToken, outputToken, slippageBps, getBalanceForToken]);
+  }, [
+    publicKey,
+    signTransaction,
+    connection,
+    refetchBalances,
+    amount,
+    inputToken,
+    outputToken,
+    slippageBps,
+    getBalanceForToken,
+  ]);
 
   const switchTokens = () => {
     setInputToken(outputToken);
@@ -598,7 +632,7 @@ export default function Swap() {
                   Get quote
                 </Button>
                 <Button
-                  onClick={executeSwap}
+                  onClick={() => void executeSwap()}
                   disabled={swapLoading || !quote}
                   className="flex-1 gap-2"
                 >
