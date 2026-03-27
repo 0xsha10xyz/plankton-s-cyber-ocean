@@ -70,6 +70,10 @@ function buildJupiterQuoteQuery(
   }).toString();
 }
 
+function isRetriableUpstreamStatus(status: number): boolean {
+  return status === 401 || status === 403 || status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   let url = (req.url || "/").split("#")[0];
   if (!url.startsWith("/")) {
@@ -140,6 +144,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       "https://rpc.ankr.com/solana",
     ];
     const id = payload.id ?? null;
+    let lastStatus = 0;
+    let lastBodySnippet = "";
     for (const url of upstreams) {
       try {
         const r = await fetch(url, {
@@ -148,6 +154,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
           body: bodyStr,
         });
         const text = await r.text();
+        lastStatus = r.status;
+        lastBodySnippet = text.replace(/\s+/g, " ").trim().slice(0, 280);
+        if (isRetriableUpstreamStatus(r.status)) {
+          continue;
+        }
         res.statusCode = r.status;
         const ct = r.headers.get("content-type");
         if (ct) res.setHeader("Content-Type", ct);
@@ -157,12 +168,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         continue;
       }
     }
-    sendJson(res, 502, {
+    sendJson(res, lastStatus || 502, {
       jsonrpc: "2.0",
       error: {
-        code: 502,
-        message:
-          "RPC proxy could not reach an upstream. Set SOLANA_RPC_URL (e.g. Helius) in Vercel env.",
+        code: lastStatus || 502,
+        message: lastBodySnippet
+          ? `RPC upstreams unavailable: ${lastBodySnippet}`
+          : "RPC proxy could not reach a healthy upstream. Set SOLANA_RPC_URL (e.g. Helius) in Vercel env.",
       },
       id,
     });
