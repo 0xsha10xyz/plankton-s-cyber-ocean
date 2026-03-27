@@ -22,8 +22,10 @@ const POLL_INTERVAL_MS = 10_000;
 export function StatsProvider({ children }: { children: ReactNode }) {
   const [userCount, setUserCount] = useState(0);
   const mounted = useRef(true);
+  const statsApiUnavailable = useRef(false);
 
   const fetchCount = useCallback(async () => {
+    if (statsApiUnavailable.current) return;
     try {
       const base = getApiBase();
       if (!base) return;
@@ -33,6 +35,7 @@ export function StatsProvider({ children }: { children: ReactNode }) {
         const data = await res.json();
         setUserCount(typeof data.count === "number" ? data.count : 0);
       } else {
+        if (res.status === 404 || res.status === 405) statsApiUnavailable.current = true;
         setUserCount(0);
       }
     } catch {
@@ -41,6 +44,7 @@ export function StatsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const registerWallet = useCallback(async (wallet: string) => {
+    if (statsApiUnavailable.current) return;
     if (!wallet.trim()) return;
     try {
       const base = getApiBase();
@@ -54,6 +58,8 @@ export function StatsProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setUserCount(typeof data.count === "number" ? data.count : 0);
+      } else if (res.status === 404 || res.status === 405) {
+        statsApiUnavailable.current = true;
       }
     } catch {
       // ignore
