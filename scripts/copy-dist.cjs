@@ -19,9 +19,14 @@ if (fs.existsSync(frontDest)) fs.rmSync(frontDest, { recursive: true });
 fs.cpSync(frontSrc, frontDest, { recursive: true });
 console.log("Copied frontend/dist -> dist");
 
-// 2. Backend dist -> api/__backend (so serverless can import it)
+// 2. Remove legacy backend copy under api/ (can be restored from Vercel cache).
+//    If left behind, Vercel counts those *.js files as extra Serverless Functions.
+const legacyBackDest = path.join(root, "api", "__backend");
+if (fs.existsSync(legacyBackDest)) fs.rmSync(legacyBackDest, { recursive: true, force: true });
+
+// 3. Backend dist -> repo-root vercel-express-bundle (imported from api/[[...path]].ts)
 const backSrc = path.join(root, "backend", "dist");
-const backDest = path.join(root, "api", "__backend");
+const backDest = path.join(root, "vercel-express-bundle");
 if (!fs.existsSync(backSrc)) {
   console.error("Missing backend/dist. Run: npm run build --workspace=backend");
   process.exit(1);
