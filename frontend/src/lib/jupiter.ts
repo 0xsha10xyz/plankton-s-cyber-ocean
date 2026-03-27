@@ -12,6 +12,24 @@ const JUPITER_PUBLIC_BASES = [
   "https://quote-api.jup.ag/v6",
 ];
 
+async function readErrorPayload(res: Response): Promise<{ message?: string }> {
+  const raw = await res.text().catch(() => "");
+  if (!raw) return {};
+  try {
+    const data = JSON.parse(raw) as { error?: unknown; message?: unknown; hint?: unknown };
+    const message =
+      (typeof data.error === "string" && data.error.trim()) ||
+      (typeof data.message === "string" && data.message.trim()) ||
+      (typeof data.hint === "string" && data.hint.trim()) ||
+      "";
+    return message ? { message } : {};
+  } catch {
+    // Non-JSON body (HTML/plain text) from proxy/provider.
+    const snippet = raw.replace(/\s+/g, " ").trim().slice(0, 220);
+    return snippet ? { message: snippet } : {};
+  }
+}
+
 function getJupiterProxyBase(): string {
   const api = getApiBase();
   return api ? `${api.replace(/\/$/, "")}/api/jupiter` : "";
@@ -87,13 +105,14 @@ export async function getQuote(params: JupiterQuoteParams): Promise<JupiterQuote
 
       const res = await fetch(url.toString());
       if (!res.ok) {
+        const payload = await readErrorPayload(res);
         if (res.status === 401 || res.status === 403) {
           throw new Error("Jupiter quote requires JUPITER_API_KEY. Add it in Vercel env vars and redeploy.");
         }
         if (proxyBase && base === proxyBase && (res.status === 503 || res.status === 502)) {
-          const errJson = (await res.json().catch(() => ({}))) as { hint?: string; error?: string };
-          throw new Error(errJson.hint || errJson.error || "Swap quoting failed. Configure JUPITER_API_KEY on the server.");
+          throw new Error(payload.message || "Swap quoting failed. Configure JUPITER_API_KEY on the server.");
         }
+        if (payload.message) throw new Error(`Jupiter quote failed (HTTP ${res.status}): ${payload.message}`);
         continue;
       }
       const data = await res.json();
@@ -137,7 +156,15 @@ export async function getSwapTransaction(
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await res.json().catch(() => ({}));
+      const raw = await res.text().catch(() => "");
+      let data: unknown = {};
+      if (raw) {
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          data = { message: raw.replace(/\s+/g, " ").trim().slice(0, 220) };
+        }
+      }
       if (!res.ok) {
         if (res.status === 401 || res.status === 403) {
           throw new Error("Jupiter swap requires JUPITER_API_KEY. Add it in Vercel env vars and redeploy.");

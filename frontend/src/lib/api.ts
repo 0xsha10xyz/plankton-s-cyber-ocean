@@ -1,19 +1,35 @@
 /**
  * Shared API base URL for backend requests.
  * - Set VITE_API_URL when the backend is on a different host (e.g. Render).
- * - In development we use same hostname as the page on port 3000 (so 127.0.0.1 works with CORS).
+ * - In Vite dev (import.meta.env.DEV), use same origin so /api is proxied to the Express backend
+ *   (avoids 404 when the UI runs on the same port as you thought the API used, e.g. localhost:3000).
  * - In production (HTTPS, non-localhost) we use same origin (Vercel /api).
+ * - Local preview / static builds without proxy: fall back to hostname:3000 (run backend there).
  */
 export function getApiBase(): string {
-  if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) {
-    return String(import.meta.env.VITE_API_URL).replace(/\/$/, "");
-  }
   if (typeof window === "undefined" || !window.location?.origin) {
+    if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) {
+      return String(import.meta.env.VITE_API_URL).replace(/\/$/, "");
+    }
     return "http://localhost:3000";
   }
   const origin = window.location.origin;
-  const isProduction = /^https:\/\//.test(origin) && !origin.includes("localhost") && !origin.includes("127.0.0.1");
+  const isLocal =
+    origin.includes("localhost") || origin.includes("127.0.0.1");
+  const isProduction = /^https:\/\//.test(origin) && !isLocal;
+  const envApi = typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL
+    ? String(import.meta.env.VITE_API_URL).replace(/\/$/, "")
+    : "";
+  if (envApi) {
+    // Guard against accidental production builds pointing to localhost.
+    if (isProduction && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(envApi)) {
+      return origin;
+    }
+    return envApi;
+  }
   if (isProduction) return origin;
+  const isViteDev = typeof import.meta !== "undefined" && Boolean(import.meta.env?.DEV);
+  if (isLocal && isViteDev) return origin;
   return `http://${window.location.hostname}:3000`;
 }
 

@@ -3,12 +3,29 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
 // https://vitejs.dev/config/
+const API_TARGET = process.env.VITE_DEV_API_PROXY ?? "http://127.0.0.1:3000";
+
+// https://vitejs.dev/config/
 export default defineConfig({
   server: {
     host: "::",
     port: 8080,
     hmr: {
       overlay: false,
+    },
+    proxy: {
+      "/api": {
+        target: API_TARGET,
+        changeOrigin: true,
+      },
+    },
+  },
+  preview: {
+    proxy: {
+      "/api": {
+        target: API_TARGET,
+        changeOrigin: true,
+      },
     },
   },
   build: {
