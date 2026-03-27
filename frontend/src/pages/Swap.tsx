@@ -189,16 +189,27 @@ export default function Swap() {
     !pairHasStable &&
     (inputToken.mint === solMint || outputToken.mint === solMint);
 
-  // When pair is token/SOL, chart shows token/SOL price (base=token, quote=SOL). Otherwise chart shows single-token USD.
+  // For stable pairs (SOL/USDC, token/USDT), use pair chart directly so it is live immediately from pair endpoints.
+  const stableMintInPair = pairHasStable
+    ? (isStable(inputToken.mint) ? inputToken.mint : outputToken.mint)
+    : undefined;
+  const nonStableMintInPair = stableMintInPair
+    ? (inputToken.mint === stableMintInPair ? outputToken.mint : inputToken.mint)
+    : undefined;
+
+  // When pair is token/SOL, chart shows token/SOL price (base=token, quote=SOL).
+  // When pair has stable coin, chart shows token/stable pair (base=non-stable, quote=stable).
+  // Otherwise chart shows single-token USD.
   const chartMint =
     inputToken.mint === COMMON_MINTS.USDC || inputToken.mint === COMMON_MINTS.USDT
       ? outputToken.mint
       : inputToken.mint;
-  const chartQuoteMint: string | undefined =
-    pairIsTokenSol ? solMint : undefined;
-  const chartBaseMint = pairIsTokenSol
-    ? (inputToken.mint === solMint ? outputToken.mint : inputToken.mint)
-    : chartMint;
+  const chartQuoteMint: string | undefined = stableMintInPair ?? (pairIsTokenSol ? solMint : undefined);
+  const chartBaseMint = stableMintInPair
+    ? (nonStableMintInPair ?? chartMint)
+    : pairIsTokenSol
+      ? (inputToken.mint === solMint ? outputToken.mint : inputToken.mint)
+      : chartMint;
 
   let latestPriceFromQuote: number | null = null;
   // Only use quote as "price" when the pair is vs USDC/USDT so the value is USD per token. SOL/SYRA etc. use pair API.
