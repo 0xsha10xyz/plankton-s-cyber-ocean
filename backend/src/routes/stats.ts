@@ -1,10 +1,8 @@
 import { Router, Request, Response } from "express";
 import { readFile, writeFile, mkdir } from "fs/promises";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { join } from "path";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = join(__dirname, "..", "data");
+const DATA_DIR = join(process.cwd(), "backend", "data");
 const WALLETS_FILE = join(DATA_DIR, "connected-wallets.json");
 const isVercel = process.env.VERCEL === "1";
 

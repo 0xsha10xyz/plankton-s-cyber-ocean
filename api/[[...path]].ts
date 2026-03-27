@@ -496,26 +496,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
-  // All other /api/* → Express backend
-  try {
-    if (!(req as { url?: string }).url) {
-      (req as { url?: string }).url = url;
-    }
-    // Keep this path dynamic so Vercel's TypeScript checker doesn't require it at compile time.
-    const backendEntry = "../vercel-express-bundle/index.js";
-    const backendMod = (await import(backendEntry)) as { app?: (r: IncomingMessage, s: ServerResponse) => void };
-    if (!backendMod.app) {
-      throw new Error("Express app export not found in vercel-express-bundle");
-    }
-    return backendMod.app(req, res);
-  } catch (err) {
-    res.statusCode = 500;
-    res.setHeader("Content-Type", "application/json");
-    res.end(
-      JSON.stringify({
-        error: "API failed to load",
-        message: err instanceof Error ? err.message : String(err),
-      })
-    );
-  }
+  // Keep unknown /api routes explicit and safe on serverless:
+  // avoid dynamic runtime imports that can fail under CJS/ESM transforms.
+  sendJson(res, 404, { error: "Not found" });
 }
