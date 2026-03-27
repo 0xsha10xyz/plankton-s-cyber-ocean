@@ -18,9 +18,30 @@ type StatsContextValue = {
 const StatsContext = createContext<StatsContextValue | null>(null);
 
 const POLL_INTERVAL_MS = 10_000;
+const USER_COUNT_CACHE_KEY = "plankton_user_count_cache";
+
+function loadCachedUserCount(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = window.localStorage.getItem(USER_COUNT_CACHE_KEY);
+    const n = raw == null ? NaN : Number(raw);
+    return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveCachedUserCount(n: number): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(USER_COUNT_CACHE_KEY, String(Math.max(0, Math.floor(n))));
+  } catch {
+    // ignore storage failures
+  }
+}
 
 export function StatsProvider({ children }: { children: ReactNode }) {
-  const [userCount, setUserCount] = useState(0);
+  const [userCount, setUserCount] = useState(() => loadCachedUserCount());
   const mounted = useRef(true);
   const statsApiUnavailable = useRef(false);
 
@@ -33,13 +54,15 @@ export function StatsProvider({ children }: { children: ReactNode }) {
       if (!mounted.current) return;
       if (res.ok) {
         const data = await res.json();
-        setUserCount(typeof data.count === "number" ? data.count : 0);
+        if (typeof data.count === "number" && Number.isFinite(data.count) && data.count >= 0) {
+          setUserCount(data.count);
+          saveCachedUserCount(data.count);
+        }
       } else {
         if (res.status === 404 || res.status === 405) statsApiUnavailable.current = true;
-        setUserCount(0);
       }
     } catch {
-      if (mounted.current) setUserCount(0);
+      // keep last known count on transient failures
     }
   }, []);
 
@@ -57,7 +80,10 @@ export function StatsProvider({ children }: { children: ReactNode }) {
       if (!mounted.current) return;
       if (res.ok) {
         const data = await res.json();
-        setUserCount(typeof data.count === "number" ? data.count : 0);
+        if (typeof data.count === "number" && Number.isFinite(data.count) && data.count >= 0) {
+          setUserCount(data.count);
+          saveCachedUserCount(data.count);
+        }
       } else if (res.status === 404 || res.status === 405) {
         statsApiUnavailable.current = true;
       }

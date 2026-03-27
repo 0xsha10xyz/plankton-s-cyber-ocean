@@ -235,8 +235,21 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
         .catch(() => {});
     };
 
+    // Run immediately so chart/price become live on mount and pair/range changes.
+    refresh();
     const interval = setInterval(refresh, 15_000);
-    return () => clearInterval(interval);
+    const handleFocus = () => refresh();
+    const handleVisibility = () => {
+      if (!document.hidden) refresh();
+    };
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [inputMint, quoteMint, range, isPairMode]);
 
   const effectiveLivePrice =
