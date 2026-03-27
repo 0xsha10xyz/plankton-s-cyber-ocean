@@ -11,6 +11,28 @@ function sendJson(res: ServerResponse, statusCode: number, body: unknown): void 
   res.end(JSON.stringify(body));
 }
 
+async function lookupTokenViaJupiter(mint: string): Promise<{ symbol: string; decimals: number } | null> {
+  const urls = [
+    `https://lite-api.jup.ag/tokens/v1/token/${encodeURIComponent(mint)}`,
+    `https://api.jup.ag/tokens/v1/token/${encodeURIComponent(mint)}`,
+  ];
+  for (const u of urls) {
+    try {
+      const r = await fetch(u);
+      if (!r.ok) continue;
+      const j = (await r.json()) as { symbol?: unknown; decimals?: unknown };
+      const symbol = typeof j.symbol === "string" && j.symbol.trim() ? j.symbol.trim() : `${mint.slice(0, 4)}…${mint.slice(-4)}`;
+      const decimals = Number(j.decimals);
+      if (Number.isFinite(decimals) && decimals >= 0 && decimals <= 18) {
+        return { symbol, decimals };
+      }
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if ((req.method || "GET").toUpperCase() !== "GET") {
     sendJson(res, 405, { error: "Method not allowed" });
@@ -70,6 +92,16 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         sendJson(res, 200, { symbol: `${mint.slice(0, 4)}…${mint.slice(-4)}`, decimals });
         return;
       }
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    const jup = await lookupTokenViaJupiter(mint);
+    if (jup) {
+      sendJson(res, 200, jup);
+      return;
     }
   } catch {
     // ignore

@@ -86,6 +86,29 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
+  // Lightweight stubs to keep non-MVP UI modules from spamming 404 on Hobby plan.
+  if (method === "GET" && pathname === "/api/agent/status") {
+    sendJson(res, 200, { active: false, riskLevel: 0, profit24h: 0, totalPnL: 0 });
+    return;
+  }
+  if (method === "GET" && pathname === "/api/agent/logs") {
+    sendJson(res, 200, { lines: [], source: "stub" });
+    return;
+  }
+  if (method === "GET" && pathname === "/api/research/feeds") {
+    sendJson(res, 200, { items: [] });
+    return;
+  }
+  if (method === "GET" && (pathname === "/api/subscription/me" || pathname === "/api/subscription/mc")) {
+    const wallet = searchParams.get("wallet")?.trim() || "";
+    if (!wallet) {
+      sendJson(res, 400, { error: "wallet query required" });
+      return;
+    }
+    sendJson(res, 200, { tier: "free" });
+    return;
+  }
+
   // POST /api/rpc – Solana JSON-RPC proxy (avoids browser 403/CORS on public RPCs from production origins)
   if (method === "POST" && pathname === "/api/rpc") {
     const bodyStr = await new Promise<string>((resolve, reject) => {
@@ -271,18 +294,6 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return;
     }
     sendJson(res, 502, { error: "Jupiter swap build unavailable" });
-    return;
-  }
-
-  // GET /api/subscription/me – stub when Express not loaded (same shape as backend)
-  // Also accept /mc (common typo / bad link) so production never 404s.
-  if (method === "GET" && (pathname === "/api/subscription/me" || pathname === "/api/subscription/mc")) {
-    const wallet = searchParams.get("wallet")?.trim();
-    if (!wallet) {
-      sendJson(res, 400, { error: "wallet query required" });
-      return;
-    }
-    sendJson(res, 200, { tier: "free" });
     return;
   }
 
