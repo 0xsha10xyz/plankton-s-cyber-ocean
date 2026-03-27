@@ -9,6 +9,7 @@ import { walletRouter } from "./routes/wallet.js";
 import { researchRouter } from "./routes/research.js";
 import { subscriptionRouter } from "./routes/subscription.js";
 import { agentRouter } from "./routes/agent.js";
+import { rpcRouter } from "./routes/rpc.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
@@ -51,6 +52,7 @@ app.use("/api/wallet", walletRouter);
 app.use("/api/research", researchRouter);
 app.use("/api/subscription", subscriptionRouter);
 app.use("/api/agent", agentRouter);
+app.use("/api/rpc", rpcRouter);
 
 app.get("/", (_req, res) => {
   res.json({

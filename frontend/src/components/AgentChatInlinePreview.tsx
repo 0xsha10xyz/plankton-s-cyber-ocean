@@ -10,7 +10,7 @@ import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
 import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
 import { useAccount } from "@/contexts/AccountContext";
 import { COMMON_MINTS } from "@/lib/jupiter";
-import { FALLBACK_RPCS, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
+import { getFallbackRpcs, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 import { Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 
 type ChatMessage = {
@@ -737,7 +737,7 @@ export function AgentChatInlinePreview() {
       return await connection.getLatestBlockhash("finalized");
     } catch (err) {
       let lastErr: unknown = err;
-      for (const rpc of FALLBACK_RPCS) {
+      for (const rpc of getFallbackRpcs()) {
         try {
           return await new Connection(rpc).getLatestBlockhash("finalized");
         } catch (e) {

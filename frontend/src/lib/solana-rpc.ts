@@ -1,18 +1,53 @@
 import { Connection, PublicKey } from "@solana/web3.js";
 
-/** Fallback RPCs when the app's connection fails or returns 403 (e.g. API key restricted). Tried in order. */
-function getFallbackRpcs(): string[] {
-  const env = typeof import.meta !== "undefined" && (import.meta as { env?: { VITE_SOLANA_RPC_URL?: string } }).env?.VITE_SOLANA_RPC_URL;
-  const url = typeof env === "string" && env.trim() ? env.trim() : null;
-  const list = [
-    "https://rpc.ankr.com/solana",
-    "https://solana.publicnode.com",
-    "https://api.mainnet-beta.solana.com",
-  ];
-  return url ? [url, ...list] : list;
+function getEnvRpcUrl(): string | null {
+  const env = typeof import.meta !== "undefined" && import.meta.env?.VITE_SOLANA_RPC_URL;
+  return typeof env === "string" && env.trim() ? env.trim() : null;
 }
 
-export const FALLBACK_RPCS = getFallbackRpcs();
+/**
+ * Primary RPC URL for `ConnectionProvider` / `useConnection`.
+ * - `VITE_SOLANA_RPC_URL` wins when set (Helius, etc.).
+ * - Otherwise use same-origin `/api/rpc` for Vite dev (proxied) and production deploys so the browser
+ *   never posts directly to public RPCs (common 403 / CORS from deployed origins).
+ */
+export function getPrimaryRpcEndpoint(): string {
+  const fromEnv = getEnvRpcUrl();
+  if (fromEnv) return fromEnv;
+
+  if (typeof window !== "undefined" && typeof import.meta !== "undefined") {
+    const origin = window.location.origin;
+    const isLocal = /localhost|127\.0\.0\.1/.test(origin);
+    const dev = import.meta.env.DEV;
+    const prod = import.meta.env.PROD;
+    if ((dev && isLocal) || (prod && !isLocal)) {
+      return `${origin}/api/rpc`;
+    }
+  }
+
+  return "https://rpc.ankr.com/solana";
+}
+
+function usesSameOriginRpcProxy(): boolean {
+  return getPrimaryRpcEndpoint().includes("/api/rpc");
+}
+
+/**
+ * RPC URLs to try for balance, token accounts, and `sendRawTransaction` fallbacks.
+ * When using `/api/rpc`, do not add browser-direct public RPCs (they often 403 in production).
+ */
+export function getFallbackRpcs(): string[] {
+  const primary = getPrimaryRpcEndpoint();
+  if (usesSameOriginRpcProxy()) {
+    return [primary];
+  }
+  const extras = ["https://api.mainnet-beta.solana.com", "https://rpc.ankr.com/solana"];
+  return [primary, ...extras.filter((u) => u !== primary)];
+}
+
+function fallbackList(): string[] {
+  return getFallbackRpcs();
+}
 
 /** Send raw transaction; try primary connection then fallback RPCs on failure (e.g. 403 API key restricted). */
 export async function sendRawTransactionWithFallback(
@@ -25,8 +60,7 @@ export async function sendRawTransactionWithFallback(
     maxRetries: options?.maxRetries ?? 5,
     preflightCommitment: options?.preflightCommitment ?? "confirmed",
   };
-  const send = async (conn: Connection) =>
-    conn.sendRawTransaction(rawTransaction, opts);
+  const send = async (conn: Connection) => conn.sendRawTransaction(rawTransaction, opts);
 
   let lastError: unknown;
   try {
@@ -35,7 +69,7 @@ export async function sendRawTransactionWithFallback(
     lastError = err;
   }
 
-  for (const rpc of FALLBACK_RPCS) {
+  for (const rpc of fallbackList()) {
     try {
       return await send(new Connection(rpc));
     } catch (err) {
@@ -48,12 +82,10 @@ export async function sendRawTransactionWithFallback(
 }
 
 /** Try fallback RPCs first (reliable when primary has 403), then primary. Returns lamports. */
-export async function fetchBalance(
-  connection: Connection,
-  publicKey: PublicKey
-): Promise<number> {
+export async function fetchBalance(connection: Connection, publicKey: PublicKey): Promise<number> {
+  const list = fallbackList();
   const tryRpcs = [
-    ...FALLBACK_RPCS.map((rpc) => () => new Connection(rpc).getBalance(publicKey)),
+    ...list.map((rpc) => () => new Connection(rpc).getBalance(publicKey)),
     () => connection.getBalance(publicKey),
   ];
   let lastErr: unknown;
@@ -84,10 +116,7 @@ export async function fetchTokenAccountBalance(
     return Number.isFinite(num) ? num : 0;
   };
 
-  const rpcs = [
-    ...FALLBACK_RPCS.map((r) => new Connection(r)),
-    connection,
-  ];
+  const rpcs = [...fallbackList().map((r) => new Connection(r)), connection];
   for (const conn of rpcs) {
     try {
       return await tryFetch(conn);
@@ -122,7 +151,7 @@ export async function fetchAllTokenBalancesAsTokens(
   connection: Connection,
   publicKey: PublicKey
 ): Promise<TokenBalanceItem[]> {
-  const rpcs = [...getFallbackRpcs().map((r) => new Connection(r)), connection];
+  const rpcs = [...fallbackList().map((r) => new Connection(r)), connection];
   for (const conn of rpcs) {
     try {
       const out: TokenBalanceItem[] = [];
@@ -131,7 +160,12 @@ export async function fetchAllTokenBalancesAsTokens(
         const { value } = await conn.getParsedTokenAccountsByOwner(publicKey, { programId });
         for (const item of value) {
           const data = (item as { account?: { data?: unknown } }).account?.data as {
-            parsed?: { info?: { mint?: string; tokenAmount?: { amount?: string; decimals?: number; uiAmount?: number; uiAmountString?: string } } };
+            parsed?: {
+              info?: {
+                mint?: string;
+                tokenAmount?: { amount?: string; decimals?: number; uiAmount?: number; uiAmountString?: string };
+              };
+            };
           } | undefined;
           const info = data?.parsed?.info;
           const mint = info?.mint;

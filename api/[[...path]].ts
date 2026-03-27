@@ -106,6 +106,69 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
+  // POST /api/rpc – Solana JSON-RPC proxy (avoids browser 403/CORS on public RPCs from production origins)
+  if (method === "POST" && pathname === "/api/rpc") {
+    const bodyStr = await new Promise<string>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (c: Buffer) => chunks.push(c));
+      req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+      req.on("error", reject);
+    });
+    let payload: { id?: unknown };
+    try {
+      payload = JSON.parse(bodyStr || "{}");
+    } catch {
+      sendJson(res, 400, {
+        jsonrpc: "2.0",
+        error: { code: -32700, message: "Invalid JSON-RPC body" },
+        id: null,
+      });
+      return;
+    }
+    if (payload == null || typeof payload !== "object") {
+      sendJson(res, 400, {
+        jsonrpc: "2.0",
+        error: { code: -32700, message: "Invalid JSON-RPC body" },
+        id: null,
+      });
+      return;
+    }
+    const envUrl = process.env.SOLANA_RPC_URL?.trim();
+    const upstreams = [
+      ...(envUrl ? [envUrl] : []),
+      "https://api.mainnet-beta.solana.com",
+      "https://rpc.ankr.com/solana",
+    ];
+    const id = payload.id ?? null;
+    for (const url of upstreams) {
+      try {
+        const r = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: bodyStr,
+        });
+        const text = await r.text();
+        res.statusCode = r.status;
+        const ct = r.headers.get("content-type");
+        if (ct) res.setHeader("Content-Type", ct);
+        res.end(text);
+        return;
+      } catch {
+        continue;
+      }
+    }
+    sendJson(res, 502, {
+      jsonrpc: "2.0",
+      error: {
+        code: 502,
+        message:
+          "RPC proxy could not reach an upstream. Set SOLANA_RPC_URL (e.g. Helius) in Vercel env.",
+      },
+      id,
+    });
+    return;
+  }
+
   // All /api/market/* (ohlcv, ohlcv-pair, price, price-pair, token-info, token-details) are handled by Express backend
   // so live and localhost return the same format (full OHLCV for candlestick, token details, etc.).
 
