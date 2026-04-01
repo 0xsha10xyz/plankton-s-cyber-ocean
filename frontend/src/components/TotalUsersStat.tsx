@@ -1,8 +1,6 @@
-import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Users } from "lucide-react";
 import { useStats } from "@/contexts/StatsContext";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 /** Prominent "Total Users" stat for social proof — hero and stats strip */
 export function TotalUsersStat({
@@ -13,7 +11,6 @@ export function TotalUsersStat({
   className?: string;
 }) {
   const { userCount } = useStats();
-  const demoVideoSrc = useMemo(() => "/plankton-demo.mp4", []);
 
   if (variant === "hero") {
     return (
@@ -21,29 +18,8 @@ export function TotalUsersStat({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.5 }}
-        className={`relative inline-flex flex-col items-center gap-1 rounded-2xl border border-primary/30 bg-primary/5 px-8 py-4 ${className}`}
+        className={`inline-flex flex-col items-center gap-1 rounded-2xl border border-primary/30 bg-primary/5 px-8 py-4 ${className}`}
       >
-        <Dialog>
-          <DialogTrigger asChild>
-            <button
-              type="button"
-              className="absolute -top-2.5 right-3 rounded-full border border-primary/30 bg-background/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary/90 backdrop-blur-sm hover:bg-background/90 focus:outline-none focus:ring-2 focus:ring-primary/40"
-            >
-              Demo
-            </button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl p-0 overflow-hidden">
-            <div className="aspect-video w-full bg-black">
-              <video
-                src={demoVideoSrc}
-                className="h-full w-full"
-                controls
-                autoPlay
-                playsInline
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
         <span className="text-xs font-semibold uppercase tracking-wider text-primary/90">
           Total Users
         </span>

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import ParticleBackground from "@/components/ParticleBackground";
@@ -15,6 +15,7 @@ import Roadmap from "@/components/Roadmap";
 import Footer from "@/components/Footer";
 import { TotalUsersStat } from "@/components/TotalUsersStat";
 import { AgentChatInlinePreview } from "@/components/AgentChatInlinePreview";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 const Section = ({ title, id, children }: { title: string; id: string; children: React.ReactNode }) => (
   <section id={id} className="mb-20 scroll-mt-24">
@@ -38,6 +39,8 @@ const Index = () => {
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, []);
+
+  const demoVideoSrc = useMemo(() => "/plankton-demo.mp4", []);
 
   return (
     <div className="relative min-h-screen">
@@ -73,6 +76,29 @@ const Index = () => {
                   Swap
                 </motion.span>
               </Link>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <motion.button
+                    type="button"
+                    className="inline-flex items-center px-6 py-3 rounded-lg bg-secondary/50 text-foreground border border-border/50 hover:border-primary/30 transition-all font-semibold"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Demo
+                  </motion.button>
+                </DialogTrigger>
+                <DialogContent className="max-w-3xl p-0 overflow-hidden">
+                  <div className="aspect-video w-full bg-black">
+                    <video
+                      src={demoVideoSrc}
+                      className="h-full w-full"
+                      controls
+                      autoPlay
+                      playsInline
+                    />
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </motion.div>
         </section>
