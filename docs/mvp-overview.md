@@ -16,6 +16,12 @@ The product is designed for both end users and investor-facing demos with a clea
 
 ## MVP Features (Current Scope)
 
+### 0) Demo Video (Landing Page)
+
+- The landing page includes a **Demo** button next to **Launch App** and **Swap**
+- Clicking **Demo** opens a modal and plays a short walkthrough video
+- The video asset is served from `frontend/public/plankton-demo.mp4`
+
 ### 1) Swap (Jupiter Integration)
 
 - Token quote retrieval via Jupiter API

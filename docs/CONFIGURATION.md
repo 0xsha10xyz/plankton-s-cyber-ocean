@@ -26,7 +26,7 @@ Your domain **planktonomous.dev** is already showing **Valid Configuration** on 
    If you add `www.planktonomous.dev`, in **Domains** set the primary to **planktonomous.dev** and add a redirect from `www` to the apex so one canonical URL is used.
 
 5. **Test the live site**  
-   Open **https://planktonomous.dev** and check: Dashboard, Connect Wallet, Swap (chart + quote), Research, Tokenomics, and Docs. If the chart shows “Sample” and you added `BIRDEYE_API_KEY`, trigger a redeploy.
+Open **https://planktonomous.dev** and check: Dashboard, Connect Wallet, Swap (chart + quote), Research, Tokenomics, and Docs. If the chart still falls back to a synthetic series after adding `BIRDEYE_API_KEY`, trigger a redeploy.
 
 ---
 
@@ -120,7 +120,7 @@ Without this, the production frontend won’t call the backend (no CORS errors),
 
 **Option B — Everything on Vercel (frontend + API in one project):**  
 The backend runs as Vercel Serverless (folder `api/`). Deploy from the repo root. In **Vercel → Settings → Environment Variables** set:
-- `BIRDEYE_API_KEY` = your Birdeye API key (so the chart shows **Live**; without it the chart uses **Sample**).
+- `BIRDEYE_API_KEY` = your Birdeye API key (recommended for consistently live OHLCV across all pairs).
 - `CORS_ORIGIN` = `https://planktonomous.dev,https://planktonomous.vercel.app` (optional; use your production domain).
 
 **Total Users:** On Vercel the count is stored in memory (may reset on cold start). Connecting a wallet increases the count.

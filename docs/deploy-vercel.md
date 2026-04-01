@@ -30,11 +30,11 @@ In the Vercel project: **Settings** → **Environment Variables**. Add:
 
 | Name | Value | Notes |
 |------|--------|--------|
-| `BIRDEYE_API_KEY` | Your Birdeye API key | **Required for real-time chart** (all pairs, including tokens added by paste CA). Without it, the chart shows "Sample" for custom tokens; SOL pairs can still use CoinGecko fallback. |
+| `BIRDEYE_API_KEY` | Your Birdeye API key | **Recommended for real-time chart** (all pairs, including tokens added by paste CA). Without it, the chart may fall back to a synthetic series for some pairs depending on available upstreams. |
 | `JUPITER_API_KEY` | Your Jupiter API key (get at [portal.jup.ag](https://portal.jup.ag)) | **Required for manual Swap** (quote + transaction build). Jupiter’s hosted API expects `x-api-key`; without this env var, `/api/jupiter/*` cannot complete swaps. |
 | `CORS_ORIGIN` | `https://planktonomous.vercel.app` | Replace with your actual Vercel URL. Lets the API allow your frontend origin. |
 | `SOLANA_RPC_URL` | `https://rpc.ankr.com/solana` or your RPC | Optional; used by `/api/wallet/balances` for token balances. |
-| `KV_REST_API_URL` + `KV_REST_API_TOKEN` | From Vercel KV / Upstash Redis | **Optional.** For **Total Users** (unique connected wallets) to persist and display real-time on the dashboard. Add a Redis store in Vercel (Storage → KV or Upstash) and paste the REST URL and token here. Without these, the count stays 0. |
+| `KV_REST_API_URL` + `KV_REST_API_TOKEN` | From Vercel KV / Upstash Redis | **Optional (recommended).** Persists **Total Users** (unique connected wallets) and other state across deployments/instances. Without Redis/KV, the app falls back to a safe baseline and can increment within a single instance, but it will not be globally consistent across cold starts. |
 | `REDIS_URL` | From Vercel Redis (Storage → Redis → Connect) | **Optional.** If you create a **Redis** database in Vercel, this env var is usually auto-added to the project. The code supports `REDIS_URL` for Total Users and for **Agent logs** (Command Center + Helius webhook). |
 | `HELIUS_API_KEY` | Your Helius API key (get at [helius.xyz](https://helius.xyz)) | **Optional.** For Helius RPC and webhooks. Set **SOLANA_RPC_URL** to `https://mainnet.helius-rpc.com/?api_key=YOUR_KEY` for better rate limits. See [helius-setup.md](helius-setup.md) for webhook URL and steps. |
 
@@ -78,7 +78,7 @@ Done. After redeploying, connect a wallet in the app → Total Users on the dash
 
 ---
 
-**Note:** I can’t access your Vercel/Upstash account, so database creation and env setup must be done by you. Without this, Total Users can still render on the dashboard but the count will stay 0 (no hard crash).
+**Note:** I can’t access your Vercel/Upstash account, so database creation and env setup must be done by you. Without Redis/KV, Total Users still renders and remains stable (no hard crash), but persistence/consistency is not guaranteed across serverless instances.
 
 ---
 
