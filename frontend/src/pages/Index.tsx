@@ -34,10 +34,12 @@ const Section = ({ title, id, children }: { title: string; id: string; children:
 const Index = () => {
   useEffect(() => {
     const hash = window.location.hash.replace(/^#/, "");
-    if (hash) {
-      const el = document.getElementById(hash);
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (!hash) return;
+    // On full reload, start at the top; do not jump back to the previous hash section.
+    const nav = performance.getEntriesByType?.("navigation")?.[0] as PerformanceNavigationTiming | undefined;
+    if (nav?.type === "reload") return;
+    const el = document.getElementById(hash);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
   const demoVideoSrc = useMemo(() => "/plankton-demo.mp4", []);
