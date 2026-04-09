@@ -20,6 +20,7 @@ LANGUAGE (critical):
 
 ANSWER QUALITY:
 - Answer what they actually asked first. Be direct and specific to their question.
+- If they ask you to build/write/improve a "prompt", give a concrete outline or example prompts (steps, placeholders). Do NOT answer only with "your wallet is connected" or generic Research/Swap text unless they asked about wallet status.
 - Do NOT repeat the same generic onboarding ("paste a mint", "check Swap/Research") unless they asked how to get started or have no specific question.
 - You cannot execute trades or read live chain data here. If they ask for "today's market movement" or live prices, explain honestly you don't have live feeds in chat, and suggest they use in-app Research/Swap/charts—without copying the same boilerplate every time.
 
@@ -36,6 +37,40 @@ function clampChatLength(s: string, max: number): string {
   const t = (s || "").trim();
   if (t.length <= max) return t;
   return t.slice(0, max);
+}
+
+/** Server-side hint so English turns are not drowned by Indonesian chat history. */
+function inferReplyLanguage(lastUserMessage: string): "en" | "id" {
+  const t = lastUserMessage.trim().toLowerCase();
+  if (!t) return "en";
+
+  const idRe =
+    /\b(yang|dan|untuk|dengan|tidak|bisa|kamu|kau|saya|aku|ini|itu|dari|atau|juga|sudah|belum|aja|kok|nih|dong|apa|bagaimana|gimana|tolong|bantu|adalah|memiliki|dapat|hari|karena|harus|mau|pernah|tersebut|saja)\b/g;
+  const enRe =
+    /\b(the|is|are|was|were|you|your|yours|can|could|would|please|what|how|why|when|where|which|about|good|morning|build|advice|advise|sentiment|market|today|for|not|and|or|with|from|this|that|these|those|have|has|had|help|will|should|ask|tell|give|me|my|any|some|there|here|just|also|into|onto|gm)\b/g;
+
+  const idHits = (t.match(idRe) ?? []).length;
+  const enHits = (t.match(enRe) ?? []).length;
+
+  if (idHits >= 2 && idHits >= enHits + 1) return "id";
+  if (enHits >= 2 && enHits >= idHits + 1) return "en";
+
+  if (/\b(can you|could you|would you|please|what is|what are|how (do|can|to|is)|tell me|give me|build (a |the )?prompt|about the|sentiment|market today)\b/i.test(t)) {
+    return "en";
+  }
+  if (/\b(bisa (tolong|bantu)|tolong|apakah|bagaimana|kenapa|gimana)\b/i.test(t)) return "id";
+
+  if (idHits > enHits) return "id";
+  if (enHits > idHits) return "en";
+  if (t.length < 28 && idHits === 0) return "en";
+  return "en";
+}
+
+function languageLockFooter(lang: "en" | "id"): string {
+  if (lang === "en") {
+    return `\n\n---\nLANGUAGE_LOCK: EN\nMandatory: output JSON fields in English only (insight, additional_insight, every action label). Prioritize this over any non-English text in prior messages.`;
+  }
+  return `\n\n---\nLANGUAGE_LOCK: ID\nWajib: seluruh isi JSON dalam bahasa Indonesia (insight, additional_insight, setiap label action). Utamakan ini daripada bahasa lain di pesan sebelumnya jika berbeda dengan pesan user terbaru.`;
 }
 
 function parseAgentChatPayload(raw: string): AgentChatJson | null {
@@ -353,7 +388,8 @@ agentRouter.post("/chat", async (req, res) => {
   if (body.context?.timeframe) ctxParts.push(`Context timeframe: ${body.context.timeframe}`);
   if (body.wallet) ctxParts.push(`Connected wallet: ${body.wallet}`);
   const contextBlock = ctxParts.length ? `\n\n${ctxParts.join("\n")}` : "";
-  const userBlock = clampChatLength(message + contextBlock, 8500);
+  const replyLang = inferReplyLanguage(message);
+  const userBlock = clampChatLength(message + contextBlock + languageLockFooter(replyLang), 9500);
 
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), 55_000);
