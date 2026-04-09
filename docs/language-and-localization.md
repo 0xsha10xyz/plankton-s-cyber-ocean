@@ -14,6 +14,8 @@ Changing “everything to English” for shipped UI means editing React componen
 
 The in-app **Plankton Agent** does **not** use a single fixed UI language for replies. The backend matches the **user’s last message** (with a server-side language hint) so answers and action buttons stay in the same language as that message (e.g. English questions → English replies). This is implemented in the agent route (`backend/src/routes/agent.ts`); the frontend only sends the user text and history.
 
+**LLM providers:** Chat completions use whichever provider succeeds first: **Anthropic (Claude)**, then **[Groq](https://groq.com)** (OpenAI-compatible API, default model `llama-3.3-70b-versatile`), then **OpenAI**. Configure keys in `backend/.env` — see **[Configuration — Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)** for **Groq** integration details.
+
 Do **not** hardcode a default chat language to Indonesian in new code—the server prompt and `inferReplyLanguage()` logic already enforce consistency with the latest user turn.
 
 ## Secrets vs. language

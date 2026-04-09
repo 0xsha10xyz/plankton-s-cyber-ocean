@@ -75,12 +75,30 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 |--------|------|-------------|
 | GET | `/api/agent/status` | Agent status (active, riskLevel, profit24h, totalPnL, message) |
 | GET | `/api/agent/config` | Agent config (riskLevels, defaultRisk) |
+| POST | `/api/agent/chat` | **Plankton Agent** LLM chat (JSON body). Requires at least one of `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, or `OPENAI_API_KEY` on the server. |
 
 **Example:** `GET /api/agent/status`  
 **Response:** `{ "active": false, "riskLevel": "mid", "profit24h": "0", "totalPnL": "0", "message": "..." }`
 
 **Example:** `GET /api/agent/config`  
 **Response:** `{ "riskLevels": ["conservative", "mid", "aggressive"], "defaultRisk": "mid" }`
+
+#### `POST /api/agent/chat`
+
+Powers the in-app agent chat. The backend calls LLMs in order: **Anthropic → Groq → OpenAI** (first successful response wins).
+
+**Request body (JSON):**
+
+| Field | Type | Description |
+|--------|------|-------------|
+| `message` | string | Required. User message (max ~8000 chars). |
+| `history` | array | Optional. Last turns `{ "role": "user" \| "assistant", "content": string }[]` (trimmed server-side). |
+| `context` | object | Optional. `tokenMint`, `wallet`, `timeframe` for extra context. |
+| `wallet` | string | Optional. Connected wallet address. |
+
+**Success response:** `{ "insight": string, "additional_insight": string, "actions": string[] }` (parsed from model JSON).
+
+**Errors:** `400` invalid message; `503` no LLM keys (`LLM_DISABLED`); `502` parse/model failure. See **[Configuration — Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)** for **Groq** (`GROQ_API_KEY`) and other env vars.
 
 ---
 
@@ -130,8 +148,14 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 | `CORS_ORIGIN` | Allowed origin for CORS | `http://localhost:8080` |
 | `BIRDEYE_API_KEY` | Birdeye API key for Swap chart OHLCV | Optional; chart uses sample data if unset |
 | `SOLANA_RPC_URL` | Solana RPC for wallet balances (and Jupiter proxy). If unset, uses public RPCs (Ankr, PublicNode, mainnet-beta). | Optional |
+| `GROQ_API_KEY` | **[Groq](https://console.groq.com)** OpenAI-compatible API for `POST /api/agent/chat` | Optional; required for chat unless Anthropic or OpenAI is set |
+| `GROQ_AGENT_MODEL` | Groq chat model id | `llama-3.3-70b-versatile` |
+| `ANTHROPIC_API_KEY` | Claude — tried **before** Groq if set | Optional |
+| `ANTHROPIC_AGENT_MODEL` | Anthropic model id | See `backend/.env.example` |
+| `OPENAI_API_KEY` | OpenAI — tried **after** Groq if set | Optional |
+| `OPENAI_AGENT_MODEL` | OpenAI model id | See `backend/.env.example` |
 
-Create `backend/.env` and add variables as needed. For full setup (Birdeye, production), see **[Configuration](./CONFIGURATION.md)**.
+Create `backend/.env` from **`backend/.env.example`** and add variables as needed. For **Groq** setup and provider order, see **[Configuration — Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)**.
 
 ## Running the server
 

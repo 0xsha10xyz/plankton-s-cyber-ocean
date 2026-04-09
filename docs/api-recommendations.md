@@ -65,18 +65,21 @@ The in-app chat should answer questions about portfolio, risk, research, and age
 
 ### 2.1 LLM (Conversation + Reasoning)
 
+**Implemented in this repo:** `POST /api/agent/chat` uses **Anthropic → Groq → OpenAI** (first successful response). **[Groq](https://console.groq.com)** is integrated via the OpenAI-compatible API (`GROQ_API_KEY`, optional `GROQ_AGENT_MODEL`, default `llama-3.3-70b-versatile`). Setting **`GROQ_API_KEY`** alone is enough for working agent chat on a self-hosted backend or VPS.
+
 | API | Purpose | Notes |
 |-----|---------|--------|
-| **OpenAI** (platform.openai.com) | Chat (gpt-4o / gpt-4o-mini), function calling | Strong tool use; good for “agent that can call your backend”. |
-| **Anthropic** (claude.ai) | Claude, tool use | Alternative to OpenAI; good instruction following. |
-| **Together / Groq / OpenRouter** | Open models (Llama, Mistral, etc.) | Lower cost; check tool-use support. |
-| **Ollama (self-hosted)** | Local LLM | No external API cost; good for dev; scale for production. |
+| **OpenAI** (platform.openai.com) | Chat (gpt-4o / gpt-4o-mini), function calling | Used as **fallback** after Groq if `OPENAI_API_KEY` is set. Strong tool use for future tool-calling. |
+| **Anthropic** (claude.ai) | Claude, tool use | Tried **first** if `ANTHROPIC_API_KEY` is set. |
+| **Groq** (console.groq.com) | Llama-class models via OpenAI-compatible API | **Primary cost-effective path** when Anthropic is unset; fast, generous free tier. |
+| **Together / OpenRouter** | Open models | Not wired in code; could be added similarly to Groq. |
+| **Ollama (self-hosted)** | Local LLM | Not wired; add an OpenAI-compatible proxy if needed. |
 
-**Recommendation:** **OpenAI (gpt-4o-mini)** or **Anthropic (Claude)** for production chat with **function/tool calling** so the model can call your backend (e.g. “get portfolio”, “get agent status”, “run screener”).
+**Recommendation:** Set **`GROQ_API_KEY`** on the backend (and optionally Anthropic/OpenAI). For **function/tool calling** so the model can call your backend (e.g. “get portfolio”, “get agent status”), extend `backend/src/routes/agent.ts` or add a tool layer — the current integration returns structured JSON (`insight`, `actions`) without external tool calls.
 
 ### 2.2 Chat Backend Design
 
-- **Backend endpoint:** e.g. `POST /api/agent/chat` with `{ message, wallet?, conversationId? }`.
+- **Backend endpoint:** `POST /api/agent/chat` with `{ message, history?, context?, wallet? }` (see `docs/backend-api.md`).
 - **Tools the LLM can call:**
   - `get_agent_status(wallet)` → active, riskLevel, profit24h, totalPnL.
   - `get_portfolio_summary(wallet)` → SOL balance, top tokens, PnL (from RPC or your DB).

@@ -39,7 +39,7 @@ Open **https://planktonomous.dev** and check: Dashboard, Connect Wallet, Swap (c
 
 2. **Create a `.env` file in the backend folder** (if you don’t have one):
    - Open folder: `plankton-s-cyber-ocean/backend/`
-   - Create a new file named `.env` (there is no `.env.example` in the repo; use the block below)
+   - Copy `backend/.env.example` to `.env`, or create `.env` and paste the block below
 
 3. **Add to backend `.env`:**
    ```env
@@ -60,6 +60,38 @@ Open **https://planktonomous.dev** and check: Dashboard, Connect Wallet, Swap (c
 4. **Save the file.** Restart the backend (`npm run dev:backend`) so the variables are loaded.
 
 **Without BIRDEYE_API_KEY:** the Swap page chart still works but uses sample data (not real-time).
+
+---
+
+## Agent chat — Groq and other LLMs
+
+The **Plankton Agent** chat in the app calls the backend at **`POST /api/agent/chat`**. The server needs **at least one** LLM API key; otherwise the endpoint returns **503** (`LLM_DISABLED`).
+
+### Provider order (first success wins)
+
+1. **Anthropic** — if `ANTHROPIC_API_KEY` is set  
+2. **Groq** — if `GROQ_API_KEY` is set (OpenAI-compatible API, fast, generous free tier)  
+3. **OpenAI** — if `OPENAI_API_KEY` is set  
+
+So **Groq is the default “budget” path** when you do not set Anthropic: add **`GROQ_API_KEY`** alone on a VPS or self-hosted backend for working chat without OpenAI/Anthropic costs.
+
+### Groq setup
+
+1. Create a key at **[Groq Console](https://console.groq.com)** (free tier available; no card required to start).  
+2. In **`backend/.env`** (or your host’s environment variables):
+
+   ```env
+   GROQ_API_KEY=your_groq_key_here
+   # Optional — default is llama-3.3-70b-versatile
+   # GROQ_AGENT_MODEL=llama-3.3-70b-versatile
+   ```
+
+3. Optionally set **`ANTHROPIC_API_KEY`** and/or **`OPENAI_API_KEY`** if you want those providers in the fallback chain (see `backend/.env.example` for model overrides).  
+4. Restart the backend after changing env vars.
+
+The implementation uses Groq’s **OpenAI-compatible** endpoint (`https://api.groq.com/openai/v1/chat/completions`). Replies follow the **user’s last message language** (server-side hint in `backend/src/routes/agent.ts`).
+
+**Production note:** If the frontend is on Vercel and the **agent chat** must hit a **separate backend** (e.g. VPS) where Groq keys live, set **`VITE_API_URL`** to that backend’s HTTPS URL so the SPA calls `POST /api/agent/chat` on the correct host.
 
 ---
 
@@ -109,7 +141,8 @@ So that production (e.g. **https://planktonomous.dev** or **https://planktonomou
 1. **Deploy the backend** to a service like Railway, Render, or Fly.io. Set environment variables there:
    - `CORS_ORIGIN` = **`https://planktonomous.dev,https://planktonomous.vercel.app`** (comma-separated; add localhost if you test locally).
    - `BIRDEYE_API_KEY` = your Birdeye API key (for OHLCV chart).
-   - Other vars as needed: `PORT`, `NODE_ENV`, etc.
+   - **Agent chat:** at least one of **`GROQ_API_KEY`** (recommended for cost/speed), **`ANTHROPIC_API_KEY`**, or **`OPENAI_API_KEY`** — otherwise `POST /api/agent/chat` returns 503.
+   - Other vars as needed: `PORT`, `NODE_ENV`, Redis/KV for stats, etc.
 
 2. **In Vercel (Project → Settings → Environment Variables)** add:
    - **Name:** `VITE_API_URL`  
@@ -135,9 +168,11 @@ The backend runs as Vercel Serverless (folder `api/`). Deploy from the repo root
 | File | Variable | Required? | Value |
 |------|----------|----------|--------|
 | `backend/.env` | `BIRDEYE_API_KEY` | For **Live** chart | API key from birdeye.so |
+| `backend/.env` | `GROQ_API_KEY` | **Agent chat** (if no Anthropic/OpenAI) | Key from [console.groq.com](https://console.groq.com); use with or instead of other LLM keys |
+| `backend/.env` | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | **Agent chat** (optional) | Tried before Groq / after Groq per server order; see Agent chat section |
 | `backend/.env` | `SOLANA_RPC_URL` | Optional (wallet balances) | RPC URL (e.g. `https://rpc.ankr.com/solana` or Helius/QuickNode). Default: Ankr + fallbacks |
 | `frontend/.env` | `VITE_SOLANA_RPC_URL` | Optional (more stable swap) | RPC URL (Helius/QuickNode). Default: Ankr |
-| `frontend/.env` | `VITE_API_URL` | Only if backend is on another host | Backend URL. Leave unset when using Option B (all on Vercel) |
+| `frontend/.env` | `VITE_API_URL` | Only if backend is on another host | Backend URL (required for agent chat if LLM runs on VPS). Leave unset when using Option B (all on Vercel) |
 | Backend (production) | `CORS_ORIGIN` | When backend is separate | `https://planktonomous.dev,https://planktonomous.vercel.app` |
 
 **Important:** Do not commit `.env` files to Git (they are in `.gitignore`). Do not share `.env` contents with others.

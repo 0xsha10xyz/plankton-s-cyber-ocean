@@ -66,7 +66,7 @@
   <p><strong>Connect wallet</strong> — "Connect Wallet" opens a modal with supported wallets. After a successful connection, the modal closes automatically. When connected, the header shows a truncated address and a dropdown with Account and Disconnect.</p>
   <p><strong>Account (when connected)</strong> — "Account" opens a sidebar with: avatar (upload, stored per wallet); username (edit and save); SOL balance; connected wallet address; Disconnect.</p>
   <p><strong>Autonomous Agent Protocol</strong> — Command Center: AITerminal (scrolling logs) and AutoPilot card ("Autonomous Agent Protocol", "Auto Pilot - Your Agent Partner"). When connected: toggle, P/L, risk slider, and SOON.</p>
-  <p><strong>AI Agent Chat (when connected)</strong> — Floating button (bot icon) at bottom-right opens the chat. Topics: portfolio, risk, market research, autonomous agent, PAP.</p>
+  <p><strong>AI Agent Chat (when connected)</strong> — Floating button (bot icon) at bottom-right opens the chat. Topics: portfolio, risk, market research, autonomous agent, PAP. Replies use the backend <code>POST /api/agent/chat</code>; the server can use LLM providers such as <strong>Groq</strong> (OpenAI-compatible), Anthropic, or OpenAI — keys are never in the app bundle.</p>
   <p><strong>Swap</strong> — The Swap link opens the Swap page: trading chart (1H, 4H, 1D, 1W) and manual swap form. Connect wallet, choose From/To tokens (SOL, USDC, USDT), enter amount, click Get quote (Jupiter), then Swap. Success links to Solscan.</p>
   <p><strong>Other sections</strong> — Dashboard (hero, Total Users card, stats strip), Research &amp; Screening, PAP Tokenomics, Subscription Tiers, Roadmap (Phase 0–8), Docs. Footer: Total Users and social links (X: Planktonomous).</p>
 
@@ -77,7 +77,7 @@
   <p><strong>Health:</strong> <code>GET /api/health</code>, <code>/api/health/live</code>, <code>/api/health/ready</code>.</p>
   <p><strong>Research:</strong> <code>GET /api/research/feeds</code>, <code>/api/research/screener</code>.</p>
   <p><strong>Subscription:</strong> <code>GET /api/subscription/tiers</code>, <code>/api/subscription/tiers/:id</code>.</p>
-  <p><strong>Agent:</strong> <code>GET /api/agent/status</code>, <code>/api/agent/config</code>.</p>
+  <p><strong>Agent:</strong> <code>GET /api/agent/status</code>, <code>GET /api/agent/config</code>, <code>POST /api/agent/chat</code> (Plankton Agent; requires server LLM keys, e.g. Groq).</p>
   <p><strong>Stats (user count):</strong> <code>GET /api/stats/users</code> — returns <code>{ count }</code> (unique wallets connected). <code>POST /api/stats/connect</code> — body <code>{ wallet: "&lt;address&gt;" }</code> — registers a wallet (idempotent), returns <code>{ count, isNew }</code>.</p>
   <p>All responses are JSON except live health (plain text). Server port and environment-specific settings are configured via environment files; not documented here for security.</p>
 

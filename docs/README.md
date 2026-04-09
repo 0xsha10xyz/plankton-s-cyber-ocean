@@ -10,7 +10,7 @@ Documentation for **Plankton's Cyber Ocean** — frontend app, backend API, wall
 |-----|-------------|
 | [Language & localization](./language-and-localization.md) | English-first UI/docs; agent replies follow the user’s last message |
 | [Getting started](./getting-started.md) | Setup, run, and project structure |
-| [Configuration](./CONFIGURATION.md) | Environment variables, Birdeye, RPC, production (Vercel) |
+| [Configuration](./CONFIGURATION.md) | Environment variables, Birdeye, RPC, **Agent chat (Groq & LLMs)**, production (Vercel) |
 | [Frontend](./frontend.md) | App features, wallet, Account, AI chat, navigation |
 | [Backend API](./backend-api.md) | API reference, endpoints, and environment variables |
 | [Integration](./integration.md) | Using the API from the frontend |

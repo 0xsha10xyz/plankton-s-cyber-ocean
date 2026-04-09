@@ -66,7 +66,7 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 **Autonomous Agent Protocol** — In the Command Center: AITerminal (scrolling logs) and the AutoPilot card. The card shows "Autonomous Agent Protocol" and "Auto Pilot - Your Agent Partner." When not connected, it shows a message and "Connect Wallet." When connected, it shows a toggle, P/L (24h, Total), risk slider, and SOON.
 
-**AI Agent Chat (under Command Center)** — In the Command Center area, a small chat teaser/entry appears; when your wallet is connected, it opens the AI Agent Chat as a true full-screen page (not a modal/sheet). You can send messages and receive replies. Topics include portfolio, risk, market research, the autonomous agent, and PAP.
+**AI Agent Chat (under Command Center)** — In the Command Center area, a small chat teaser/entry appears; when your wallet is connected, it opens the AI Agent Chat as a true full-screen page (not a modal/sheet). You can send messages and receive replies. Topics include portfolio, risk, market research, the autonomous agent, and PAP. Replies are produced by the backend via **`POST /api/agent/chat`**. Operators configure LLM keys on the server; **Groq** is supported (OpenAI-compatible API, fast free tier — see maintainer docs `docs/CONFIGURATION.md`, section *Agent chat — Groq and other LLMs*).
 
 Quick actions supported in-chat:
 - `Check Balance` / `Check another wallet` → shows `Balance details` with `SOL <amount>` and SPL token lines as `TOKEN_NAME <amount>` (mint/contract not shown).
@@ -118,6 +118,7 @@ The server allows requests from the frontend origin (e.g. http://localhost:8080 
 
 - `GET /api/agent/status` — Agent status: active, risk level, profit 24h, total PnL, message.
 - `GET /api/agent/config` — Risk levels and default risk.
+- `POST /api/agent/chat` — Plankton Agent LLM chat (JSON body: `message`, optional `history`, `context`, `wallet`). Requires server-side LLM keys (**Groq**, and/or Anthropic, OpenAI). Returns structured fields such as `insight`, `additional_insight`, and `actions`.
 
 **Stats (user count)**
 
