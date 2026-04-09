@@ -4,7 +4,6 @@ import { Menu, X, Wallet, LogOut, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { cn } from "@/lib/utils";
-import { PlanktonMark } from "./PlanktonMark";
 import { AccountSidebar } from "./AccountSidebar";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 
@@ -118,7 +117,15 @@ const Header = () => {
               }}
               className="flex items-center gap-3 outline-none rounded-md focus-visible:ring-2 focus-visible:ring-primary/50"
             >
-              <PlanktonMark size={34} className="shrink-0" />
+              <img
+                src="/brand/plankton-token-logo.png"
+                alt="Plankton logo"
+                width={34}
+                height={34}
+                className="shrink-0 rounded-full"
+                loading="eager"
+                decoding="async"
+              />
               <span className="text-xl font-bold glow-text text-primary">PLANKTON</span>
             </Link>
           </div>

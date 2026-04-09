@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="500" viewBox="0 0 1500 500" fill="none">
+  <defs>
+    <!-- Background -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1500" y2="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#050A12" />
+      <stop offset="0.55" stop-color="#050B14" />
+      <stop offset="1" stop-color="#03060D" />
+    </linearGradient>
+
+    <!-- Gentle vignette -->
+    <radialGradient id="vignette" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(750 250) rotate(90) scale(300 900)">
+      <stop offset="0" stop-color="#000000" stop-opacity="0" />
+      <stop offset="1" stop-color="#000000" stop-opacity="0.55" />
+    </radialGradient>
+
+    <!-- Subtle teal haze (very light) -->
+    <radialGradient id="haze" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(430 170) rotate(90) scale(220 520)">
+      <stop offset="0" stop-color="#1FD6C7" stop-opacity="0.10" />
+      <stop offset="1" stop-color="#1FD6C7" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Dot pattern -->
+    <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse">
+      <circle cx="1.4" cy="1.4" r="1" fill="#E6EDF7" fill-opacity="0.07" />
+    </pattern>
+
+    <!-- Icon gradients -->
+    <radialGradient id="ringGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(32 32) rotate(90) scale(30)">
+      <stop stop-color="#64FFE6" stop-opacity="0.85" />
+      <stop offset="1" stop-color="#18D7C9" stop-opacity="0.35" />
+    </radialGradient>
+    <radialGradient id="bodyGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(30 34) rotate(120) scale(22 16)">
+      <stop stop-color="#B8FFF3" stop-opacity="0.82" />
+      <stop offset="1" stop-color="#1AAFA6" stop-opacity="0.20" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background layers -->
+  <rect width="1500" height="500" fill="url(#bg)" />
+  <rect width="1500" height="500" fill="url(#haze)" />
+  <rect width="1500" height="500" fill="url(#dots)" />
+  <rect width="1500" height="500" fill="url(#vignette)" />
+
+  <!-- Brand lockup -->
+  <g transform="translate(120 150)">
+    <!-- Text -->
+    <g transform="translate(0 -10)">
+      <text
+        x="0"
+        y="74"
+        fill="#45E9DB"
+        font-size="92"
+        font-weight="700"
+        letter-spacing="2.2"
+        font-family="Space Grotesk, Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
+      >
+        PLANKTON
+      </text>
+      <text
+        x="0"
+        y="126"
+        fill="#45E9DB"
+        font-size="28"
+        font-weight="500"
+        letter-spacing="0.2"
+        font-family="Space Grotesk, Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
+        opacity="0.90"
+      >
+        Combining advanced autonomous AI agents with a robust human
+      </text>
+      <text
+        x="0"
+        y="160"
+        fill="#45E9DB"
+        font-size="28"
+        font-weight="500"
+        letter-spacing="0.2"
+        font-family="Space Grotesk, Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
+        opacity="0.90"
+      >
+        oversight layer
+      </text>
+    </g>
+  </g>
+
+  <!-- PAP lockup (bottom-right) -->
+  <g transform="translate(1060 392) scale(1.35)" opacity="0.97">
+    <!-- token mark (local file for reliable preview/export) -->
+    <image href="./plankton-token-logo.png" x="0" y="0" width="44" height="44" preserveAspectRatio="xMidYMid slice" />
+
+    <!-- text -->
+    <g transform="translate(56 6)">
+      <text
+        x="0"
+        y="22"
+        fill="#E6EDF7"
+        font-size="24"
+        font-weight="700"
+        letter-spacing="0.6"
+        font-family="Space Grotesk, Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
+      >
+        PAP
+      </text>
+      <text
+        x="0"
+        y="44"
+        fill="#B8C3D3"
+        font-size="15"
+        font-weight="500"
+        letter-spacing="0.15"
+        font-family="Space Grotesk, Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif"
+        opacity="0.9"
+      >
+        Plankton Autonomous Protocol
+      </text>
+    </g>
+  </g>
+</svg>
+

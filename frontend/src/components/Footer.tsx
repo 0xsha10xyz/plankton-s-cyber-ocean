@@ -1,5 +1,3 @@
-import { PlanktonMark } from "./PlanktonMark";
-
 const XIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -30,7 +28,15 @@ const Footer = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <PlanktonMark size={28} className="shrink-0" />
+            <img
+              src="/brand/plankton-token-logo.png"
+              alt="Plankton logo"
+              width={28}
+              height={28}
+              className="shrink-0 rounded-full"
+              loading="lazy"
+              decoding="async"
+            />
             <span className="font-bold text-primary glow-text">PLANKTON</span>
           </div>
 
