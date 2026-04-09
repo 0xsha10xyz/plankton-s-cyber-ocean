@@ -31,7 +31,20 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-app.use(express.json());
+app.use(express.json({ limit: "512kb" }));
+
+/** Malformed JSON bodies must not take down the process — return 400 instead of 502 from nginx. */
+app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err instanceof SyntaxError && "body" in err) {
+    res.status(400).json({ error: "Invalid JSON body" });
+    return;
+  }
+  if (err instanceof SyntaxError && /JSON/i.test(String((err as Error).message))) {
+    res.status(400).json({ error: "Invalid JSON body" });
+    return;
+  }
+  next(err);
+});
 
 // CORS preflight for all /api (fix 405 on live when browser sends OPTIONS)
 app.options("/api/*", (_req, res) => {
