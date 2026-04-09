@@ -35,7 +35,6 @@ const HoloCard = ({ children, className }: { children: React.ReactNode; classNam
       style={{
         background: "linear-gradient(105deg, transparent 40%, hsl(180 90% 70%) 45%, hsl(160 80% 60%) 50%, hsl(280 60% 70%) 55%, transparent 60%)",
         backgroundSize: "200% 100%",
-        animation: "shimmer 4s ease-in-out infinite",
       }}
     />
     <div className="relative z-10">{children}</div>
@@ -60,7 +59,7 @@ const Docs = () => {
   const scrollToSection = (id: string) => {
     setActiveSection(id);
     setSidebarOpen(false);
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById(id)?.scrollIntoView({ behavior: "auto", block: "start" });
   };
 
   return (

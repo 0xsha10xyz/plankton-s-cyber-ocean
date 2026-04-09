@@ -36,10 +36,10 @@
 
     --radius: 0.75rem;
 
-    /* Custom tokens */
-    --glow-cyan: 0 0 20px hsl(180 90% 50% / 0.4), 0 0 60px hsl(180 90% 50% / 0.1);
-    --glow-green: 0 0 20px hsl(140 80% 50% / 0.4), 0 0 60px hsl(140 80% 50% / 0.1);
-    --glow-red: 0 0 20px hsl(0 80% 55% / 0.4), 0 0 60px hsl(0 80% 55% / 0.1);
+    /* Custom tokens (subtle, natural) */
+    --glow-cyan: 0 0 10px hsl(180 90% 50% / 0.18);
+    --glow-green: 0 0 10px hsl(140 80% 50% / 0.18);
+    --glow-red: 0 0 10px hsl(0 80% 55% / 0.18);
     --glass-bg: hsl(215 60% 10% / 0.6);
     --glass-border: hsl(180 90% 50% / 0.15);
     --glass-border-hover: hsl(180 90% 50% / 0.3);
@@ -52,6 +52,10 @@
     --sidebar-accent-foreground: 190 80% 90%;
     --sidebar-border: 200 40% 20%;
     --sidebar-ring: 180 90% 50%;
+
+    /* Background pattern */
+    --bg-dot: 210 20% 80%;
+    --bg-dot-opacity: 0.09;
   }
 }
 
@@ -64,9 +68,22 @@
     min-height: 100vh;
   }
 
+  html {
+    scroll-behavior: auto;
+  }
+
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Space Grotesk', sans-serif;
+    background-color: hsl(var(--background));
+    background-image:
+      radial-gradient(circle at 50% 35%, hsl(180 90% 50% / 0.06), transparent 45%),
+      radial-gradient(circle at 18% 78%, hsl(160 80% 45% / 0.05), transparent 40%),
+      radial-gradient(ellipse at 50% 60%, hsl(0 0% 0% / 0.55), transparent 55%),
+      radial-gradient(hsl(var(--bg-dot) / var(--bg-dot-opacity)) 1px, transparent 1px);
+    background-size: auto, auto, auto, 14px 14px;
+    background-position: 0 0, 0 0, 0 0, 0 0;
+    background-attachment: fixed;
   }
 
   code, .font-mono {
@@ -85,39 +102,97 @@
 
   .glass-card:hover {
     border-color: var(--glass-border-hover);
-    box-shadow: var(--glow-cyan);
+    box-shadow: 0 0 0 1px hsl(180 90% 50% / 0.06);
   }
 
   .glow-text {
-    text-shadow: 0 0 10px hsl(180 90% 50% / 0.5), 0 0 30px hsl(180 90% 50% / 0.2);
+    text-shadow: 0 0 10px hsl(180 90% 50% / 0.18);
   }
 
   .glow-border {
-    box-shadow: var(--glow-cyan);
+    box-shadow: 0 0 0 1px hsl(180 90% 50% / 0.10);
   }
 
   .neon-button {
     @apply relative overflow-hidden rounded-lg px-6 py-3 font-semibold transition-all duration-300;
-    background: linear-gradient(135deg, hsl(180 90% 50% / 0.15), hsl(160 80% 45% / 0.1));
-    border: 1px solid hsl(180 90% 50% / 0.3);
+    background: hsl(var(--card) / 0.55);
+    border: 1px solid hsl(var(--border) / 0.65);
   }
 
   .neon-button:hover {
-    background: linear-gradient(135deg, hsl(180 90% 50% / 0.3), hsl(160 80% 45% / 0.2));
-    box-shadow: var(--glow-cyan);
-    transform: translateY(-1px);
+    background: hsl(var(--card) / 0.75);
+    border-color: hsl(var(--border) / 0.9);
   }
 
   .section-title {
     @apply text-2xl md:text-3xl font-bold tracking-tight;
-    background: linear-gradient(135deg, hsl(180 90% 50%), hsl(160 80% 60%));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: hsl(var(--foreground));
   }
 }
 
 @layer utilities {
+  /* Natural dark mode: avoid "AI-ish" motion by default */
+  [class*="animate-"] {
+    animation: none !important;
+  }
+
+  .marquee {
+    --marquee-gap: 1rem;
+    --marquee-duration: 38s;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .marquee__track {
+    display: flex;
+    gap: var(--marquee-gap);
+    width: max-content;
+    will-change: transform;
+    animation: marquee var(--marquee-duration) linear infinite;
+    padding: 0.5rem 0;
+  }
+
+  .marquee__item {
+    flex: 0 0 auto;
+    width: 140px;
+  }
+
+  @media (min-width: 640px) {
+    .marquee__item {
+      width: 160px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .marquee__item {
+      width: 176px;
+    }
+  }
+
+  .marquee:hover .marquee__track {
+    animation-play-state: paused;
+  }
+
+  .marquee--rtl .marquee__track {
+    animation-direction: reverse;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee__track {
+      animation: none;
+      transform: none;
+    }
+  }
+
+  @keyframes marquee {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
   .animate-pulse-glow {
     animation: pulse-glow 2s ease-in-out infinite;
   }

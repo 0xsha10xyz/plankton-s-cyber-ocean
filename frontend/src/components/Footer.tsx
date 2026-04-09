@@ -1,5 +1,4 @@
-import { motion } from "framer-motion";
-import PlanktonLogo from "./PlanktonLogo";
+import { PlanktonMark } from "./PlanktonMark";
 
 const XIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -31,24 +30,22 @@ const Footer = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <PlanktonLogo status="profitable" size={32} />
+            <PlanktonMark size={28} className="shrink-0" />
             <span className="font-bold text-primary glow-text">PLANKTON</span>
           </div>
 
           <div className="flex items-center gap-4">
             {socials.map((s) => (
-              <motion.a
+              <a
                 key={s.name}
                 href={s.href}
                 target={s.href.startsWith("http") ? "_blank" : undefined}
                 rel={s.href.startsWith("http") ? "noopener noreferrer" : undefined}
-                whileHover={{ scale: 1.15, y: -2 }}
-                whileTap={{ scale: 0.9 }}
                 className="w-10 h-10 rounded-lg bg-secondary/50 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors"
                 title={s.name}
               >
                 <s.icon />
-              </motion.a>
+              </a>
             ))}
           </div>
         </div>

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { MotionConfig } from "framer-motion";
 import { SolanaWalletProviders } from "@/contexts/WalletContext";
 import { StatsProvider, StatsWalletTracker } from "@/contexts/StatsContext";
 import { WalletModalProvider } from "@/contexts/WalletModalContext";
@@ -33,19 +34,21 @@ const App = () => (
             <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter
-              future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-            >
-              <ScrollToTop />
-              <StatsWalletTracker />
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/swap" element={<Swap />} />
-                <Route path="/docs" element={<Docs />} />
-                <Route path="/agent-chat" element={<AgentChatPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
+            <MotionConfig reducedMotion="always">
+              <BrowserRouter
+                future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+              >
+                <ScrollToTop />
+                <StatsWalletTracker />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/swap" element={<Swap />} />
+                  <Route path="/docs" element={<Docs />} />
+                  <Route path="/agent-chat" element={<AgentChatPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </MotionConfig>
             </TooltipProvider>
             </SubscriptionProvider>
             </TokenSymbolProvider>

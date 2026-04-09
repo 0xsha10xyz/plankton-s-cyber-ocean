@@ -4,7 +4,7 @@ import { Menu, X, Wallet, LogOut, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { cn } from "@/lib/utils";
-import PlanktonLogo from "./PlanktonLogo";
+import { PlanktonMark } from "./PlanktonMark";
 import { AccountSidebar } from "./AccountSidebar";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 
@@ -21,7 +21,7 @@ const NAV_CONFIG: { label: string; sectionId?: string; path?: string }[] = [
 
 const scrollToSection = (sectionId: string) => {
   const el = document.getElementById(sectionId);
-  el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  el?.scrollIntoView({ behavior: "auto", block: "start" });
 };
 
 function truncateAddress(address: string, chars = 4): string {
@@ -113,12 +113,12 @@ const Header = () => {
               onClick={() => {
                 setMobileOpen(false);
                 if (pathname === "/") {
-                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  window.scrollTo({ top: 0, behavior: "auto" });
                 }
               }}
               className="flex items-center gap-3 outline-none rounded-md focus-visible:ring-2 focus-visible:ring-primary/50"
             >
-              <PlanktonLogo status="researching" size={40} />
+              <PlanktonMark size={34} className="shrink-0" />
               <span className="text-xl font-bold glow-text text-primary">PLANKTON</span>
             </Link>
           </div>
@@ -135,7 +135,9 @@ const Header = () => {
                   ? "text-primary font-semibold"
                   : "text-muted-foreground hover:text-primary"
               );
-              const activeUnderline = active && "after:content-[''] after:absolute after:left-2 after:right-2 after:bottom-0 after:h-0.5 after:bg-primary after:rounded-full after:shadow-[0_0_8px_hsl(180_90%_50%_/_0.6)]";
+              const activeUnderline =
+                active &&
+                "after:content-[''] after:absolute after:left-2 after:right-2 after:bottom-0 after:h-0.5 after:bg-primary after:rounded-full after:opacity-60";
               if (path) {
                 const isDocs = path === "/docs";
                 // Open docs in a new tab to keep main app state
