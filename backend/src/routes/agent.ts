@@ -250,13 +250,62 @@ async function chatOpenAI(
   return { ok: true, raw };
 }
 
-/** POST /api/agent/chat — prefers Anthropic (Claude) if ANTHROPIC_API_KEY is set, else OpenAI. */
+/** Groq: OpenAI-compatible chat; generous free tier (console.groq.com). */
+async function chatGroq(
+  apiKey: string,
+  history: { role: "user" | "assistant"; content: string }[],
+  userBlock: string,
+  signal: AbortSignal
+): Promise<{ ok: true; raw: string } | { ok: false; status: number; msg: string; code: string }> {
+  const model = process.env.GROQ_AGENT_MODEL?.trim() || "llama-3.3-70b-versatile";
+  const messages: { role: "system" | "user" | "assistant"; content: string }[] = [
+    { role: "system", content: CHAT_SYSTEM_PROMPT },
+    ...history.map((h) => ({ role: h.role, content: h.content })),
+    { role: "user", content: userBlock },
+  ];
+
+  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    signal,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.6,
+      max_tokens: 1024,
+      response_format: { type: "json_object" },
+      messages,
+    }),
+  });
+
+  const data = (await r.json().catch(() => null)) as {
+    error?: { message?: string };
+    choices?: { message?: { content?: string } }[];
+  } | null;
+
+  if (!r.ok || !data) {
+    const msg = data?.error?.message || `Groq HTTP ${r.status}`;
+    return { ok: false, status: r.status, msg, code: "GROQ_ERROR" };
+  }
+
+  const raw = data.choices?.[0]?.message?.content?.trim() || "";
+  if (!raw) {
+    return { ok: false, status: 502, msg: "Empty Groq response", code: "GROQ_ERROR" };
+  }
+  return { ok: true, raw };
+}
+
+/** POST /api/agent/chat — Anthropic → Groq → OpenAI (first success wins). */
 agentRouter.post("/chat", async (req, res) => {
   const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
+  const groqKey = process.env.GROQ_API_KEY?.trim();
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!anthropicKey && !openaiKey) {
+  if (!anthropicKey && !groqKey && !openaiKey) {
     res.status(503).json({
-      error: "No LLM configured. Set ANTHROPIC_API_KEY (Claude) or OPENAI_API_KEY on the server.",
+      error:
+        "No LLM configured. Set GROQ_API_KEY (free tier), and/or ANTHROPIC_API_KEY, OPENAI_API_KEY on the server.",
       code: "LLM_DISABLED",
     });
     return;
@@ -304,6 +353,12 @@ agentRouter.post("/chat", async (req, res) => {
       const a = await chatAnthropic(anthropicKey, history, userBlock, ac.signal);
       if (a.ok) raw = a.raw;
       else lastErr = { status: a.status, msg: a.msg, code: a.code };
+    }
+
+    if (!raw && groqKey) {
+      const g = await chatGroq(groqKey, history, userBlock, ac.signal);
+      if (g.ok) raw = g.raw;
+      else if (!lastErr) lastErr = { status: g.status, msg: g.msg, code: g.code };
     }
 
     if (!raw && openaiKey) {
