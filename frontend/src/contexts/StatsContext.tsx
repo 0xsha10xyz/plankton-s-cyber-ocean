@@ -17,7 +17,8 @@ type StatsContextValue = {
 
 const StatsContext = createContext<StatsContextValue | null>(null);
 
-const POLL_INTERVAL_MS = 10_000;
+// Keep polling low to reduce API load during launch.
+const POLL_INTERVAL_MS = 60_000;
 const USER_COUNT_CACHE_KEY = "plankton_user_count_cache";
 
 function loadCachedUserCount(): number {
@@ -93,11 +94,24 @@ export function StatsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    fetchCount();
-    const id = setInterval(fetchCount, POLL_INTERVAL_MS);
+    let id: number | null = null;
+    const tick = async () => {
+      if (document.visibilityState === "hidden") return;
+      await fetchCount();
+    };
+
+    void tick();
+    id = window.setInterval(() => void tick(), POLL_INTERVAL_MS);
+
+    const onVis = () => {
+      if (document.visibilityState !== "hidden") void tick();
+    };
+    document.addEventListener("visibilitychange", onVis);
+
     return () => {
       mounted.current = false;
-      clearInterval(id);
+      if (id != null) window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
     };
   }, [fetchCount]);
 

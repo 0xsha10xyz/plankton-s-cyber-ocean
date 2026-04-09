@@ -102,8 +102,20 @@ export function TokenDetails({ mint, tokenSymbol, className }: TokenDetailsProps
   // Real-time refresh every 45s
   useEffect(() => {
     if (!mint?.trim()) return;
-    const t = setInterval(fetchDetails, 45_000);
-    return () => clearInterval(t);
+    const tick = () => {
+      if (document.visibilityState === "hidden") return;
+      fetchDetails();
+    };
+    tick();
+    const t = setInterval(tick, 60_000);
+    const onVis = () => {
+      if (document.visibilityState !== "hidden") tick();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [mint, fetchDetails]);
 
   const copyMint = () => {

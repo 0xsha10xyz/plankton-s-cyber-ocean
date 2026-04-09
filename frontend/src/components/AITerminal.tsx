@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Terminal } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { getApiBase } from "@/lib/api";
 
-const FALLBACK_MESSAGES = [
-  "[SCANNING] Solana Mainnet...",
-  "[ON_CHAIN] Tracking: new mints, whale transfers, sniper buys, swaps.",
-  "[WHALE_TRANSFER] Large SOL/token • [NEW_MINT] pump.fun / Raydium / gmgn",
-  "[ACTION] Agent ready.",
-];
+const SOON_LINES = [
+  "[STATUS] Coming soon.",
+  "[INFO] Live onchain terminal will be available soon",
+  "[INFO] Core app features are available now.",
+] as const;
 
 type LogEntry = { id: string; time: string; message: string; type?: string };
 
@@ -39,49 +37,20 @@ const AITerminal = () => {
     : lines;
 
   useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        const base = getApiBase();
-        const res = await fetch(`${base}/api/agent/logs?limit=80`, { cache: "no-store" });
-        const data = await res.json();
-        if (Array.isArray(data?.lines) && data.lines.length > 0) {
-          setLines(data.lines);
-          setLive(data.source === "redis");
-        } else if (data?.source === "redis" && Array.isArray(data?.lines)) {
-          setLines(data.lines);
-          setLive(true);
-        } else if (lines.length === 0) {
-          setLines(
-            FALLBACK_MESSAGES.map((message, i) => ({
-              id: `fallback-${i}`,
-              time: new Date().toISOString(),
-              message,
-              type: "info",
-            }))
-          );
-          setLive(false);
-        }
-      } catch {
-        if (lines.length === 0) {
-          setLines(
-            FALLBACK_MESSAGES.map((message, i) => ({
-              id: `fallback-${i}`,
-              time: new Date().toISOString(),
-              message,
-              type: "info",
-            }))
-          );
-        }
-        setLive(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLogs();
-    const intervalMs = live ? 2000 : 5000;
-    const interval = setInterval(fetchLogs, intervalMs);
-    return () => clearInterval(interval);
-  }, [live]);
+    // "Coming Soon" mode: keep this module static to avoid introducing
+    // runtime/network errors during launch preparations.
+    const time = new Date().toISOString();
+    setLines(
+      SOON_LINES.map((message, i) => ({
+        id: `soon-${i}`,
+        time,
+        message,
+        type: "info",
+      }))
+    );
+    setLive(false);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -106,14 +75,13 @@ const AITerminal = () => {
         <div className="ml-auto flex items-center gap-2">
           <div className={`w-2 h-2 rounded-full ${live ? "bg-accent animate-pulse-glow" : "bg-muted-foreground/60"}`} />
           <span className={`text-xs font-mono ${live ? "text-accent" : "text-muted-foreground"}`}>
-            {live ? "LIVE" : "SIMULATED"}
+            {live ? "LIVE" : "SOON"}
           </span>
         </div>
       </div>
       <div
         ref={scrollRef}
-        className="p-4 h-64 overflow-y-auto overflow-x-hidden font-mono text-xs leading-relaxed scroll-smooth"
-        style={{ scrollBehavior: "smooth" }}
+        className="p-4 h-64 overflow-y-auto overflow-x-hidden font-mono text-xs leading-relaxed"
       >
         {loading && lines.length === 0 ? (
           <div className="text-muted-foreground">Loading agent logs...</div>
@@ -128,7 +96,7 @@ const AITerminal = () => {
         )}
       </div>
       <p className="px-4 py-2 text-[10px] text-muted-foreground/80 border-t border-border/30">
-        {live ? "Real-time Solana on-chain events" : "Set Redis + Helius in Vercel for real-time Solana data."}
+        {live ? "Live Solana network telemetry (RPC)" : "Agent Terminal: Coming soon."}
       </p>
     </div>
   );

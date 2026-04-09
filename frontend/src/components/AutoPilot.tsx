@@ -31,9 +31,20 @@ const AutoPilot = () => {
         setStatus(null);
       }
     };
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 15000);
-    return () => clearInterval(interval);
+    const tick = () => {
+      if (document.visibilityState === "hidden") return;
+      fetchStatus();
+    };
+    tick();
+    const interval = setInterval(tick, 60_000);
+    const onVis = () => {
+      if (document.visibilityState !== "hidden") tick();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [connected, publicKey]);
 
   const profit24h = status?.profit24h ?? 0;

@@ -91,7 +91,8 @@ export function TokenHeaderMetrics({
   // Refresh price and details periodically for real-time feel
   useEffect(() => {
     if (!mint?.trim() || !getApiBase()) return;
-    const interval = setInterval(() => {
+    const tick = () => {
+      if (document.visibilityState === "hidden") return;
       const base = getApiBase();
       if (!base) return;
       fetch(`${base}/api/market/price?mint=${encodeURIComponent(mint.trim())}&_=${Date.now()}`)
@@ -113,8 +114,17 @@ export function TokenHeaderMetrics({
             });
         })
         .catch(() => {});
-    }, 45_000);
-    return () => clearInterval(interval);
+    };
+    tick();
+    const interval = setInterval(tick, 60_000);
+    const onVis = () => {
+      if (document.visibilityState !== "hidden") tick();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [mint]);
 
   const displayPrice = currentPriceProp ?? priceFromApi;
