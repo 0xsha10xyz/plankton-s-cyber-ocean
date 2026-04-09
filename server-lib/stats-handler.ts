@@ -62,11 +62,16 @@ async function withRedis<T>(fn: (redis: RedisOps) => Promise<T>): Promise<T | nu
   try {
     const m = await import("@upstash/redis");
     const redis = new m.Redis({ url, token });
-    return fn({
-      sadd: (key: string, ...members: string[]) =>
-        members.length === 0 ? Promise.resolve(0) : redis.sadd(key, ...(members as [string, ...string[]])),
-      scard: (key: string) => redis.scard(key),
-    });
+    try {
+      return await fn({
+        sadd: (key: string, ...members: string[]) =>
+          members.length === 0 ? Promise.resolve(0) : redis.sadd(key, ...(members as [string, ...string[]])),
+        scard: (key: string) => redis.scard(key),
+      });
+    } catch (e) {
+      console.warn("[stats] Upstash request failed:", e instanceof Error ? e.message : e);
+      return null;
+    }
   } catch {
     return null;
   }
