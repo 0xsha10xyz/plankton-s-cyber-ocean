@@ -26,7 +26,9 @@ function clampChatLength(s: string, max: number): string {
 }
 
 function parseAgentChatPayload(raw: string): AgentChatJson | null {
-  const text = raw.trim();
+  let text = raw.trim();
+  const fence = text.match(/^```(?:json)?\s*([\s\S]*?)```$/m);
+  if (fence) text = fence[1].trim();
   try {
     const o = JSON.parse(text) as Record<string, unknown>;
     const insight = typeof o.insight === "string" ? o.insight : "";
@@ -145,11 +147,118 @@ agentRouter.get("/config", (_req, res) => {
   });
 });
 
-/** POST /api/agent/chat — LLM reply as { insight, additional_insight, actions }. */
+/** Anthropic Messages API: must start with a `user` turn. */
+function buildAnthropicMessages(
+  history: { role: "user" | "assistant"; content: string }[],
+  userBlock: string
+): { role: "user" | "assistant"; content: string }[] {
+  let h = [...history];
+  while (h.length > 0 && h[0].role === "assistant") h.shift();
+  const out = h.map((m) => ({ role: m.role, content: m.content }));
+  out.push({ role: "user", content: userBlock });
+  return out;
+}
+
+async function chatAnthropic(
+  apiKey: string,
+  history: { role: "user" | "assistant"; content: string }[],
+  userBlock: string,
+  signal: AbortSignal
+): Promise<{ ok: true; raw: string } | { ok: false; status: number; msg: string; code: string }> {
+  const model = process.env.ANTHROPIC_AGENT_MODEL?.trim() || "claude-3-5-haiku-20241022";
+  const system = `${CHAT_SYSTEM_PROMPT}\n\nReturn only a single JSON object matching the schema. No markdown, no code fences.`;
+  const messages = buildAnthropicMessages(history, userBlock);
+
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    signal,
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 1024,
+      temperature: 0.6,
+      system,
+      messages,
+    }),
+  });
+
+  const data = (await r.json().catch(() => null)) as {
+    error?: { message?: string; type?: string };
+    content?: { type: string; text?: string }[];
+  } | null;
+
+  if (!r.ok || !data) {
+    const msg = data?.error?.message || `Anthropic HTTP ${r.status}`;
+    return { ok: false, status: r.status, msg, code: "ANTHROPIC_ERROR" };
+  }
+
+  const textBlock = data.content?.find((c) => c.type === "text");
+  const raw = textBlock?.text?.trim() ?? "";
+  if (!raw) {
+    return { ok: false, status: 502, msg: "Empty Claude response", code: "ANTHROPIC_ERROR" };
+  }
+  return { ok: true, raw };
+}
+
+async function chatOpenAI(
+  apiKey: string,
+  history: { role: "user" | "assistant"; content: string }[],
+  userBlock: string,
+  signal: AbortSignal
+): Promise<{ ok: true; raw: string } | { ok: false; status: number; msg: string; code: string }> {
+  const model = process.env.OPENAI_AGENT_MODEL?.trim() || "gpt-4o-mini";
+  const openaiMessages: { role: "system" | "user" | "assistant"; content: string }[] = [
+    { role: "system", content: CHAT_SYSTEM_PROMPT },
+    ...history.map((h) => ({ role: h.role, content: h.content })),
+    { role: "user", content: userBlock },
+  ];
+
+  const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    signal,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.6,
+      max_tokens: 900,
+      response_format: { type: "json_object" },
+      messages: openaiMessages,
+    }),
+  });
+
+  const data = (await r.json().catch(() => null)) as {
+    error?: { message?: string };
+    choices?: { message?: { content?: string } }[];
+  } | null;
+
+  if (!r.ok || !data) {
+    const msg = data?.error?.message || `OpenAI error ${r.status}`;
+    return { ok: false, status: r.status, msg, code: "OPENAI_ERROR" };
+  }
+
+  const raw = data.choices?.[0]?.message?.content?.trim() || "";
+  if (!raw) {
+    return { ok: false, status: 502, msg: "Empty OpenAI response", code: "OPENAI_ERROR" };
+  }
+  return { ok: true, raw };
+}
+
+/** POST /api/agent/chat — prefers Anthropic (Claude) if ANTHROPIC_API_KEY is set, else OpenAI. */
 agentRouter.post("/chat", async (req, res) => {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  if (!apiKey) {
-    res.status(503).json({ error: "Agent LLM not configured", code: "LLM_DISABLED" });
+  const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
+  const openaiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!anthropicKey && !openaiKey) {
+    res.status(503).json({
+      error: "No LLM configured. Set ANTHROPIC_API_KEY (Claude) or OPENAI_API_KEY on the server.",
+      code: "LLM_DISABLED",
+    });
     return;
   }
 
@@ -182,49 +291,36 @@ agentRouter.post("/chat", async (req, res) => {
   if (body.context?.timeframe) ctxParts.push(`Context timeframe: ${body.context.timeframe}`);
   if (body.wallet) ctxParts.push(`Connected wallet: ${body.wallet}`);
   const contextBlock = ctxParts.length ? `\n\n${ctxParts.join("\n")}` : "";
+  const userBlock = clampChatLength(message + contextBlock, 8500);
 
-  const openaiMessages: { role: "system" | "user" | "assistant"; content: string }[] = [
-    { role: "system", content: CHAT_SYSTEM_PROMPT },
-    ...history.map((h) => ({ role: h.role, content: h.content })),
-    { role: "user", content: clampChatLength(message + contextBlock, 8500) },
-  ];
-
-  const model = process.env.OPENAI_AGENT_MODEL?.trim() || "gpt-4o-mini";
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), 55_000);
 
   try {
-    const r = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      signal: ac.signal,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.6,
-        max_tokens: 900,
-        response_format: { type: "json_object" },
-        messages: openaiMessages,
-      }),
-    });
+    let raw = "";
+    let lastErr: { status: number; msg: string; code: string } | null = null;
 
-    const data = (await r.json().catch(() => null)) as {
-      error?: { message?: string };
-      choices?: { message?: { content?: string } }[];
-    } | null;
+    if (anthropicKey) {
+      const a = await chatAnthropic(anthropicKey, history, userBlock, ac.signal);
+      if (a.ok) raw = a.raw;
+      else lastErr = { status: a.status, msg: a.msg, code: a.code };
+    }
 
-    if (!r.ok || !data) {
-      const msg = data?.error?.message || `OpenAI error ${r.status}`;
-      res.status(502).json({ error: msg, code: "OPENAI_ERROR" });
+    if (!raw && openaiKey) {
+      const o = await chatOpenAI(openaiKey, history, userBlock, ac.signal);
+      if (o.ok) raw = o.raw;
+      else if (!lastErr) lastErr = { status: o.status, msg: o.msg, code: o.code };
+    }
+
+    if (!raw) {
+      const e = lastErr ?? { status: 502, msg: "All configured LLM providers failed", code: "LLM_ERROR" };
+      res.status(e.status >= 400 && e.status < 600 ? e.status : 502).json({ error: e.msg, code: e.code });
       return;
     }
 
-    const raw = data.choices?.[0]?.message?.content?.trim() || "";
     const parsed = parseAgentChatPayload(raw);
     if (!parsed) {
-      res.status(502).json({ error: "Invalid model output", code: "PARSE_ERROR" });
+      res.status(502).json({ error: "Invalid model output (expected JSON with insight/actions)", code: "PARSE_ERROR" });
       return;
     }
 
