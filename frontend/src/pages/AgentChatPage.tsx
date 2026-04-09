@@ -187,6 +187,26 @@ const WELCOME_MESSAGE: ChatMessage = {
   timestamp: new Date(),
 };
 
+/** Prior turns for POST /api/agent/chat (assistant content = insight summary only). */
+function chatMessagesToHistory(msgs: ChatMessage[]): { role: "user" | "assistant"; content: string }[] {
+  const out: { role: "user" | "assistant"; content: string }[] = [];
+  for (const m of msgs) {
+    if (m.id === "welcome") continue;
+    if (m.role === "user") {
+      out.push({ role: "user", content: m.content.slice(0, 4000) });
+    } else {
+      try {
+        const p = JSON.parse(m.content) as AgentJsonResponse;
+        const summary = [p.insight, p.additional_insight].filter(Boolean).join("\n").slice(0, 2000);
+        if (summary) out.push({ role: "assistant", content: summary });
+      } catch {
+        out.push({ role: "assistant", content: m.content.slice(0, 2000) });
+      }
+    }
+  }
+  return out.slice(-14);
+}
+
 function AgentBubble({ msg, onAction }: { msg: ChatMessage; onAction: (action: string) => void }) {
   if (msg.role === "agent") {
     try {
@@ -260,8 +280,13 @@ export default function AgentChatPage() {
   const [pendingSendBalance, setPendingSendBalance] = useState<{ tokens: SendTokenInfo[] } | null>(null);
   const [placeholderMode, setPlaceholderMode] = useState<"help" | "see">("help");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<ChatMessage[]>(messages);
 
   const walletLabel = connected && publicKey ? shortenAddress(publicKey.toBase58()) : undefined;
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const quickActions = useMemo(
     () => ["Check Balance", "Send Balance", "Buy", "Sell"],
@@ -746,8 +771,36 @@ export default function AgentChatPage() {
     setInput("");
     setSending(true);
 
-    setTimeout(() => {
-      const reply = JSON.stringify(buildAgentResponse(trimmed, nextContext));
+    void (async () => {
+      let reply = JSON.stringify(buildAgentResponse(trimmed, nextContext));
+      const priorForHistory = messagesRef.current.filter((m) => m.id !== "welcome");
+      const history = chatMessagesToHistory(priorForHistory);
+      try {
+        const apiBase = getApiBase();
+        const res = await fetch(`${apiBase}/api/agent/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            message: trimmed,
+            history,
+            context: nextContext,
+            wallet: connectedWallet,
+          }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as Partial<AgentJsonResponse>;
+          if (typeof data.insight === "string" && Array.isArray(data.actions)) {
+            reply = JSON.stringify({
+              insight: data.insight,
+              additional_insight: typeof data.additional_insight === "string" ? data.additional_insight : "",
+              actions: data.actions.map((a) => String(a)),
+            } satisfies AgentJsonResponse);
+          }
+        }
+      } catch {
+        /* fallback: reply already set to local buildAgentResponse */
+      }
+
       const agentMsg: ChatMessage = {
         id: `agent-${Date.now()}`,
         role: "agent",
@@ -756,7 +809,7 @@ export default function AgentChatPage() {
       };
       setMessages((prev) => [...prev, agentMsg]);
       setSending(false);
-    }, 450 + Math.min(trimmed.length * 15, 650));
+    })();
   };
 
   useEffect(() => {
