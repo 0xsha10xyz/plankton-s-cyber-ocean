@@ -22,6 +22,7 @@ backend/data
 !.env.example
 !frontend/.env.example
 !backend/.env.example
+!api/.env.example
 *.pem
 *.key
 *secret*
@@ -30,6 +31,12 @@ wallet.json
 keystore*
 mnemonic*
 *.keystore
+
+# Accidental env backups / dumps (never commit real values)
+.env.backup
+.env.*.backup
+*-firebase-adminsdk-*.json
+serviceAccount*.json
 
 # User/data that must not be in git
 backend/data

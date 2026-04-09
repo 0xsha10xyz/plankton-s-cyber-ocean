@@ -2,12 +2,13 @@
 
 Documentation for **Plankton's Cyber Ocean** — frontend app, backend API, wallet integration, Command Center, and AI agent.
 
-**Language:** All user-facing copy and documentation are in **English**. Keep UI strings, docs, and comments in English for consistency.
+**Language:** All user-facing copy and documentation are in **English**. Keep UI strings, docs, and comments in English for consistency. For how chat vs. UI language works, see **[Language & localization](./language-and-localization.md)**.
 
 ## Contents
 
 | Doc | Description |
 |-----|-------------|
+| [Language & localization](./language-and-localization.md) | English-first UI/docs; agent replies follow the user’s last message |
 | [Getting started](./getting-started.md) | Setup, run, and project structure |
 | [Configuration](./CONFIGURATION.md) | Environment variables, Birdeye, RPC, production (Vercel) |
 | [Frontend](./frontend.md) | App features, wallet, Account, AI chat, navigation |
