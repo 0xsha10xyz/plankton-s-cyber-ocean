@@ -1,9 +1,10 @@
 /**
  * Total users = unique wallets that have ever connected.
- * Mirror: backend/src/lib/stats-handler.ts (Express on VPS) — keep in sync.
+ * Duplicate of ../../server-lib/stats-handler.ts — keep both files identical.
+ *
  * Supports:
- * - REDIS_URL (Vercel Redis / node-redis TCP)
- * - KV_REST_API_URL + KV_REST_API_TOKEN or UPSTASH_REDIS_REST_* (REST, @upstash/redis)
+ * - REDIS_URL (TCP / node-redis)
+ * - KV_REST_API_URL + KV_REST_API_TOKEN or UPSTASH_REDIS_REST_* (@upstash/redis)
  */
 const REDIS_KEY = "plankton:connected_wallets";
 const LEGACY_REDIS_KEYS = [
@@ -107,4 +108,3 @@ export async function statsConnect(wallet: string): Promise<{ count: number; isN
   if (isNew) memoryWallets.add(trimmed);
   return { count: FALLBACK_BASELINE_COUNT + memoryWallets.size, isNew };
 }
-
