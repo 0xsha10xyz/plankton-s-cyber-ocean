@@ -144,6 +144,26 @@ const WELCOME_MESSAGE: ChatMessage = {
   timestamp: new Date(),
 };
 
+/** Same as AgentChatPage — history for POST /api/agent/chat. */
+function chatMessagesToHistory(msgs: ChatMessage[]): { role: "user" | "assistant"; content: string }[] {
+  const out: { role: "user" | "assistant"; content: string }[] = [];
+  for (const m of msgs) {
+    if (m.id === "welcome") continue;
+    if (m.role === "user") {
+      out.push({ role: "user", content: m.content.slice(0, 4000) });
+    } else {
+      try {
+        const p = JSON.parse(m.content) as AgentJsonResponse;
+        const summary = [p.insight, p.additional_insight].filter(Boolean).join("\n").slice(0, 2000);
+        if (summary) out.push({ role: "assistant", content: summary });
+      } catch {
+        out.push({ role: "assistant", content: m.content.slice(0, 2000) });
+      }
+    }
+  }
+  return out.slice(-14);
+}
+
 function AgentMessageBubble({
   msg,
   connected,
@@ -220,6 +240,11 @@ export function AgentChatInlinePreview() {
   const [pendingSendBalance, setPendingSendBalance] = useState<{ tokens: SendTokenInfo[] } | null>(null);
   const [placeholderMode, setPlaceholderMode] = useState<"help" | "see">("help");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesRef = useRef<ChatMessage[]>(messages);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const defaultQuickActions = useMemo(
     () => ["Check Balance", "Send Balance", "Buy", "Sell"],
@@ -693,17 +718,45 @@ export function AgentChatInlinePreview() {
     setInput("");
     setSending(true);
 
-    setTimeout(() => {
-      const replyObj = buildAgentResponse(trimmed, nextContext);
+    void (async () => {
+      let reply = JSON.stringify(buildAgentResponse(trimmed, nextContext));
+      const priorForHistory = messagesRef.current.filter((m) => m.id !== "welcome");
+      const history = chatMessagesToHistory(priorForHistory);
+      try {
+        const apiBase = getApiBase();
+        const res = await fetch(`${apiBase}/api/agent/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            message: trimmed,
+            history,
+            context: nextContext,
+            wallet: connectedWallet,
+          }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as Partial<AgentJsonResponse>;
+          if (typeof data.insight === "string" && Array.isArray(data.actions)) {
+            reply = JSON.stringify({
+              insight: data.insight,
+              additional_insight: typeof data.additional_insight === "string" ? data.additional_insight : "",
+              actions: data.actions.map((a) => String(a)),
+            } satisfies AgentJsonResponse);
+          }
+        }
+      } catch {
+        /* fallback: local buildAgentResponse */
+      }
+
       const agentMsg: ChatMessage = {
         id: `agent-${Date.now()}`,
         role: "agent",
-        content: JSON.stringify(replyObj),
+        content: reply,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, agentMsg]);
       setSending(false);
-    }, 450 + Math.min(trimmed.length * 15, 650));
+    })();
   };
 
   const onAction = (action: string) => {
