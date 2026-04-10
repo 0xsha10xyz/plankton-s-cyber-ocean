@@ -1,123 +1,51 @@
-# Deploy to Vercel (frontend + API in one project)
+# Deploy the web app to Vercel (static frontend only)
 
-Your app runs on Vercel with the **frontend** (React) and **backend** (Express API) in a single project. The API is served as serverless functions under `/api/*`. **Behavior is the same as localhost:** API-first for balances and stats, with client RPC fallback when the API is unavailable.
-
----
-
-## 1. Push your code to GitHub
-
-Make sure the project is in a GitHub repo and the latest code is pushed (e.g. `main` branch).
+The Vercel deployment hosts **only the built React app** (HTML, JS, CSS). **All `/api/*` traffic is served by your VPS** (Express `backend/`). See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for the full split and why there is no duplicate API on Vercel.
 
 ---
 
-## 2. Import the project in Vercel
+## 1. Prerequisites
 
-1. Go to [vercel.com](https://vercel.com) and sign in (GitHub).
-2. Click **Add New…** → **Project**.
-3. **Import** the `plankton-s-cyber-ocean` repo (or your fork).
-4. **Root Directory:** leave as **.** (repo root). Do **not** set it to `frontend`.
-5. Vercel will read `vercel.json` from the root. You should see:
-   - **Build Command:** `npm run build:backend && npm run build && npm run vercel-build`
-   - **Output Directory:** `dist`
-   - **Install Command:** `npm install` (default)
-6. Click **Deploy** (you can add env vars in the next step if needed).
+- A running **HTTPS API** on a VPS (or other host) with the Express app from `backend/`.
+- You know that API’s public origin, e.g. `https://api.example.com`.
 
 ---
 
-## 3. Set environment variables (recommended)
+## 2. Import the repo in Vercel
 
-In the Vercel project: **Settings** → **Environment Variables**. Add:
-
-| Name | Value | Notes |
-|------|--------|--------|
-| `BIRDEYE_API_KEY` | Your Birdeye API key | **Recommended for real-time chart** (all pairs, including tokens added by paste CA). Without it, the chart may fall back to a synthetic series for some pairs depending on available upstreams. |
-| `JUPITER_API_KEY` | Your Jupiter API key (get at [portal.jup.ag](https://portal.jup.ag)) | **Required for manual Swap** (quote + transaction build). Jupiter’s hosted API expects `x-api-key`; without this env var, `/api/jupiter/*` cannot complete swaps. |
-| `CORS_ORIGIN` | `https://planktonomous.vercel.app` | Replace with your actual Vercel URL. Lets the API allow your frontend origin. |
-| `SOLANA_RPC_URL` | `https://rpc.ankr.com/solana` or your RPC | Optional; used by `/api/wallet/balances` for token balances. |
-| `KV_REST_API_URL` + `KV_REST_API_TOKEN` | From Vercel KV / Upstash Redis | **Optional (recommended).** Persists **Total Users** (unique connected wallets) and other state across deployments/instances. Without Redis/KV, the app falls back to a safe baseline and can increment within a single instance, but it will not be globally consistent across cold starts. |
-| `REDIS_URL` | From Vercel Redis (Storage → Redis → Connect) | **Optional.** If you create a **Redis** database in Vercel, this env var is usually auto-added to the project. The code supports `REDIS_URL` for Total Users and for **Agent logs** (Command Center + Helius webhook). |
-| `HELIUS_API_KEY` | Your Helius API key (get at [helius.xyz](https://helius.xyz)) | **Optional.** For Helius RPC and webhooks. Set **SOLANA_RPC_URL** to `https://mainnet.helius-rpc.com/?api_key=YOUR_KEY` for better rate limits. See [helius-setup.md](helius-setup.md) for webhook URL and steps. |
-
-**Total Users setup (manual in Vercel):** Follow the steps in [Setup Total Users (Redis/KV)](#setup-total-users-rediskv) below.
-
-**Real-time chart (including paste-CA tokens):** Set **BIRDEYE_API_KEY** in Vercel Environment Variables. The `/api/market/ohlcv` and `/api/market/token-info` endpoints use Birdeye; the chart will show "Live" for any token (SOL, USDC, or tokens added by pasting a CA).
-
-**Do not set** `VITE_API_URL`. In production the frontend uses the same origin, so `/api/*` is your backend.
-
-After adding variables, trigger a **Redeploy** (Deployments → ⋮ → Redeploy).
+1. Import the GitHub repository.
+2. **Root directory:** `.` (repository root).
+3. Confirm **Build Command** and **Output Directory** match root `vercel.json` (frontend build + `vercel-build` → output `dist/`).
 
 ---
 
-## 3a. Setup Total Users (Redis/KV)
+## 3. Required environment variables (Vercel)
 
-To make **Total Users** on the dashboard **persist** and update in real-time (each wallet that connects is counted), you need a **Redis database** and corresponding environment variables. This must be done **manually** in your Vercel dashboard (your account).
+| Name | Required | Description |
+|------|----------|-------------|
+| **`VITE_API_URL`** | **Yes** (production) | Full origin of your Express API, e.g. `https://api.example.com`. No trailing slash. Without this, the SPA will call same-origin `/api/*` on Vercel, which does not exist in the static-only setup. |
+| **`VITE_AGENT_API_URL`** | No | Only if agent chat is on a **different** host than `VITE_API_URL`. Otherwise omit. |
 
-### Option A: Vercel KV (simplest)
-
-1. Open your project on [vercel.com](https://vercel.com) → select **plankton-s-cyber-ocean** (or your project name).
-2. In the left menu, click **Storage**.
-3. Click **Create Database** → choose **KV** (Vercel KV).
-4. Set a **Name** (e.g. `plankton-kv`) → **Create**.
-5. After the database is created, click the database name.
-6. In the **Connect** / **.env** tab, Vercel usually auto-adds env vars to the project:
-   - `KV_REST_API_URL`
-   - `KV_REST_API_TOKEN`  
-   If not, click **Add to Project** / **Connect to Project** and select your project. After that, the variables will appear in **Settings → Environment Variables**.
-7. **Redeploy** the project (Deployments → ⋮ → Redeploy).
-
-Done. After redeploying, connect a wallet in the app → Total Users on the dashboard should increase and persist.
-
-### Option B: Upstash Redis (if using Upstash)
-
-1. Create a database at [console.upstash.com](https://console.upstash.com) (free tier is fine).
-2. In the Upstash dashboard, copy the **REST URL** and **REST Token**.
-3. In Vercel: **Settings** → **Environment Variables** → add:
-   - Name: `UPSTASH_REDIS_REST_URL`, Value: (REST URL from Upstash)
-   - Name: `UPSTASH_REDIS_REST_TOKEN`, Value: (REST Token from Upstash)
-4. **Redeploy** the project.
+Secrets for Birdeye, Jupiter, LLM, RPC, Redis, etc. belong on the **VPS** `backend/` environment—not on Vercel.
 
 ---
 
-**Note:** I can’t access your Vercel/Upstash account, so database creation and env setup must be done by you. Without Redis/KV, Total Users still renders and remains stable (no hard crash), but persistence/consistency is not guaranteed across serverless instances.
+## 4. CORS on the VPS
+
+Set **`CORS_ORIGIN`** on the API server to include your Vercel URL(s), e.g. `https://your-project.vercel.app`.
 
 ---
 
-## 4. After deploy
+## 5. After deploy
 
-- **Site URL:** e.g. `https://plankton-s-cyber-ocean.vercel.app` (or your project name).
-- **API:** `https://your-app.vercel.app/api/health`, `/api/wallet/balances`, etc. work on the same domain.
-- **Quick check:** Open in your browser:
-  - `https://planktonomous.vercel.app/api/health` → should show `{"ok":true}`.
-  - `https://planktonomous.vercel.app/api/wallet/balances?wallet=YOUR_WALLET_ADDRESS` → should return JSON `{ "sol": ..., "tokens": [...] }`. If you get an error or 500, check **Vercel → Logs** (Function logs) and ensure **SOLANA_RPC_URL** is set.
-- **Token balances / Swap:** Work via `/api/wallet/balances` (server-side RPC). No need to set `VITE_API_URL`.
-- **Balances** are loaded by a **standalone serverless function** at `api/wallet/balances.ts` for GET `/api/wallet/balances`, so token balances work even if the full Express backend does not load. Set **SOLANA_RPC_URL** in Vercel for reliable RPC (public RPCs work from server).
-- **Optional:** Set **VITE_SOLANA_RPC_URL** in Vercel (same value as SOLANA_RPC_URL or a browser-allowed RPC) so the frontend fallback uses it when the API is slow or fails.
+- Open the Vercel URL and verify the UI loads.
+- In the browser devtools **Network** tab, API calls should go to **`VITE_API_URL`**, not to the Vercel domain for `/api/*`.
 
 ---
 
-## 5. If the build fails
+## 6. Troubleshooting
 
-- **“Cannot find module … vercel-express-bundle” or module not found**  
-  The build copies the backend into `vercel-express-bundle/` at the **repo root** (not under `api/`, so Vercel does not treat those `.js` files as extra serverless functions). Ensure **Build Command** is exactly:
-  `npm run build:backend && npm run build && npm run vercel-build`
-  (so `backend/dist` is built first, then `vercel-build` copies it into `vercel-express-bundle/`).
+- **404 on `/api/...` when calling the Vercel domain:** Expected for static-only hosting. Set **`VITE_API_URL`** to your API origin and redeploy.
+- **CORS errors:** Add your exact Vercel preview/production origin to **`CORS_ORIGIN`** on the API.
 
-- **“Missing frontend/dist”**  
-  The frontend build must complete. Check the build log for errors in `npm run build --workspace=frontend`. Fix any frontend build errors and redeploy.
-
-- **404 on routes like /swap**  
-  The rewrite sends only non-`/api` paths to the SPA. Keep **Output Directory** as `dist`.
-
-- **404 on /api/health or /api/wallet/balances**  
-  1. **Root Directory:** In Vercel → Project → **Settings** → **General** → **Root Directory** must be **empty** or **.** (repo root). If it’s set to `frontend` or `dist`, the `api/` folder won’t deploy and `/api/*` will 404.  
-  2. After changing Root Directory, **Redeploy** (Deployments → ⋮ → Redeploy).  
-  3. There is an explicit `api/health.ts` route for GET `/api/health`; if it still 404s, make sure you deployed the latest branch (e.g. `main`) and the build succeeded.
-
-- **405 on /api/stats/connect or /api/wallet/balances**  
-  GET `/api/wallet/balances` is handled by a dedicated serverless function (`api/wallet/balances.ts`) and does not depend on Express. It should return 200 when SOLANA_RPC_URL or default RPCs work. For POST routes (e.g. stats/connect), set **CORS_ORIGIN** in Vercel to your production URL so preflight succeeds.
-
----
-
-## 6. Optional: custom domain
-
-In Vercel: **Settings** → **Domains** → add your domain and follow the DNS steps. Then set `CORS_ORIGIN` to your production URL (e.g. `https://yourdomain.com`) if you use API from that domain.
+For local development, leave **`VITE_API_URL`** unset and use the Vite proxy to `http://127.0.0.1:3000` (see `frontend/vite.config.ts`).

@@ -22,7 +22,6 @@ backend/data
 !.env.example
 !frontend/.env.example
 !backend/.env.example
-!api/.env.example
 *.pem
 *.key
 *secret*
@@ -43,9 +42,8 @@ backend/data
 backend/data/*
 **/connected-wallets.json
 
-# Vercel build output (Express copy at repo root — not under api/)
+# Legacy Vercel Express bundle (no longer produced by copy-dist; safe to delete locally)
 vercel-express-bundle
-api/__backend
 
 # Editor directories and files
 .vscode/*

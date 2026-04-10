@@ -11,7 +11,7 @@ Plankton is a Solana trading application focused on practical autonomous workflo
 The product is designed for both end users and investor-facing demos with a clean, production-ready architecture:
 
 - Frontend: React + Vite + TypeScript
-- Backend/API: Express + TypeScript and Vercel serverless API handlers
+- Backend/API: Express + TypeScript (deploy on VPS or any Node host; Vercel hosts the static frontend only)
 - Wallet: Solana Wallet Adapter (Wallet Standard + Phantom-compatible)
 
 ## MVP Features (Current Scope)

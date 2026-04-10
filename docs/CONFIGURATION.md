@@ -169,21 +169,11 @@ Follow these steps so the treasury wallet, facilitator, and resource URL stay co
 
 ---
 
-## Split deploy: Swap on Vercel, Agent chat on VPS (recommended for launches)
+## Production split: static UI on Vercel, API on VPS
 
-When you want **Jupiter swap, charts, and `/api/market/*`** to run on **Vercel** (stable, same origin) but **LLM chat** on a **VPS** (Groq keys, etc.):
+The recommended layout is **no serverless API on Vercel**: the SPA is static; **all** `/api/*` is served by Express on a VPS. Set **`VITE_API_URL`** on Vercel to that API origin, and keep API keys (Birdeye, Jupiter, LLM, RPC, Redis, …) on the **VPS** `backend/` environment only.
 
-1. **Vercel → Environment Variables (Production)**  
-   - **Remove** `VITE_API_URL` if it pointed everything at the VPS (that forces chart + swap through the VPS and can break nginx or rate limits).  
-   - **Add** `VITE_AGENT_API_URL` = your VPS API origin only, e.g. `https://api.planktonomous.dev` (no `/api` suffix).  
-   - Keep `BIRDEYE_API_KEY`, `JUPITER_API_KEY`, `SOLANA_RPC_URL` on **Vercel** so serverless `/api/*` stays healthy.
-
-2. **VPS `.env`**  
-   - Keep LLM keys (`GROQ_API_KEY`, etc.) and set **`CORS_ORIGIN`** to include **`https://planktonomous.dev`** (and your `*.vercel.app` preview URL if needed) so the browser may call `POST /api/agent/chat` cross-origin.
-
-3. **Redeploy** the Vercel project after env changes.
-
-The frontend uses `getApiBase()` for Swap, wallet balances, and market routes (defaults to **same origin** on production when `VITE_API_URL` is unset), and `getAgentApiBase()` **only** for `POST /api/agent/chat`.
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for ownership, env vars, and CORS. Optional **`VITE_AGENT_API_URL`** is only if the agent is on a **different** host than the rest of the API (unusual).
 
 ---
 

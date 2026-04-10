@@ -6,12 +6,9 @@ function normalizeEnvApiBase(raw: string): string {
 }
 
 /**
- * Base URL for **Plankton Agent LLM** only (`POST /api/agent/chat`).
- * - Optional `VITE_AGENT_API_URL`: e.g. `https://api.example.com` (VPS with Groq) while **`VITE_API_URL` is unset**
- *   so Swap / market / Jupiter stay on **same-origin Vercel** `/api/*`.
- * - If unset, falls back to `getApiBase()` (same as the rest of the app).
- * - Use this base for **agent-only** routes (`/api/agent/chat`, `/api/agent/status`, `/api/agent/config`) so split
- *   deploys stay consistent (same host for chat + status).
+ * Base URL for agent routes (`/api/agent/chat`, `/api/agent/status`, `/api/agent/config`).
+ * - If `VITE_AGENT_API_URL` is set, it wins (only needed when the agent API differs from `VITE_API_URL`).
+ * - Otherwise uses `getApiBase()` so agent and the rest of the API share one VPS origin.
  */
 export function getAgentApiBase(): string {
   const raw =
@@ -34,13 +31,11 @@ export function getAgentApiBase(): string {
 }
 
 /**
- * Shared API base URL for backend requests.
- * - Set `VITE_API_URL` when **all** API routes should hit one remote host (swap + market + agent together).
- * - For **split deploy** (Vercel swap + VPS agent): leave `VITE_API_URL` **unset** and set `VITE_AGENT_API_URL` instead.
- * - In Vite dev (import.meta.env.DEV), use same origin so /api is proxied to the Express backend
- *   (avoids 404 when the UI runs on the same port as you thought the API used, e.g. localhost:3000).
- * - In production (HTTPS, non-localhost) we use same origin (Vercel /api).
- * - Local preview / static builds without proxy: fall back to hostname:3000 (run backend there).
+ * Shared API base URL for all `/api/*` requests (market, Jupiter, wallet, agent, RPC proxy, …).
+ * - **Production (Vercel):** set `VITE_API_URL` to the Express API origin on your VPS (see docs/DEPLOYMENT.md).
+ * - **Local dev:** leave unset so the Vite proxy forwards `/api` to the backend on port 3000.
+ * - **Production without `VITE_API_URL`:** falls back to `window.location.origin` (same-origin API). Use that only
+ *   if the API is actually served from the same host as the SPA (not the default static Vercel setup).
  */
 export function getApiBase(): string {
   if (typeof window === "undefined" || !window.location?.origin) {
