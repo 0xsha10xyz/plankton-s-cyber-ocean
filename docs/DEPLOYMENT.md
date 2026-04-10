@@ -9,6 +9,12 @@ You can combine them: **Vercel** for the UI + market/Jupiter/RPC, **VPS** only f
 
 ---
 
+## Serverless source layout
+
+- **Canonical copy:** `frontend/api/**/*.ts` (edit these files in the repo).
+- **Build:** `npm run vercel-build` runs `scripts/sync-api-to-root.cjs`, which copies `frontend/api` → `api/` at the repo root. That lets Vercel projects with **Root Directory = `.`** deploy `./api/*` without maintaining two divergent trees.
+- **Root Directory = `frontend`:** Vercel serves `frontend/api` as `/api/*` directly — no sync step required for routing (same files as above).
+
 ## What runs where
 
 | Concern | Vercel (`api/*.ts` serverless) | VPS (`backend/` Express) |

@@ -1,0 +1,3 @@
+# Canonical serverless sources live in frontend/api/; vercel-build copies them to ./api/.
+# Ignore the source tree for Vercel's function graph so routes are not registered twice (Hobby limit).
+frontend/api

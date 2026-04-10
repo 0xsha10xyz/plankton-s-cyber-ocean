@@ -22,7 +22,10 @@ backend/data
 !.env.example
 !frontend/.env.example
 !backend/.env.example
-!api/.env.example
+!frontend/api/.env.example
+
+# Generated copy for Vercel when Root Directory is repo root (see scripts/sync-api-to-root.cjs)
+/api/
 *.pem
 *.key
 *secret*

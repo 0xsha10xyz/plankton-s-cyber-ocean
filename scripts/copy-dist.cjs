@@ -1,6 +1,6 @@
 /**
  * Vercel build: copy frontend/dist -> repo-root dist/ for static hosting.
- * API is not deployed on Vercel; see docs/DEPLOYMENT.md.
+ * Run after scripts/sync-api-to-root.cjs (serverless lives in frontend/api, copied to api/).
  */
 const fs = require("fs");
 const path = require("path");

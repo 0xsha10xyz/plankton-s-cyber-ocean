@@ -71,6 +71,7 @@ function isRetriableUpstreamStatus(status: number): boolean {
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  try {
   let url = (req.url || "/").split("#")[0];
   if (!url.startsWith("/")) {
     url = `/${url}`;
@@ -300,4 +301,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   // Keep unknown /api routes explicit and safe on serverless:
   // avoid dynamic runtime imports that can fail under CJS/ESM transforms.
   sendJson(res, 404, { error: "Not found" });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!res.headersSent) {
+      sendJson(res, 500, { error: "Internal server error", code: "API_UNCAUGHT", detail: msg });
+    }
+  }
 }

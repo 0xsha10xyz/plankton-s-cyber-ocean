@@ -1,13 +1,15 @@
 # Deploy to Vercel (SPA + `/api/*` serverless)
 
-The default setup keeps **Swap, charts, Jupiter, and `POST /api/rpc`** on **the same origin** as the site (Vercel serverless under `api/`). See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for modes (Vercel-only vs VPS vs hybrid).
+The default setup keeps **Swap, charts, Jupiter, and `POST /api/rpc`** on **the same origin** as the site. Serverless handlers live in **`frontend/api/`** (synced to root `api/` during `vercel-build` when deploying from the repo root). See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for modes (Vercel-only vs VPS vs hybrid).
 
 ---
 
 ## 1. Import the repo
 
-- **Root directory:** repository root (where `vercel.json` lives).  
-- **Build:** `npm run build && npm run vercel-build` (see `vercel.json`).  
+- **Root directory:** either **`.`** (repository root, recommended) **or** **`frontend`**.  
+  - If **`.`**: `vercel.json` at the root runs `npm run build && npm run vercel-build`, which copies **`frontend/api` → `api/`** and then copies the Vite build to `dist/`.  
+  - If **`frontend`**: the same `frontend/api` folder is used as Vercel’s `/api` — set **Build Command** to `cd .. && npm install && npm run build && npm run vercel-build` **or** build only the frontend and rely on `frontend/api` (simpler: use root `.` to avoid misconfiguration).  
+- **Build (root deploy):** `npm run build && npm run vercel-build` (see root `vercel.json`).  
 - **Output directory:** `dist`
 
 ---

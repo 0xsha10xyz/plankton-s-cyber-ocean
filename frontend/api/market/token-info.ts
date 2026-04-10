@@ -180,8 +180,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const searchParams = new URLSearchParams(query);
   const mint = searchParams.get("mint")?.trim() || "";
 
-  if (!mint || mint.length > 64) {
-    sendJson(res, 400, { error: "Missing or invalid mint" });
+  if (!mint || mint.length < 32 || mint.length > 44) {
+    sendJson(res, 400, { error: "Missing or invalid mint (expected 32–44 character base58)" });
     return;
   }
 
