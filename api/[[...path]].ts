@@ -3,6 +3,7 @@
  * Hobby plan: max 12 functions per deployment — avoid duplicating these routes as separate `api/**/*.ts` files.
  */
 import type { IncomingMessage, ServerResponse } from "http";
+import { Buffer } from "node:buffer";
 
 /** Force Node (not Edge): Solana RPC proxy uses Node streams + fetch. */
 export const config = {
@@ -133,6 +134,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   if (
     method === "GET" &&
     (pathname === "/api/subscription/me" ||
+      pathname === "/api/subscription/my" ||
       pathname === "/api/subscription/mc" ||
       pathname === "/api/subscription/my-wallet")
   ) {
@@ -179,11 +181,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       return;
     }
     const envUrl = process.env.SOLANA_RPC_URL?.trim();
-    const upstreams = [
-      ...(envUrl ? [envUrl] : []),
-      "https://api.mainnet-beta.solana.com",
-      "https://rpc.ankr.com/solana",
-    ];
+    const heliusKey = process.env.HELIUS_API_KEY?.trim();
+    const heliusRpc = heliusKey
+      ? `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(heliusKey)}`
+      : null;
+    const upstreams: string[] = [];
+    if (envUrl) upstreams.push(envUrl);
+    if (heliusRpc && !upstreams.includes(heliusRpc)) upstreams.push(heliusRpc);
+    upstreams.push("https://api.mainnet-beta.solana.com", "https://rpc.ankr.com/solana");
     const id = payload.id ?? null;
     let lastStatus = 0;
     let lastBodySnippet = "";

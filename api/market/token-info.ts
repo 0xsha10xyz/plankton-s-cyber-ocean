@@ -6,6 +6,7 @@
  * we also parse Metaplex on-chain metadata as a last-resort.
  */
 import type { IncomingMessage, ServerResponse } from "http";
+import { Buffer } from "node:buffer";
 import { PublicKey } from "@solana/web3.js";
 
 export const config = {
@@ -19,6 +20,15 @@ const KNOWN_MINTS: Record<string, { symbol: string; name?: string; decimals: num
   EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: { symbol: "USDC", name: "USD Coin", decimals: 6 },
   Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: { symbol: "USDT", name: "USDT", decimals: 6 },
 };
+
+/** Prefer SOLANA_RPC_URL; else Helius when HELIUS_API_KEY is set (matches Vercel env). */
+function primaryRpcUrlForServer(): string {
+  const custom = process.env.SOLANA_RPC_URL?.trim();
+  if (custom) return custom;
+  const hk = process.env.HELIUS_API_KEY?.trim();
+  if (hk) return `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(hk)}`;
+  return "https://api.mainnet-beta.solana.com";
+}
 
 function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
   res.statusCode = statusCode;
@@ -274,7 +284,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   // 2) Try RPC jsonParsed decimals (most reliable way to avoid layout/offset issues).
   try {
-    const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+    const rpcUrl = primaryRpcUrlForServer();
     const decimals = await tryRpcDecimalsViaJsonParsed(mint, rpcUrl);
     if (decimals != null) {
       // Symbol is nice-to-have; swaps only truly require correct decimals.
@@ -291,7 +301,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   // 3) Try getTokenSupply (another reliable decimals source for mint accounts).
   try {
-    const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+    const rpcUrl = primaryRpcUrlForServer();
     const decimals = await tryRpcDecimalsViaTokenSupply(mint, rpcUrl);
     if (decimals != null) {
       sendJson(res, 200, {
@@ -307,7 +317,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   // 4) As a last resort, keep the older base64 layout parsing (may still work for standard SPL mints).
   try {
-    const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
+    const rpcUrl = primaryRpcUrlForServer();
     const rpcRes = await fetch(rpcUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
