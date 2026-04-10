@@ -1,4 +1,4 @@
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey, type ConnectionConfig } from "@solana/web3.js";
 
 function getEnvRpcUrl(): string | null {
   const env = typeof import.meta !== "undefined" && import.meta.env?.VITE_SOLANA_RPC_URL;
@@ -32,6 +32,24 @@ export function getPrimaryRpcEndpoint(): string {
 
 function usesSameOriginRpcProxy(): boolean {
   return getPrimaryRpcEndpoint().includes("/api/rpc");
+}
+
+/**
+ * WebSocket URL for account/slot subscriptions. Must NOT be `wss://…/api/rpc` — Vercel serverless has no WS upgrade.
+ * HTTP JSON-RPC still uses `getPrimaryRpcEndpoint()` (same-origin `/api/rpc`).
+ */
+export function getConnectionConfig(): ConnectionConfig {
+  const commitment = "confirmed" as const;
+  if (usesSameOriginRpcProxy()) {
+    const ws =
+      typeof import.meta !== "undefined" &&
+      typeof import.meta.env?.VITE_SOLANA_WS_URL === "string" &&
+      import.meta.env.VITE_SOLANA_WS_URL.trim()
+        ? import.meta.env.VITE_SOLANA_WS_URL.trim()
+        : "wss://api.mainnet-beta.solana.com";
+    return { commitment, wsEndpoint: ws };
+  }
+  return { commitment };
 }
 
 /**

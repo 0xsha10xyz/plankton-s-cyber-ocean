@@ -10,5 +10,7 @@ interface ImportMetaEnv {
   /** Optional: override origin for `/api/agent/*` when `VITE_API_MODE=external`. */
   readonly VITE_AGENT_API_URL?: string;
   readonly VITE_SOLANA_RPC_URL?: string;
+  /** Optional WebSocket RPC for subscriptions when HTTP uses same-origin `/api/rpc` (Vercel cannot host WSS on /api/rpc). */
+  readonly VITE_SOLANA_WS_URL?: string;
   readonly VITE_DEV_API_PROXY?: string;
 }
