@@ -1,20 +1,23 @@
 # Deploy to Vercel (SPA + `/api/*` serverless)
 
-The default setup keeps **Swap, charts, Jupiter, and `POST /api/rpc`** on **the same origin** as the site. Serverless handlers live in **`frontend/api/`** (synced to root `api/` during `vercel-build` when deploying from the repo root). See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for modes (Vercel-only vs VPS vs hybrid).
+Keep **Swap, Jupiter, charts, and `POST /api/rpc`** on the **same origin** as the site by deploying the repo-root **`api/`** folder. See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for modes.
 
 ---
 
-## 1. Import the repo
+## 1. Root Directory (required)
 
-- **Root directory:** either **`.`** (repository root, recommended) **or** **`frontend`**.  
-  - If **`.`**: `vercel.json` at the root runs `npm run build && npm run vercel-build`, which copies **`frontend/api` → `api/`** and then copies the Vite build to `dist/`.  
-  - If **`frontend`**: the same `frontend/api` folder is used as Vercel’s `/api` — set **Build Command** to `cd .. && npm install && npm run build && npm run vercel-build` **or** build only the frontend and rely on `frontend/api` (simpler: use root `.` to avoid misconfiguration).  
-- **Build (root deploy):** `npm run build && npm run vercel-build` (see root `vercel.json`).  
+In **Vercel → Project → Settings → General → Root Directory**, leave the field **empty** (repository root). **Do not** set it to `frontend` — otherwise **`api/`** is not deployed and `/api/market/token-info`, `/api/rpc`, etc. return **404**.
+
+---
+
+## 2. Build & output
+
+- **Build command:** `npm run build && npm run vercel-build` (see root `vercel.json`).  
 - **Output directory:** `dist`
 
 ---
 
-## 2. Environment variables (Vercel)
+## 3. Environment variables (Vercel)
 
 ### Same-origin API (recommended for Swap — **do not set `VITE_API_URL`**)
 
@@ -23,31 +26,28 @@ The default setup keeps **Swap, charts, Jupiter, and `POST /api/rpc`** on **the 
 | **`JUPITER_API_KEY`** | Required for reliable Jupiter quote/swap (`x-api-key`). |
 | **`BIRDEYE_API_KEY`** | Recommended for charts and market endpoints. |
 | **`SOLANA_RPC_URL`** | Used by `/api/rpc` proxy and wallet routes (Helius or similar). |
-| **`KV_REST_*` / Redis** | Optional — stats / features that need persistence. |
 
-Secrets are read **only** by Vercel serverless functions — not exposed to the browser.
+### Pointing the whole UI at a VPS API
 
-### If you point the entire UI at a VPS API instead
-
-Set **`VITE_API_URL`** = `https://api.example.com` (no trailing slash). Then the browser will **not** use same-origin `api/` for `/api/*`. Use one strategy per environment to avoid confusion.
+Set **`VITE_API_URL`** = `https://api.example.com` (no trailing slash).
 
 ### Optional: agent on VPS only
 
-Leave **`VITE_API_URL` unset** and set **`VITE_AGENT_API_URL`** = your Express origin so only agent calls go cross-origin. Configure **`CORS_ORIGIN`** on the VPS.
+Leave **`VITE_API_URL` unset** and set **`VITE_AGENT_API_URL`**. Configure **`CORS_ORIGIN`** on the VPS.
 
 ---
 
-## 3. After deploy
+## 4. After deploy
 
-- Open `https://<project>.vercel.app/api/health` if exposed via `api/[[...path]].ts`, or test **`/api/rpc`** with a POST (JSON-RPC).  
-- In the app **Network** tab, **`rpc`** must return **200**, not **404**.
+- Test **`/api/health`** or **`POST /api/rpc`** from the browser **Network** tab — **`rpc`** must be **200**, not **404** or **500**.  
+- Paste-token flow uses **`GET /api/market/token-info?mint=`** — must hit your **Vercel** domain if `VITE_API_URL` is unset.
 
 ---
 
-## 4. Troubleshooting
+## 5. Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
-| **404 on `/api/rpc`** | Ensure the `api/` folder is deployed (root project). Do not use a **static-only** deploy that omits `api/`. **`VITE_API_URL` must be unset** for same-origin API. |
-| **Swap quote fails** | Set **`JUPITER_API_KEY`** on Vercel. |
-| **CORS** (hybrid agent) | Add the Vercel URL to **`CORS_ORIGIN`** on the VPS. |
+| **404 on `token-info` or `rpc`** | Set **Root Directory** to repo root (`.`). Redeploy. |
+| **500 on `rpc`** | Set **`SOLANA_RPC_URL`** on Vercel; check function logs. |
+| **Invalid mint when pasting CA** | Use a full Solana mint (32–44 base58 characters). |

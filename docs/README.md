@@ -11,7 +11,7 @@ Documentation for **Plankton's Cyber Ocean** — frontend app, backend API, wall
 | [Language & localization](./language-and-localization.md) | English-first UI/docs; agent replies follow the user’s last message |
 | [Getting started](./getting-started.md) | Setup, run, and project structure |
 | [Configuration](./CONFIGURATION.md) | Environment variables, Birdeye, RPC, **Agent chat (Groq & LLMs)**, production (Vercel) |
-| [Deployment](./DEPLOYMENT.md) | Vercel SPA + `api/` serverless vs optional VPS (`backend/`) |
+| [Deployment](./DEPLOYMENT.md) | Vercel SPA + root `api/` (set Root Directory to `.`) vs optional VPS |
 | [Frontend](./frontend.md) | App features, wallet, Account, AI chat, navigation |
 | [Backend API](./backend-api.md) | API reference, endpoints, and environment variables |
 | [Integration](./integration.md) | Using the API from the frontend |
@@ -24,4 +24,4 @@ Documentation for **Plankton's Cyber Ocean** — frontend app, backend API, wall
 
 - **Run frontend:** `npm run dev` (from repo root) → http://localhost:8080  
 - **Run backend:** `npm run dev:backend` → http://localhost:3000  
-- **Repo structure:** `frontend/`, root `api/` (Vercel serverless), `backend/` (optional Express on VPS)
+- **Repo structure:** `frontend/`, **`api/`** (Vercel serverless — must stay at repo root), `backend/` (optional VPS)

@@ -50,8 +50,8 @@ See `backend/README.md` for setup and env vars.
 
 ## Deploy
 
-- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — **Vercel** hosts the SPA + root `api/` serverless (Swap, Jupiter, `/api/rpc`, market). Optional **VPS** for Express-only features (e.g. agent).  
-- **[docs/deploy-vercel.md](docs/deploy-vercel.md)** — Vercel env (for same-origin Swap, **omit `VITE_API_URL`** and set `JUPITER_API_KEY`, etc.).
+- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — **Vercel** hosts the SPA + repo-root **`api/`** serverless. **Root Directory must be `.`**, not `frontend`.  
+- **[docs/deploy-vercel.md](docs/deploy-vercel.md)** — Env vars; same-origin Swap (**omit `VITE_API_URL`**).
 
 ## Tech
 
