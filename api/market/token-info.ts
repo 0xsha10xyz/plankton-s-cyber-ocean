@@ -19,7 +19,10 @@ function asTrimmedString(x: unknown): string | null {
   return typeof x === "string" ? (x.trim() || null) : null;
 }
 
-async function lookupTokenViaJupiter(mint: string): Promise<{ symbol: string; name?: string; decimals: number } | null> {
+async function lookupTokenViaJupiter(
+  mint: string,
+  metaplexFallback?: { symbol?: string; name?: string } | null
+): Promise<{ symbol: string; name?: string; decimals: number } | null> {
   const truncated = `${mint.slice(0, 4)}…${mint.slice(-4)}`;
   const urls = [
     // lite-api often works without x-api-key (but not guaranteed for all endpoints/mints)
