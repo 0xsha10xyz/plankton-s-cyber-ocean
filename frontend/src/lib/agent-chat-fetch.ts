@@ -1,0 +1,82 @@
+import { createX402Client } from "x402-solana/client";
+import type { VersionedTransaction } from "@solana/web3.js";
+import type { WalletContextState } from "@solana/wallet-adapter-react";
+
+export type AgentChatX402Info = {
+  enabled: boolean;
+  network: "solana" | "solana-devnet";
+  amountAtomic: string;
+  usdcMint: string;
+  decimals: number;
+  priceUsd?: number;
+};
+
+export function parseAgentConfigX402(data: unknown): AgentChatX402Info | null {
+  if (!data || typeof data !== "object") return null;
+  const x = (data as { x402AgentChat?: unknown }).x402AgentChat;
+  if (!x || typeof x !== "object") return null;
+  const o = x as Record<string, unknown>;
+  if (!o.enabled) return null;
+  const network = o.network === "solana-devnet" ? "solana-devnet" : "solana";
+  const amountAtomic = String(o.amountAtomic ?? "10000");
+  return {
+    enabled: true,
+    network,
+    amountAtomic,
+    usdcMint: String(o.usdcMint ?? ""),
+    decimals: typeof o.decimals === "number" ? o.decimals : 6,
+    priceUsd: typeof o.priceUsd === "number" ? o.priceUsd : undefined,
+  };
+}
+
+export async function fetchAgentConfigWithX402(agentOrigin: string): Promise<AgentChatX402Info | null> {
+  try {
+    const r = await fetch(`${agentOrigin}/api/agent/config`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    return parseAgentConfigX402(data);
+  } catch {
+    return null;
+  }
+}
+
+function maxPaymentAtomic(expected: bigint): bigint {
+  if (expected <= 0n) return 1_000_000n;
+  return expected * 25n;
+}
+
+/**
+ * POST to agent chat; uses x402-solana when the server advertises paid chat and the wallet can sign.
+ */
+export async function fetchAgentChat(
+  chatUrl: string,
+  body: object,
+  options: {
+    x402: AgentChatX402Info | null;
+    wallet: WalletContextState;
+  }
+): Promise<Response> {
+  const init: RequestInit = {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+  };
+
+  const x = options.x402;
+  const w = options.wallet;
+  if (!x?.enabled || !w.connected || !w.publicKey || !w.signTransaction) {
+    return fetch(chatUrl, init);
+  }
+
+  const client = createX402Client({
+    wallet: {
+      address: w.publicKey.toString(),
+      signTransaction: async (tx: VersionedTransaction) => w.signTransaction!(tx),
+    },
+    network: x.network,
+    amount: maxPaymentAtomic(BigInt(x.amountAtomic)),
+    verbose: Boolean(import.meta.env?.DEV),
+  });
+
+  return client.fetch(chatUrl, init);
+}

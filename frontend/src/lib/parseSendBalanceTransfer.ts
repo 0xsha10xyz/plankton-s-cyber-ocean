@@ -17,7 +17,7 @@ export function parseSendBalanceTransferInput(
     throw new Error("Recipient address is missing");
   }
 
-  let beforeRecipient = cleaned.slice(0, idx).trim();
+  const beforeRecipient = cleaned.slice(0, idx).trim();
   if (!beforeRecipient) {
     throw new Error("Paste: token name, amount, then recipient address");
   }

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { getAgentApiBase, getApiBase } from "@/lib/api";
+import { fetchAgentChat, fetchAgentConfigWithX402, type AgentChatX402Info } from "@/lib/agent-chat-fetch";
 import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
 import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
 import { useAccount } from "@/contexts/AccountContext";
@@ -226,7 +227,8 @@ function AgentMessageBubble({
 }
 
 export function AgentChatInlinePreview() {
-  const { connected, publicKey, signTransaction } = useWallet();
+  const wallet = useWallet();
+  const { connected, publicKey, signTransaction } = wallet;
   const { connection } = useConnection();
   const { openWalletModal } = useWalletModal();
   const { getSymbol, ensureTokenInfo } = useTokenSymbol();
@@ -241,8 +243,21 @@ export function AgentChatInlinePreview() {
   type SendTokenInfo = { mint: string; symbol: string; decimals: number; rawAmount: string };
   const [pendingSendBalance, setPendingSendBalance] = useState<{ tokens: SendTokenInfo[] } | null>(null);
   const [placeholderMode, setPlaceholderMode] = useState<"help" | "see">("help");
+  const [agentX402, setAgentX402] = useState<AgentChatX402Info | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<ChatMessage[]>(messages);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const origin = getAgentApiBase();
+      const info = await fetchAgentConfigWithX402(origin);
+      if (!cancelled) setAgentX402(info);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -726,16 +741,17 @@ export function AgentChatInlinePreview() {
       const history = chatMessagesToHistory(priorForHistory);
       try {
         const agentOrigin = getAgentApiBase();
-        const res = await fetch(`${agentOrigin}/api/agent/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({
+        const chatUrl = `${agentOrigin}/api/agent/chat`;
+        const res = await fetchAgentChat(
+          chatUrl,
+          {
             message: trimmed,
             history,
             context: nextContext,
             wallet: connectedWallet,
-          }),
-        });
+          },
+          { x402: agentX402, wallet }
+        );
         if (res.ok) {
           const data = (await res.json()) as Partial<AgentJsonResponse>;
           if (typeof data.insight === "string" && Array.isArray(data.actions)) {
@@ -1064,6 +1080,14 @@ export function AgentChatInlinePreview() {
             <div className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
               <ArrowRight size={14} />
               Connect wallet to unlock guided alpha scan.
+            </div>
+          ) : agentX402?.enabled ? (
+            <div className="text-xs text-muted-foreground mt-2">
+              x402: about{" "}
+              {typeof agentX402.priceUsd === "number"
+                ? `$${agentX402.priceUsd.toFixed(2)}`
+                : "$0.01"}{" "}
+              USDC per agent message.
             </div>
           ) : null}
         </div>

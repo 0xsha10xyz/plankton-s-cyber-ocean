@@ -1,4 +1,10 @@
 import { Router } from "express";
+import {
+  enforceAgentChatX402,
+  getAgentChatX402PublicConfig,
+  settleAgentChatX402IfNeeded,
+} from "../x402-agent-chat.js";
+import { inferReplyLanguage } from "../lib/infer-reply-language.js";
 
 export const agentRouter = Router();
 
@@ -39,38 +45,11 @@ function clampChatLength(s: string, max: number): string {
   return t.slice(0, max);
 }
 
-/** Server-side hint so English turns are not drowned by Indonesian chat history. */
-function inferReplyLanguage(lastUserMessage: string): "en" | "id" {
-  const t = lastUserMessage.trim().toLowerCase();
-  if (!t) return "en";
-
-  const idRe =
-    /\b(yang|dan|untuk|dengan|tidak|bisa|kamu|kau|saya|aku|ini|itu|dari|atau|juga|sudah|belum|aja|kok|nih|dong|apa|bagaimana|gimana|tolong|bantu|adalah|memiliki|dapat|hari|karena|harus|mau|pernah|tersebut|saja)\b/g;
-  const enRe =
-    /\b(the|is|are|was|were|you|your|yours|can|could|would|please|what|how|why|when|where|which|about|good|morning|build|advice|advise|sentiment|market|today|for|not|and|or|with|from|this|that|these|those|have|has|had|help|will|should|ask|tell|give|me|my|any|some|there|here|just|also|into|onto|gm)\b/g;
-
-  const idHits = (t.match(idRe) ?? []).length;
-  const enHits = (t.match(enRe) ?? []).length;
-
-  if (idHits >= 2 && idHits >= enHits + 1) return "id";
-  if (enHits >= 2 && enHits >= idHits + 1) return "en";
-
-  if (/\b(can you|could you|would you|please|what is|what are|how (do|can|to|is)|tell me|give me|build (a |the )?prompt|about the|sentiment|market today)\b/i.test(t)) {
-    return "en";
-  }
-  if (/\b(bisa (tolong|bantu)|tolong|apakah|bagaimana|kenapa|gimana)\b/i.test(t)) return "id";
-
-  if (idHits > enHits) return "id";
-  if (enHits > idHits) return "en";
-  if (t.length < 28 && idHits === 0) return "en";
-  return "en";
-}
-
 function languageLockFooter(lang: "en" | "id"): string {
   if (lang === "en") {
     return `\n\n---\nLANGUAGE_LOCK: EN\nMandatory: output JSON fields in English only (insight, additional_insight, every action label). Prioritize this over any non-English text in prior messages.`;
   }
-  return `\n\n---\nLANGUAGE_LOCK: ID\nWajib: seluruh isi JSON dalam bahasa Indonesia (insight, additional_insight, setiap label action). Utamakan ini daripada bahasa lain di pesan sebelumnya jika berbeda dengan pesan user terbaru.`;
+  return `\n\n---\nLANGUAGE_LOCK: ID\nMandatory: write the entire JSON in Indonesian (insight, additional_insight, every action label). Override non-Indonesian text from earlier conversation turns.`;
 }
 
 function parseAgentChatPayload(raw: string): AgentChatJson | null {
@@ -192,6 +171,7 @@ agentRouter.get("/config", (_req, res) => {
   res.json({
     riskLevels: ["conservative", "mid", "aggressive"],
     defaultRisk: "mid",
+    x402AgentChat: getAgentChatX402PublicConfig(),
   });
 });
 
@@ -372,6 +352,10 @@ agentRouter.post("/chat", async (req, res) => {
     return;
   }
 
+  if (!(await enforceAgentChatX402(req, res))) {
+    return;
+  }
+
   const history = Array.isArray(body.history)
     ? body.history
         .filter((h) => (h.role === "user" || h.role === "assistant") && typeof h.content === "string")
@@ -434,6 +418,7 @@ agentRouter.post("/chat", async (req, res) => {
     const msg = e instanceof Error ? e.message : String(e);
     res.status(504).json({ error: msg, code: "LLM_TIMEOUT_OR_NETWORK" });
   } finally {
+    await settleAgentChatX402IfNeeded(res);
     clearTimeout(t);
   }
 });

@@ -7,6 +7,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { getAgentApiBase, getApiBase } from "@/lib/api";
+import { fetchAgentChat, fetchAgentConfigWithX402, type AgentChatX402Info } from "@/lib/agent-chat-fetch";
 import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
 import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
 import { useAccount } from "@/contexts/AccountContext";
@@ -264,7 +265,8 @@ function AgentBubble({ msg, onAction }: { msg: ChatMessage; onAction: (action: s
 
 export default function AgentChatPage() {
   const { connection } = useConnection();
-  const { connected, publicKey, signTransaction } = useWallet();
+  const wallet = useWallet();
+  const { connected, publicKey, signTransaction } = wallet;
   const { openWalletModal } = useWalletModal();
   const { getSymbol, ensureTokenInfo } = useTokenSymbol();
   const { profile } = useAccount();
@@ -281,6 +283,7 @@ export default function AgentChatPage() {
   type SendTokenInfo = { mint: string; symbol: string; decimals: number; rawAmount: string };
   const [pendingSendBalance, setPendingSendBalance] = useState<{ tokens: SendTokenInfo[] } | null>(null);
   const [placeholderMode, setPlaceholderMode] = useState<"help" | "see">("help");
+  const [agentX402, setAgentX402] = useState<AgentChatX402Info | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<ChatMessage[]>(messages);
 
@@ -318,6 +321,18 @@ export default function AgentChatPage() {
     if (!prefill) return;
     setInput(prefill);
   }, [prefill]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const origin = getAgentApiBase();
+      const info = await fetchAgentConfigWithX402(origin);
+      if (!cancelled) setAgentX402(info);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSendWithText = (text: string) => {
     const trimmed = text.trim();
@@ -779,16 +794,17 @@ export default function AgentChatPage() {
       const history = chatMessagesToHistory(priorForHistory);
       try {
         const agentOrigin = getAgentApiBase();
-        const res = await fetch(`${agentOrigin}/api/agent/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({
+        const chatUrl = `${agentOrigin}/api/agent/chat`;
+        const res = await fetchAgentChat(
+          chatUrl,
+          {
             message: trimmed,
             history,
             context: nextContext,
             wallet: connectedWallet,
-          }),
-        });
+          },
+          { x402: agentX402, wallet }
+        );
         if (res.ok) {
           const data = (await res.json()) as Partial<AgentJsonResponse>;
           if (typeof data.insight === "string" && Array.isArray(data.actions)) {
@@ -1117,6 +1133,14 @@ export default function AgentChatPage() {
           {!connected ? (
             <div className="text-xs text-muted-foreground">
               Chat is locked until wallet is connected. Connect to enable sending.
+            </div>
+          ) : agentX402?.enabled ? (
+            <div className="text-xs text-muted-foreground">
+              Agent chat uses x402: about{" "}
+              {typeof agentX402.priceUsd === "number"
+                ? `$${agentX402.priceUsd.toFixed(2)}`
+                : "$0.01"}{" "}
+              USDC per message on Solana (wallet will prompt to approve).
             </div>
           ) : null}
         </div>

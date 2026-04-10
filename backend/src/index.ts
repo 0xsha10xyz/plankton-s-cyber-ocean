@@ -13,6 +13,8 @@ import { rpcRouter } from "./routes/rpc.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
+/** Correct `req.protocol` / host when behind nginx or a load balancer (needed for x402 `resource` URL). */
+app.set("trust proxy", 1);
 
 const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:8080,http://127.0.0.1:8080";
 const corsOrigins = corsOrigin.split(",").map((o) => o.trim()).filter(Boolean);
@@ -28,7 +30,14 @@ app.use(
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "PAYMENT-SIGNATURE",
+      "payment-signature",
+      "PAYMENT-RESPONSE",
+      "payment-response",
+    ],
   })
 );
 app.use(express.json({ limit: "512kb" }));
@@ -52,7 +61,10 @@ app.options("/api/*", (_req, res) => {
   const allow = origin && (corsOrigins.includes(origin) || (isVercel && /^https:\/\//.test(origin))) ? origin : corsOrigins[0] || "*";
   res.setHeader("Access-Control-Allow-Origin", allow);
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, PAYMENT-SIGNATURE, PAYMENT-RESPONSE"
+  );
   res.setHeader("Access-Control-Max-Age", "86400");
   res.status(204).end();
 });

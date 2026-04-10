@@ -91,7 +91,43 @@ So **Groq is the default “budget” path** when you do not set Anthropic: add 
 
 The implementation uses Groq’s **OpenAI-compatible** endpoint (`https://api.groq.com/openai/v1/chat/completions`). Replies follow the **user’s last message language** (server-side hint in `backend/src/routes/agent.ts`).
 
-**Production note:** If the frontend is on Vercel and the **agent chat** must hit a **separate backend** (e.g. VPS) where Groq keys live, set **`VITE_API_URL`** to that backend’s HTTPS URL so the SPA calls `POST /api/agent/chat` on the correct host.
+**Production note:** If the frontend is on Vercel and the **agent** must hit a **VPS** while Swap stays on Vercel, set **`VITE_AGENT_API_URL`** to the VPS origin (HTTPS, no trailing path). If **all** API routes should use one host, use **`VITE_API_URL`** instead.
+
+### Agent chat — x402 (optional, USDC on Solana)
+
+To charge **per chat message** via **[x402-solana](https://www.npmjs.com/package/x402-solana)** (PayAI facilitator, mainnet USDC by default):
+
+1. On the **backend** (VPS), set **`X402_TREASURY_ADDRESS`** to your Solana treasury (base58) that should receive USDC. When this variable is set, **`POST /api/agent/chat`** returns **402** without a valid `PAYMENT-SIGNATURE` header; the SPA uses `createX402Client` from `x402-solana/client` when **`GET /api/agent/config`** includes `x402AgentChat.enabled: true`.
+
+2. **Defaults:** **$0.01** USDC per message (`X402_CHAT_AMOUNT_ATOMIC=10000`, 6 decimals), network **`solana`** (mainnet). USDC mint: mainnet `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`.
+
+3. **Optional env (backend):**
+   - **`X402_FACILITATOR_URL`** — default `https://facilitator.payai.network`
+   - **`X402_NETWORK`** — `solana` (default) or `solana-devnet` for testing with devnet USDC
+   - **`X402_RESOURCE_BASE_URL`** — see **step-by-step table below** (only when public API URL ≠ what Express sees)
+   - **`X402_PAYAI_API_KEY_ID`** / **`X402_PAYAI_API_KEY_SECRET`** — PayAI API keys for facilitator JWT auth (recommended beyond free tier)
+   - **`X402_SOLANA_RPC_URL`** — RPC for facilitator-related chain reads (falls back to **`SOLANA_RPC_URL`**)
+
+4. **CORS:** the backend allows **`PAYMENT-SIGNATURE`** / **`PAYMENT-RESPONSE`** on agent routes when browsers call the VPS from another origin. Set **`CORS_ORIGIN`** to your real frontend origins (e.g. `https://planktonomous.dev,https://….vercel.app`).
+
+5. **Without `X402_TREASURY_ADDRESS`:** chat stays **free** (no x402), same as before.
+
+#### VPS setup order (x402 agent chat)
+
+Follow these steps so the treasury wallet, facilitator, and resource URL stay consistent.
+
+| Step | What to do | Notes |
+|------|------------|--------|
+| **1** | Confirm agent chat works without x402 | At least one LLM key (`GROQ_API_KEY`, etc.) and `POST /api/agent/chat` should succeed **before** you set `X402_TREASURY_ADDRESS`. |
+| **2** | Choose a mainnet USDC receiver | A Solana address (base58) that can hold **SPL USDC** (not SOL-only). That value is **`X402_TREASURY_ADDRESS`**. |
+| **3** | Set env on the VPS | In `backend/.env` (or systemd/Docker env), set **`X402_TREASURY_ADDRESS=<your_address>`**. |
+| **4** | Decide on **`X402_RESOURCE_BASE_URL`** | The facilitator matches the **resource URL** to the URL the browser uses for `client.fetch`. **Set this** if the public API URL (same as `VITE_AGENT_API_URL`) **does not match** the host/proto Express sees behind nginx. Bad case: browser calls `https://api.example.com/api/agent/chat` but Express sees `Host: 127.0.0.1:3000` — then set **`X402_RESOURCE_BASE_URL=https://api.example.com`** (origin only, **no** `/api/...`; the app appends `/api/agent/chat`). **Omit it** if your reverse proxy already sends **`X-Forwarded-Host`** and **`X-Forwarded-Proto`** correctly so the server-built URL equals the browser URL. |
+| **5** | CORS | **`CORS_ORIGIN`** must list your frontend origins (Vercel + custom domain). Otherwise browser preflight to the VPS can fail. |
+| **6** | Frontend | Set **`VITE_AGENT_API_URL`** to the **API origin** users actually call (e.g. `https://api.example.com`). Avoid `localhost` in production builds. |
+| **7** | Restart the backend | Restart Node (pm2/systemd/docker) after changing env. |
+| **8** | Verify | `GET https://<YOUR_API>/api/agent/config` should include `"x402AgentChat":{"enabled":true,...}`. Then send one chat message: the wallet should prompt to approve ~$0.01 USDC plus SOL fees. |
+
+**Summary:** turning on pay-per-message only **requires** **`X402_TREASURY_ADDRESS`** first. **`X402_RESOURCE_BASE_URL`** is **optional**—use it only when the **public API URL** and the **URL Express derives from the request** disagree behind a proxy.
 
 ---
 

@@ -15,7 +15,7 @@ cp .env.example .env   # optional: edit .env for PORT, CORS_ORIGIN
 | Command       | Description                |
 | ------------- | -------------------------- |
 | `npm run dev` | Start dev server (tsx watch) |
-| `npm run build` | Compile TypeScript to `dist/` |
+| `npm run build` | Compile TypeScript to `dist/` and copy `src/data/*.json` into `dist/data/` (agent language detection) |
 | `npm run start` | Run production build       |
 | `npm run lint`  | Type-check only            |
 
