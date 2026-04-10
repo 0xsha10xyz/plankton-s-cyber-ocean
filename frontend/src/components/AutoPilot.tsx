@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Power, TrendingUp, TrendingDown, Gauge, Wallet } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@/contexts/WalletModalContext";
-import { getApiBase } from "@/lib/api";
+import { getAgentApiBase } from "@/lib/api";
 
 type AgentStatus = { active: boolean; riskLevel: number; profit24h: number; totalPnL: number };
 
@@ -23,8 +23,12 @@ const AutoPilot = () => {
     }
     const fetchStatus = async () => {
       try {
-        const base = getApiBase();
+        const base = getAgentApiBase();
         const res = await fetch(`${base}/api/agent/status?wallet=${encodeURIComponent(publicKey.toBase58())}`);
+        if (!res.ok) {
+          setStatus(null);
+          return;
+        }
         const data = await res.json();
         if (data && typeof data.riskLevel === "number") setStatus(data);
       } catch {

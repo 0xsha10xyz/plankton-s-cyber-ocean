@@ -10,6 +10,8 @@ function normalizeEnvApiBase(raw: string): string {
  * - Optional `VITE_AGENT_API_URL`: e.g. `https://api.example.com` (VPS with Groq) while **`VITE_API_URL` is unset**
  *   so Swap / market / Jupiter stay on **same-origin Vercel** `/api/*`.
  * - If unset, falls back to `getApiBase()` (same as the rest of the app).
+ * - Use this base for **agent-only** routes (`/api/agent/chat`, `/api/agent/status`, `/api/agent/config`) so split
+ *   deploys stay consistent (same host for chat + status).
  */
 export function getAgentApiBase(): string {
   const raw =

@@ -1,6 +1,7 @@
 import { createX402Client } from "x402-solana/client";
 import type { VersionedTransaction } from "@solana/web3.js";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
+import { toast } from "sonner";
 
 export type AgentChatX402Info = {
   enabled: boolean;
@@ -48,6 +49,27 @@ function maxPaymentAtomic(expected: bigint): bigint {
 /**
  * POST to agent chat; uses x402-solana when the server advertises paid chat and the wallet can sign.
  */
+/** User-visible hint when `fetchAgentChat` returns a non-OK status (402 payment, server errors, etc.). */
+export function toastIfAgentChatFailed(res: Response): void {
+  if (res.ok) return;
+  const status = res.status;
+  if (status === 402) {
+    toast.error(
+      "Paid agent chat (x402): approve the USDC payment in your wallet, or add about $0.01 USDC on Solana mainnet plus a little SOL for fees."
+    );
+    return;
+  }
+  if (status === 503 || status === 502) {
+    toast.error("Agent chat is temporarily unavailable. Try again shortly.");
+    return;
+  }
+  if (status === 401 || status === 403) {
+    toast.error("Agent chat was rejected. Check your wallet connection and try again.");
+    return;
+  }
+  toast.error(`Agent chat failed (HTTP ${status}).`);
+}
+
 export async function fetchAgentChat(
   chatUrl: string,
   body: object,

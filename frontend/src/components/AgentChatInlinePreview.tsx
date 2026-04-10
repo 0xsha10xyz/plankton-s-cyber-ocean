@@ -6,7 +6,12 @@ import { cn } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { getAgentApiBase, getApiBase } from "@/lib/api";
-import { fetchAgentChat, fetchAgentConfigWithX402, type AgentChatX402Info } from "@/lib/agent-chat-fetch";
+import {
+  fetchAgentChat,
+  fetchAgentConfigWithX402,
+  toastIfAgentChatFailed,
+  type AgentChatX402Info,
+} from "@/lib/agent-chat-fetch";
 import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
 import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
 import { useAccount } from "@/contexts/AccountContext";
@@ -761,6 +766,8 @@ export function AgentChatInlinePreview() {
               actions: data.actions.map((a) => String(a)),
             } satisfies AgentJsonResponse);
           }
+        } else {
+          toastIfAgentChatFailed(res);
         }
       } catch {
         /* fallback: local buildAgentResponse */

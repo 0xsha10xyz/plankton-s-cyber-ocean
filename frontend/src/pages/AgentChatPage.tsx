@@ -7,7 +7,12 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { getAgentApiBase, getApiBase } from "@/lib/api";
-import { fetchAgentChat, fetchAgentConfigWithX402, type AgentChatX402Info } from "@/lib/agent-chat-fetch";
+import {
+  fetchAgentChat,
+  fetchAgentConfigWithX402,
+  toastIfAgentChatFailed,
+  type AgentChatX402Info,
+} from "@/lib/agent-chat-fetch";
 import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
 import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
 import { useAccount } from "@/contexts/AccountContext";
@@ -814,6 +819,8 @@ export default function AgentChatPage() {
               actions: data.actions.map((a) => String(a)),
             } satisfies AgentJsonResponse);
           }
+        } else {
+          toastIfAgentChatFailed(res);
         }
       } catch {
         /* fallback: reply already set to local buildAgentResponse */
