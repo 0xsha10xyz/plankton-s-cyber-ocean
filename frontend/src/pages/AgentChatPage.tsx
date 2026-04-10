@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { getApiBase } from "@/lib/api";
+import { getAgentApiBase, getApiBase } from "@/lib/api";
 import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
 import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
 import { useAccount } from "@/contexts/AccountContext";
@@ -776,8 +776,8 @@ export default function AgentChatPage() {
       const priorForHistory = messagesRef.current.filter((m) => m.id !== "welcome");
       const history = chatMessagesToHistory(priorForHistory);
       try {
-        const apiBase = getApiBase();
-        const res = await fetch(`${apiBase}/api/agent/chat`, {
+        const agentOrigin = getAgentApiBase();
+        const res = await fetch(`${agentOrigin}/api/agent/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify({
