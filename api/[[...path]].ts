@@ -3,6 +3,30 @@
  * Hobby plan: max 12 functions per deployment — avoid duplicating these routes as separate `api/**/*.ts` files.
  */
 import type { IncomingMessage, ServerResponse } from "http";
+import { Buffer } from "node:buffer";
+
+/** Some hosts pass absolute URLs in req.url; normalize to path + query so routing matches. */
+function normalizeIncomingUrl(input: string): string {
+  const raw = (input || "/").split("#")[0];
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    try {
+      const u = new URL(raw);
+      return `${u.pathname}${u.search}`;
+    } catch {
+      return "/";
+    }
+  }
+  if (!raw.startsWith("/")) return `/${raw}`;
+  return raw;
+}
+
+async function readIncomingBody(req: IncomingMessage): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
 
 function parseUrl(url: string): { pathname: string; searchParams: URLSearchParams } {
   try {
@@ -72,11 +96,8 @@ function isRetriableUpstreamStatus(status: number): boolean {
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
-  let url = (req.url || "/").split("#")[0];
-  if (!url.startsWith("/")) {
-    url = `/${url}`;
-    (req as { url?: string }).url = url;
-  }
+  const url = normalizeIncomingUrl(req.url || "/");
+  (req as { url?: string }).url = url;
   const pathname = normalizeApiPathname(url);
   const { searchParams } = parseUrl(url);
   const method = (req.method || "GET").toUpperCase();
@@ -112,12 +133,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   // POST /api/rpc – Solana JSON-RPC proxy (avoids browser 403/CORS on public RPCs from production origins)
   if (method === "POST" && pathname === "/api/rpc") {
-    const bodyStr = await new Promise<string>((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      req.on("data", (c: Buffer) => chunks.push(c));
-      req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-      req.on("error", reject);
-    });
+    const bodyStr = await readIncomingBody(req);
     let payload: { id?: unknown };
     try {
       payload = JSON.parse(bodyStr || "{}");
@@ -231,12 +247,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   // POST /api/jupiter/swap – proxy to Jupiter (set JUPITER_API_KEY in Vercel for auth)
   if (method === "POST" && pathname === "/api/jupiter/swap") {
-    const bodyStr = await new Promise<string>((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      req.on("data", (c: Buffer) => chunks.push(c));
-      req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-      req.on("error", reject);
-    });
+    const bodyStr = await readIncomingBody(req);
     let body: { quoteResponse?: unknown; userPublicKey?: string; wrapAndUnwrapSol?: boolean };
     try {
       body = JSON.parse(bodyStr || "{}");

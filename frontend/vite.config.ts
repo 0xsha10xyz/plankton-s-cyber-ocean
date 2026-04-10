@@ -7,6 +7,9 @@ const API_TARGET = process.env.VITE_DEV_API_PROXY ?? "http://127.0.0.1:3000";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    global: "globalThis",
+  },
   server: {
     host: "::",
     port: 8080,

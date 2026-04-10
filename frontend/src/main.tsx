@@ -1,8 +1,4 @@
-import { Buffer } from "buffer";
-
-if (typeof globalThis.Buffer === "undefined") {
-  globalThis.Buffer = Buffer;
-}
+import "./polyfills";
 
 // Prevent the browser from restoring the previous scroll position after refresh (F5).
 if (typeof window !== "undefined" && "scrollRestoration" in history) {

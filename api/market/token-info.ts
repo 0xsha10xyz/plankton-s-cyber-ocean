@@ -15,6 +15,21 @@ function sendJson(res: ServerResponse, statusCode: number, body: unknown): void 
   res.end(JSON.stringify(body));
 }
 
+/** Some hosts pass absolute URLs in req.url; keep query parsing correct. */
+function normalizeIncomingUrl(input: string): string {
+  const raw = (input || "/").split("#")[0];
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    try {
+      const u = new URL(raw);
+      return `${u.pathname}${u.search}`;
+    } catch {
+      return "/";
+    }
+  }
+  if (!raw.startsWith("/")) return `/${raw}`;
+  return raw;
+}
+
 function asTrimmedString(x: unknown): string | null {
   return typeof x === "string" ? (x.trim() || null) : null;
 }
@@ -175,7 +190,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     sendJson(res, 405, { error: "Method not allowed" });
     return;
   }
-  const url = req.url || "/";
+  const url = normalizeIncomingUrl(req.url || "/");
   const query = url.includes("?") ? url.slice(url.indexOf("?") + 1) : "";
   const searchParams = new URLSearchParams(query);
   const mint = searchParams.get("mint")?.trim() || "";
