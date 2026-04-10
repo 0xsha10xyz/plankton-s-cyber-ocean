@@ -17,6 +17,11 @@ import { TotalUsersStat } from "@/components/TotalUsersStat";
 import { AgentChatInlinePreview } from "@/components/AgentChatInlinePreview";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
+/** Official Pump.fun listing — keeps the hero CTA row clean; update here if the mint changes. */
+const PUMP_FUN_COIN_URL =
+  "https://pump.fun/coin/65Fp9stRoiF9AY4FqmpLTGGaeTkiv7duwiRCZrUGpump";
+const TOKEN_CONTRACT_MINT = "65Fp9stRoiF9AY4FqmpLTGGaeTkiv7duwiRCZrUGpump";
+
 const Section = ({ title, id, children }: { title: string; id: string; children: React.ReactNode }) => (
   <section id={id} className="mb-20 scroll-mt-24">
     <motion.h2
@@ -102,6 +107,16 @@ const Index = () => {
                 </DialogContent>
               </Dialog>
             </div>
+            <p className="mt-6 text-center max-w-2xl mx-auto px-2">
+              <a
+                href={PUMP_FUN_COIN_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors underline-offset-4 hover:underline font-mono break-all"
+              >
+                Contract: {TOKEN_CONTRACT_MINT}
+              </a>
+            </p>
           </motion.div>
         </section>
 
