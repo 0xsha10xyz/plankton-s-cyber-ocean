@@ -11,6 +11,7 @@ import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
 import { useAccount } from "@/contexts/AccountContext";
 import { COMMON_MINTS } from "@/lib/jupiter";
 import { resolveSendBalanceToken } from "@/lib/resolveSendBalanceToken";
+import { parseSendBalanceTransferInput } from "@/lib/parseSendBalanceTransfer";
 import { getFallbackRpcs, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 import { Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 
@@ -819,17 +820,7 @@ export function AgentChatInlinePreview() {
         g.Buffer = mod.Buffer;
       }
 
-      const cleaned = text.replace(/,/g, " ").replace(/\+/g, " ").trim();
-      const parts = cleaned.split(/\s+/);
-      if (parts.length < 3) throw new Error("Paste: TOKEN_SYMBOL amount recipientAddress");
-
-      const recipientMatches = detectBase58(cleaned);
-      const recipient = recipientMatches[recipientMatches.length - 1];
-      if (!recipient) throw new Error("Recipient address is missing");
-
-      const tokenSymbolInput = parts[0].trim();
-      const amountInput = parts[1].trim();
-      if (!amountInput) throw new Error("Amount is missing");
+      const { tokenSymbolInput, amountInput, recipient } = parseSendBalanceTransferInput(text, detectBase58);
 
       const tokenEntry = resolveSendBalanceToken(pendingSendBalance.tokens, tokenSymbolInput);
       if (!tokenEntry) {
