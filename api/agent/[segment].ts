@@ -1,12 +1,19 @@
+/**
+ * GET /api/agent/logs | /api/agent/status | /api/agent/config
+ */
 import type { IncomingMessage, ServerResponse } from "http";
+
+export const config = {
+  runtime: "nodejs",
+  maxDuration: 10,
+};
 
 type LogLine = { id: string; time: string; message: string; type?: string };
 
-function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
+function sendJson(res: ServerResponse, statusCode: number, body: unknown, cache?: string): void {
   res.statusCode = statusCode;
   res.setHeader("Content-Type", "application/json");
-  // Keep this endpoint cheap on Vercel: allow short caching and serve stale briefly.
-  res.setHeader("Cache-Control", "public, s-maxage=5, stale-while-revalidate=30");
+  res.setHeader("Cache-Control", cache ?? "private, max-age=10");
   res.end(JSON.stringify(body));
 }
 
@@ -48,26 +55,22 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const method = (req.method || "GET").toUpperCase();
-  if (method !== "GET") {
-    sendJson(res, 405, { error: "Method not allowed" });
-    return;
-  }
-
+async function handleLogs(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const q = getQuery(req.url);
   const limit = clampInt(parseInt(q.get("limit") || "20", 10), 1, 120);
 
-  const upstreams = [
-    ...(process.env.SOLANA_RPC_URL?.trim() ? [process.env.SOLANA_RPC_URL.trim()] : []),
-    "https://api.mainnet-beta.solana.com",
-    "https://rpc.ankr.com/solana",
-  ];
+  const heliusKey = process.env.HELIUS_API_KEY?.trim();
+  const heliusRpc = heliusKey
+    ? `https://mainnet.helius-rpc.com/?api-key=${encodeURIComponent(heliusKey)}`
+    : null;
+  const upstreams: string[] = [];
+  if (process.env.SOLANA_RPC_URL?.trim()) upstreams.push(process.env.SOLANA_RPC_URL.trim());
+  if (heliusRpc && !upstreams.includes(heliusRpc)) upstreams.push(heliusRpc);
+  upstreams.push("https://api.mainnet-beta.solana.com", "https://rpc.ankr.com/solana");
 
   let rpcUrl = "";
   let slot: number | null = null;
   let tps: number | null = null;
-
   let lastErr = "";
   for (const u of upstreams) {
     try {
@@ -97,7 +100,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   }
 
   if (!rpcUrl || slot == null) {
-    sendJson(res, 200, { source: "stub", lines: [], error: lastErr || "RPC unavailable" });
+    sendJson(res, 200, { source: "stub", lines: [], error: lastErr || "RPC unavailable" }, "public, s-maxage=5, stale-while-revalidate=30");
     return;
   }
 
@@ -108,10 +111,37 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   lines.push({ id: `scan-${slot}`, time, message: "[SCANNING] Solana mainnet (live RPC)", type: "info" });
   lines.push({ id: `ready-${slot}`, time, message: "[ACTION] Agent ready.", type: "info" });
 
-  sendJson(res, 200, {
-    source: process.env.SOLANA_RPC_URL?.trim() ? "rpc:custom" : "rpc:public",
-    rpcUrl: process.env.SOLANA_RPC_URL?.trim() ? "custom" : "public",
-    lines: lines.slice(0, limit),
-  });
+  sendJson(
+    res,
+    200,
+    {
+      source: process.env.SOLANA_RPC_URL?.trim() ? "rpc:custom" : "rpc:public",
+      rpcUrl: process.env.SOLANA_RPC_URL?.trim() ? "custom" : "public",
+      lines: lines.slice(0, limit),
+    },
+    "public, s-maxage=5, stale-while-revalidate=30"
+  );
 }
 
+export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const url = (req.url || "/").split("#")[0];
+  const pathOnly = url.split("?")[0] || "/";
+  const parts = pathOnly.replace(/\/+$/, "").split("/").filter(Boolean);
+  const segment = parts[parts.length - 1] || "";
+  const method = (req.method || "GET").toUpperCase();
+
+  if (segment === "status" && method === "GET") {
+    sendJson(res, 200, { active: false, riskLevel: 0, profit24h: 0, totalPnL: 0 });
+    return;
+  }
+  if (segment === "config" && method === "GET") {
+    sendJson(res, 200, { x402AgentChat: { enabled: false } });
+    return;
+  }
+  if (segment === "logs" && method === "GET") {
+    await handleLogs(req, res);
+    return;
+  }
+
+  sendJson(res, 404, { error: "Not found" });
+}

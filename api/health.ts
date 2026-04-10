@@ -1,8 +1,12 @@
 /**
- * Vercel serverless: GET /api/stats/users
+ * GET /api/health — explicit route (Vite/non-Next: optional catch-all `[[...path]]` is unreliable on Vercel).
  */
 import type { IncomingMessage, ServerResponse } from "http";
-import { getStatsUsers } from "../../server-lib/stats-handler.js";
+
+export const config = {
+  runtime: "nodejs",
+  maxDuration: 10,
+};
 
 function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
   res.statusCode = statusCode;
@@ -12,19 +16,9 @@ function sendJson(res: ServerResponse, statusCode: number, body: unknown): void 
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const method = (req.method || "GET").toUpperCase();
-  if (method !== "GET") {
-    res.setHeader("Allow", "GET");
+  if ((req.method || "GET").toUpperCase() !== "GET") {
     sendJson(res, 405, { error: "Method not allowed" });
     return;
   }
-
-  try {
-    const data = await getStatsUsers();
-    sendJson(res, 200, data);
-  } catch {
-    // Keep shape stable for frontend fallback logic.
-    sendJson(res, 200, { count: 0 });
-  }
+  sendJson(res, 200, { ok: true });
 }
-
