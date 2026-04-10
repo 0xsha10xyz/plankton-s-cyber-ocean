@@ -22,6 +22,7 @@ import { sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 import { useWalletBalances } from "@/contexts/WalletBalancesContext";
 import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
 import { getApiBase } from "@/lib/api";
+import { mintValidationMessage } from "@/lib/solana-mint";
 import { TokenSelect, type TokenOption } from "@/components/TokenSelect";
 
 export type { TokenOption };
