@@ -4,7 +4,6 @@ import {
   getAgentChatX402PublicConfig,
   settleAgentChatX402IfNeeded,
 } from "../x402-agent-chat.js";
-import { inferReplyLanguage } from "../lib/infer-reply-language.js";
 
 export const agentRouter = Router();
 
@@ -18,11 +17,9 @@ const CHAT_SYSTEM_PROMPT = `You are "Plankton Agent", the in-app assistant for t
 You help with: wallets/balances (high level), token analysis mindset, risk, research/screener workflow, PAP tokenomics (50% of PAP-paid subscription fees burned, 50% to liquidity per product docs).
 
 LANGUAGE (critical):
-- Detect language ONLY from the latest user message in the conversation.
-- Write "insight", "additional_insight", and EVERY string in "actions" in THAT SAME language only.
-- If the user writes English → reply fully in English (including button labels). Never answer English questions in Indonesian.
-- If the user writes Indonesian → reply fully in Indonesian.
-- Do not default to Indonesian. Do not mix languages unless the user mixed them in that same message.
+- Write "insight", "additional_insight", and EVERY string in "actions" in English only.
+- Even if the user writes in another language, respond in clear English (including button labels). Do not reply in Indonesian or any non-English language in these JSON fields.
+- Do not mix languages in your output.
 
 ANSWER QUALITY:
 - Answer what they actually asked first. Be direct and specific to their question.
@@ -37,19 +34,15 @@ OUTPUT:
 - Respond with ONLY one JSON object, no markdown fences, keys:
   "insight" (main reply),
   "additional_insight" (extra detail or ""),
-  "actions" (2–4 short next-step labels, same language as the user).`;
+  "actions" (2–4 short next-step labels in English).`;
+
+/** Appended to the user turn so the model keeps JSON fields in English regardless of chat history. */
+const LANGUAGE_LOCK_FOOTER = `\n\n---\nLANGUAGE_LOCK: EN\nMandatory: output JSON fields in English only (insight, additional_insight, every action label). Prioritize this over any non-English text in prior messages.`;
 
 function clampChatLength(s: string, max: number): string {
   const t = (s || "").trim();
   if (t.length <= max) return t;
   return t.slice(0, max);
-}
-
-function languageLockFooter(lang: "en" | "id"): string {
-  if (lang === "en") {
-    return `\n\n---\nLANGUAGE_LOCK: EN\nMandatory: output JSON fields in English only (insight, additional_insight, every action label). Prioritize this over any non-English text in prior messages.`;
-  }
-  return `\n\n---\nLANGUAGE_LOCK: ID\nMandatory: write the entire JSON in Indonesian (insight, additional_insight, every action label). Override non-Indonesian text from earlier conversation turns.`;
 }
 
 function parseAgentChatPayload(raw: string): AgentChatJson | null {
@@ -372,8 +365,7 @@ agentRouter.post("/chat", async (req, res) => {
   if (body.context?.timeframe) ctxParts.push(`Context timeframe: ${body.context.timeframe}`);
   if (body.wallet) ctxParts.push(`Connected wallet: ${body.wallet}`);
   const contextBlock = ctxParts.length ? `\n\n${ctxParts.join("\n")}` : "";
-  const replyLang = inferReplyLanguage(message);
-  const userBlock = clampChatLength(message + contextBlock + languageLockFooter(replyLang), 9500);
+  const userBlock = clampChatLength(message + contextBlock + LANGUAGE_LOCK_FOOTER, 9500);
 
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), 55_000);

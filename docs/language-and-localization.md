@@ -1,6 +1,6 @@
 # Language & localization
 
-This document explains how **language** works in Plankton’s Cyber Ocean so maintainers can keep **English** as the default for code and docs without breaking chat behavior.
+This document explains how **language** works in Plankton’s Cyber Ocean so maintainers keep **English** as the default for code, docs, and agent replies.
 
 ## Repository & product copy (English)
 
@@ -12,13 +12,13 @@ Changing “everything to English” for shipped UI means editing React componen
 
 ## Plankton Agent (chat) language
 
-The in-app **Plankton Agent** does **not** use a single fixed UI language for replies. The backend matches the **user’s last message** (with a server-side language hint) so answers and action buttons stay in the same language as that message (e.g. English questions → English replies). This is implemented in the agent route (`backend/src/routes/agent.ts`); the frontend only sends the user text and history.
+The in-app **Plankton Agent** responds in **English only**: `insight`, `additional_insight`, and `actions` are always English, including when the user writes in another language. This is enforced in the agent route (`backend/src/routes/agent.ts`) via the system prompt and a fixed `LANGUAGE_LOCK: EN` footer on each user turn. The frontend only sends the user text and history.
 
-**Implementation detail:** `LANGUAGE_LOCK` footers appended to the model input are written in **English** (maintainer-facing instructions). Reply-language detection uses the **`franc`** library (English vs Indonesian) plus **English-only** structural regexes in `backend/src/lib/infer-reply-language.ts`. A small list of **high-precision Indonesian tokens** used only for disambiguation lives in **`backend/src/data/indonesian-detection-tokens.json`** (linguistic data, not UI copy). That file is copied to **`dist/data/`** during `npm run build` so production can read it at runtime.
+**Implementation detail:** `LANGUAGE_LOCK` footers appended to the model input are written in **English** (maintainer-facing instructions). Optional JSON files under `backend/src/data/` are copied to **`dist/data/`** during `npm run build` (`backend/scripts/copy-agent-data.cjs`) if present.
 
 **LLM providers:** Chat completions use whichever provider succeeds first: **Anthropic (Claude)**, then **[Groq](https://groq.com)** (OpenAI-compatible API, default model `llama-3.3-70b-versatile`), then **OpenAI**. Configure keys in `backend/.env` — see **[Configuration — Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)** for **Groq** integration details.
 
-Do **not** hardcode a default chat language to Indonesian in new code—the server prompt and `inferReplyLanguage()` logic already enforce consistency with the latest user turn.
+Do **not** reintroduce per-locale agent output in new code unless product requirements explicitly add multilingual support and a reviewed i18n design.
 
 ## Secrets vs. language
 
@@ -30,6 +30,6 @@ Do **not** hardcode a default chat language to Indonesian in new code—the serv
 If you add a proper i18n library later:
 
 1. Keep **English** as the default/fallback locale.
-2. Keep **agent** language behavior **driven by the user message** on the server unless you add an explicit “reply language” user setting and pass it to the API.
+2. Decide explicitly whether agent replies stay English-only or follow a user locale / message language, and document that in this file.
 
 See also: [Security & sensitive data](../SECURITY.md).

@@ -1,18 +1,24 @@
 /**
- * Copy static agent data next to compiled output (tsc does not emit .json from src/).
+ * Copy JSON under src/data next to compiled output (tsc does not emit .json from src/).
  */
 const fs = require("fs");
 const path = require("path");
 
 const root = path.join(__dirname, "..");
-const srcFile = path.join(root, "src", "data", "indonesian-detection-tokens.json");
-const destFile = path.join(root, "dist", "data", "indonesian-detection-tokens.json");
+const srcDir = path.join(root, "src", "data");
+const destDir = path.join(root, "dist", "data");
 
-if (!fs.existsSync(srcFile)) {
-  console.warn("[copy-agent-data] skip: missing", srcFile);
+if (!fs.existsSync(srcDir)) {
   process.exit(0);
 }
 
-fs.mkdirSync(path.dirname(destFile), { recursive: true });
-fs.copyFileSync(srcFile, destFile);
-console.log("[copy-agent-data]", path.relative(root, destFile));
+const files = fs.readdirSync(srcDir).filter((f) => f.endsWith(".json"));
+if (files.length === 0) {
+  process.exit(0);
+}
+
+fs.mkdirSync(destDir, { recursive: true });
+for (const f of files) {
+  fs.copyFileSync(path.join(srcDir, f), path.join(destDir, f));
+  console.log("[copy-agent-data]", path.relative(root, path.join(destDir, f)));
+}
