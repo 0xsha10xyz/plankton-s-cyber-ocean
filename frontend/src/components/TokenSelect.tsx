@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { mintValidationMessage } from "@/lib/solana-mint";
 
 export type TokenOption = { symbol: string; mint: string; decimals: number };
 
@@ -32,10 +33,17 @@ export function TokenSelect({
   const displaySymbol = (t: TokenOption) => (getSymbol ? getSymbol(t.mint) : t.symbol);
   const [pasteCa, setPasteCa] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pasteHint, setPasteHint] = useState<string | null>(null);
 
   const handlePasteSubmit = async () => {
     const ca = pasteCa.trim();
-    if (!ca || ca.length < 32) return;
+    if (!ca) return;
+    const msg = mintValidationMessage(ca);
+    if (msg) {
+      setPasteHint(msg);
+      return;
+    }
+    setPasteHint(null);
     setLoading(true);
     try {
       const token = await resolveCa(ca);
@@ -67,12 +75,17 @@ export function TokenSelect({
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="start">
         <div className="p-2 border-b border-border/50">
-          <p className="text-xs text-muted-foreground mb-1.5">Paste a token CA → the token name appears automatically</p>
+          <p className="text-xs text-muted-foreground mb-1.5">
+            Paste the full Solana mint (32–44 characters) — the name resolves automatically.
+          </p>
           <div className="flex gap-1.5">
             <Input
-              placeholder="Contract address..."
+              placeholder="Full contract address (mint)…"
               value={pasteCa}
-              onChange={(e) => setPasteCa(e.target.value)}
+              onChange={(e) => {
+                setPasteCa(e.target.value);
+                setPasteHint(null);
+              }}
               onKeyDown={(e) => e.key === "Enter" && handlePasteSubmit()}
               className="h-8 text-xs font-mono flex-1"
             />
@@ -82,11 +95,12 @@ export function TokenSelect({
               variant="secondary"
               className="h-8 shrink-0"
               onClick={handlePasteSubmit}
-              disabled={loading || pasteCa.trim().length < 32}
+              disabled={loading || !pasteCa.trim()}
             >
               {loading ? <Loader2 size={14} className="animate-spin" /> : "OK"}
             </Button>
           </div>
+          {pasteHint && <p className="text-xs text-destructive mt-1.5 px-0.5">{pasteHint}</p>}
         </div>
         <ScrollArea className="max-h-56">
           <div className="p-1">

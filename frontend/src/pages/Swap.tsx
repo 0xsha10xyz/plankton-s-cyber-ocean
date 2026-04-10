@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { VersionedTransaction, PublicKey } from "@solana/web3.js";
+import { VersionedTransaction } from "@solana/web3.js";
 import { ArrowDownLeft, Loader2, Wallet } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
@@ -415,7 +415,11 @@ export default function Swap() {
 
   const resolveAndAddToken = useCallback(async (ca: string): Promise<TokenOption | null> => {
     const raw = ca.trim();
-    if (!raw || raw.length < 32 || raw.length > 44) return null;
+    const invalid = mintValidationMessage(raw);
+    if (invalid) {
+      setResolveError(invalid);
+      return null;
+    }
     const existing = tokenOptions.find((t) => t.mint === raw);
     if (existing) return existing;
     setResolveError(null);
@@ -423,12 +427,24 @@ export default function Swap() {
     try {
       const base = getApiBase();
       const res = await fetch(`${base}/api/market/token-info?mint=${encodeURIComponent(raw)}`);
-      const data = await res.json().catch(() => ({}));
+      const text = await res.text();
+      let data: { error?: string; symbol?: unknown; name?: unknown; decimals?: unknown } = {};
+      try {
+        if (text.trim().startsWith("{")) data = JSON.parse(text) as typeof data;
+      } catch {
+        data = {};
+      }
       if (!res.ok) {
+        if (res.status === 404 && !data.error && !text.trim().startsWith("{")) {
+          setResolveError(
+            "API returned 404 (HTML). Deploy must include repo-root `api/` — set Vercel Root Directory to “.” and redeploy."
+          );
+          return null;
+        }
         // Fallback path for production incidents: get decimals directly via RPC proxy.
         const decimalsFromRpc = await getDecimalsViaRpcProxy(base, raw);
         if (decimalsFromRpc == null) {
-          setResolveError((data as { error?: string })?.error || "Token not found");
+          setResolveError(data.error || "Token not found or could not load metadata");
           return null;
         }
         const fallbackSymbol = getSymbol(raw);
