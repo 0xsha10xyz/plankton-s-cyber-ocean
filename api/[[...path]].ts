@@ -3,7 +3,12 @@
  * Hobby plan: max 12 functions per deployment — avoid duplicating these routes as separate `api/**/*.ts` files.
  */
 import type { IncomingMessage, ServerResponse } from "http";
-import { Buffer } from "node:buffer";
+
+/** Force Node (not Edge): Solana RPC proxy uses Node streams + fetch. */
+export const config = {
+  runtime: "nodejs",
+  maxDuration: 60,
+};
 
 /** Some hosts pass absolute URLs in req.url; normalize to path + query so routing matches. */
 function normalizeIncomingUrl(input: string): string {
@@ -20,12 +25,16 @@ function normalizeIncomingUrl(input: string): string {
   return raw;
 }
 
-async function readIncomingBody(req: IncomingMessage): Promise<string> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  return Buffer.concat(chunks).toString("utf8");
+/** Classic stream read — more reliable on Vercel than `for await` on some IncomingMessage impls. */
+function readIncomingBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (c: Buffer | string | Uint8Array) => {
+      chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    req.on("error", reject);
+  });
 }
 
 function parseUrl(url: string): { pathname: string; searchParams: URLSearchParams } {
@@ -121,7 +130,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     sendJson(res, 200, { items: [] });
     return;
   }
-  if (method === "GET" && (pathname === "/api/subscription/me" || pathname === "/api/subscription/mc")) {
+  if (
+    method === "GET" &&
+    (pathname === "/api/subscription/me" ||
+      pathname === "/api/subscription/mc" ||
+      pathname === "/api/subscription/my-wallet")
+  ) {
     const wallet = searchParams.get("wallet")?.trim() || "";
     if (!wallet) {
       sendJson(res, 400, { error: "wallet query required" });
@@ -133,7 +147,18 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   // POST /api/rpc – Solana JSON-RPC proxy (avoids browser 403/CORS on public RPCs from production origins)
   if (method === "POST" && pathname === "/api/rpc") {
-    const bodyStr = await readIncomingBody(req);
+    let bodyStr: string;
+    try {
+      bodyStr = await readIncomingBody(req);
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      sendJson(res, 400, {
+        jsonrpc: "2.0",
+        error: { code: -32700, message: "Could not read request body", detail },
+        id: null,
+      });
+      return;
+    }
     let payload: { id?: unknown };
     try {
       payload = JSON.parse(bodyStr || "{}");
@@ -247,7 +272,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   // POST /api/jupiter/swap – proxy to Jupiter (set JUPITER_API_KEY in Vercel for auth)
   if (method === "POST" && pathname === "/api/jupiter/swap") {
-    const bodyStr = await readIncomingBody(req);
+    let bodyStr: string;
+    try {
+      bodyStr = await readIncomingBody(req);
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      sendJson(res, 400, { error: "Could not read request body", detail });
+      return;
+    }
     let body: { quoteResponse?: unknown; userPublicKey?: string; wrapAndUnwrapSol?: boolean };
     try {
       body = JSON.parse(bodyStr || "{}");

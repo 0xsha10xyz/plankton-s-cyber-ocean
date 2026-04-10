@@ -8,6 +8,18 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import { PublicKey } from "@solana/web3.js";
 
+export const config = {
+  runtime: "nodejs",
+  maxDuration: 60,
+};
+
+/** Align with `frontend/src/lib/jupiter.ts` COMMON_MINTS — swap UI works even if external APIs time out. */
+const KNOWN_MINTS: Record<string, { symbol: string; name?: string; decimals: number }> = {
+  So11111111111111111111111111111111111111112: { symbol: "SOL", name: "Wrapped SOL", decimals: 9 },
+  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: { symbol: "USDC", name: "USD Coin", decimals: 6 },
+  Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: { symbol: "USDT", name: "USDT", decimals: 6 },
+};
+
 function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
   res.statusCode = statusCode;
   res.setHeader("Content-Type", "application/json");
@@ -197,6 +209,16 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   if (!mint || mint.length < 32 || mint.length > 44) {
     sendJson(res, 400, { error: "Missing or invalid mint (expected 32–44 character base58)" });
+    return;
+  }
+
+  const known = KNOWN_MINTS[mint];
+  if (known) {
+    sendJson(res, 200, {
+      symbol: known.symbol,
+      name: known.name,
+      decimals: known.decimals,
+    });
     return;
   }
 
