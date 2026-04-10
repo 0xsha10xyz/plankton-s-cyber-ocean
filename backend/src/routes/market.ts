@@ -688,11 +688,13 @@ marketRouter.get("/token-info", async (req: Request, res: Response) => {
       if (resp.ok) {
         const json = await resp.json();
         const data = json?.data;
-        const symbol = typeof data?.symbol === "string" ? data.symbol : undefined;
-        const name = typeof data?.name === "string" ? data.name : undefined;
+        const symbol = typeof data?.symbol === "string" ? data.symbol.trim() : undefined;
+        const name = typeof data?.name === "string" ? data.name.trim() : undefined;
         const decimals = typeof data?.decimals === "number" ? data.decimals : undefined;
         if (decimals !== undefined) {
-          res.json({ symbol: symbol || mint.slice(0, 4) + "…" + mint.slice(-4), name, decimals });
+          const truncated = mint.slice(0, 4) + "…" + mint.slice(-4);
+          const displaySymbol = symbol || name || truncated;
+          res.json({ symbol: displaySymbol, name: name || undefined, decimals });
           return;
         }
       }
@@ -717,12 +719,11 @@ marketRouter.get("/token-info", async (req: Request, res: Response) => {
         ? (first as { symbol?: string; name?: string; decimals?: number })
         : null;
       if (obj && typeof obj.decimals === "number" && obj.decimals >= 0 && obj.decimals <= 18) {
-        const symbol = typeof obj.symbol === "string" && obj.symbol.trim()
-          ? obj.symbol.trim()
-          : typeof obj.name === "string" && obj.name.trim()
-            ? obj.name.trim().slice(0, 10)
-            : mint.slice(0, 4) + "…" + mint.slice(-4);
-        res.json({ symbol, name: typeof obj.name === "string" ? obj.name.trim() : undefined, decimals: obj.decimals });
+        const nm = typeof obj.name === "string" ? obj.name.trim() : "";
+        const sym = typeof obj.symbol === "string" ? obj.symbol.trim() : "";
+        const truncated = mint.slice(0, 4) + "…" + mint.slice(-4);
+        const symbol = sym || nm || truncated;
+        res.json({ symbol, name: nm || undefined, decimals: obj.decimals });
         return;
       }
     } catch {
@@ -735,7 +736,9 @@ marketRouter.get("/token-info", async (req: Request, res: Response) => {
   if (meta && (meta.symbol || meta.name)) {
     const decimals = await getDecimalsRpc(mint);
     if (decimals !== null && decimals >= 0 && decimals <= 18) {
-      const symbol = (meta.symbol || meta.name || "").trim().slice(0, 12) || mint.slice(0, 4) + "…" + mint.slice(-4);
+      const truncated = mint.slice(0, 4) + "…" + mint.slice(-4);
+      const raw = (meta.symbol || meta.name || "").trim();
+      const symbol = raw || truncated;
       res.json({ symbol, name: meta.name, decimals });
       return;
     }

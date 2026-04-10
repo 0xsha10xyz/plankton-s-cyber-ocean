@@ -22,6 +22,8 @@ export const KNOWN_MINT_SYMBOLS: Record<string, string> = {
   So11111111111111111111111111111111111111112: "SOL",
   EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: "USDC",
   Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: "USDT",
+  /** PAP (Plankton Autonomous Protocol) — ensure Account/Swap show the name, not a truncated mint. */
+  "65Fp9stRoiF9AY4FqmpLTGGaeTkiv7duwiRCZrUGpump": "Plankton Autonomous Protocol",
 };
 
 export function getTokenSymbol(mint: string): string {

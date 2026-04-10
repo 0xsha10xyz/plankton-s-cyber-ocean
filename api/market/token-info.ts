@@ -57,8 +57,11 @@ async function lookupTokenViaJupiter(mint: string): Promise<{ symbol: string; na
           return { symbol: symbolFromApi, name: nameFromApi ?? undefined, decimals };
         }
         if (Number.isFinite(decimals) && decimals >= 0 && decimals <= 18) {
-          // Allow truncated symbol fallback; decimals are what block swaps.
-          return { symbol: truncated, decimals };
+          const sym =
+            metaplexFallback?.symbol?.trim() ||
+            metaplexFallback?.name?.trim() ||
+            truncated;
+          return { symbol: sym, name: metaplexFallback?.name, decimals };
         }
       } catch {
         continue;
@@ -199,8 +202,8 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         const decimals = typeof data?.decimals === "number" ? data.decimals : undefined;
         if (decimals !== undefined) {
           sendJson(res, 200, {
-            symbol: symbol || metaplexSymbol || truncated,
-            name: name || metaplexName,
+            symbol: symbol || name || metaplexSymbol || metaplexName || truncated,
+            name: name || metaplexName || undefined,
             decimals,
           });
           return;
@@ -213,11 +216,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   // 1) Try Jupiter token metadata first (best chance of correct symbol + decimals).
   try {
-    const jup = await lookupTokenViaJupiter(mint);
+    const jup = await lookupTokenViaJupiter(mint, {
+      symbol: metaplexSymbol,
+      name: metaplexName,
+    });
     if (jup) {
       sendJson(res, 200, {
-        symbol: jup.symbol || metaplexSymbol || truncated,
-        name: jup.name || metaplexName,
+        symbol: jup.symbol || metaplexSymbol || metaplexName || truncated,
+        name: jup.name || metaplexName || undefined,
         decimals: jup.decimals,
       });
       return;
