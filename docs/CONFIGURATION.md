@@ -125,7 +125,7 @@ The implementation uses Groq’s **OpenAI-compatible** endpoint (`https://api.gr
    # Point frontend to backend URL (when not localhost:3000)
    VITE_API_URL=http://localhost:3000
    ```
-   Replace `http://localhost:3000` with your backend URL (e.g. `https://api.example.com`).
+   Replace `http://localhost:3000` with your backend **origin** only (e.g. `https://api.example.com`). Do **not** include `/api` or `/api/jupiter` — the app builds paths like `/api/market/...` and `/api/jupiter/quote` automatically. A wrong base breaks Swap quotes and chart price calls (404s).
 
 3. **Save.** Restart the frontend.
 

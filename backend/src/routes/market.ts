@@ -31,6 +31,21 @@ const JUPITER_QUOTE_BASES = [
   "https://quote-api.jup.ag/v6",
 ];
 
+/** Same fallback order as wallet route — avoids single-RPC failures on VPS. */
+const MAINNET_RPC_URLS = [
+  process.env.SOLANA_RPC_URL,
+  "https://rpc.ankr.com/solana",
+  "https://solana.publicnode.com",
+  "https://api.mainnet-beta.solana.com",
+].filter((u): u is string => typeof u === "string" && u.trim().length > 0);
+
+/** Avoid RPC entirely for majors — fixes price-pair + Jupiter fallback when RPC is flaky. */
+const KNOWN_MINT_DECIMALS: Record<string, number> = {
+  [SOL_MINT]: 9,
+  [USDC_MINT]: 6,
+  [USDT_MINT]: 6,
+};
+
 /** Fetch SOL/USD OHLCV from CoinGecko (no API key). Returns items with unixTime and price for merging. */
 async function fetchSolUsdOhlcv(range: Range): Promise<{ unixTime: number; price: number }[]> {
   const days = range === "1H" ? 1 : range === "4H" ? 2 : range === "1D" ? 7 : 14;
@@ -54,28 +69,53 @@ async function fetchSolUsdOhlcv(range: Range): Promise<{ unixTime: number; price
   }
 }
 
-/** Get decimals for a mint via RPC (no API key). */
+/** Get decimals for a mint via RPC (no API key). Tries several RPCs; majors use static map. */
 async function getDecimalsRpc(mint: string): Promise<number | null> {
-  try {
-    const rpcUrl = process.env.SOLANA_RPC_URL || "https://api.mainnet-beta.solana.com";
-    const res = await fetch(rpcUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "getAccountInfo",
-        params: [mint, { encoding: "base64" }],
-      }),
-    });
-    const json = await res.json();
-    const b64 = json?.result?.value?.data?.[0];
-    if (b64 && typeof b64 === "string") {
-      const buf = Buffer.from(b64, "base64");
-      if (buf.length >= 45) return buf.readUInt8(44);
+  const known = KNOWN_MINT_DECIMALS[mint];
+  if (known !== undefined) return known;
+
+  for (const rpcUrl of MAINNET_RPC_URLS) {
+    try {
+      const res = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "getTokenSupply",
+          params: [mint],
+        }),
+      });
+      const json = await res.json();
+      const decimalsRaw = json?.result?.value?.decimals;
+      const d = typeof decimalsRaw === "number" ? decimalsRaw : Number(decimalsRaw);
+      if (Number.isFinite(d) && d >= 0 && d <= 18) return d;
+    } catch {
+      continue;
     }
-  } catch {
-    // ignore
+  }
+
+  for (const rpcUrl of MAINNET_RPC_URLS) {
+    try {
+      const res = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "getAccountInfo",
+          params: [mint, { encoding: "base64" }],
+        }),
+      });
+      const json = await res.json();
+      const b64 = json?.result?.value?.data?.[0];
+      if (b64 && typeof b64 === "string") {
+        const buf = Buffer.from(b64, "base64");
+        if (buf.length >= 45) return buf.readUInt8(44);
+      }
+    } catch {
+      continue;
+    }
   }
   return null;
 }

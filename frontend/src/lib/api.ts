@@ -1,3 +1,10 @@
+/** Strip accidental path suffixes so `/api/market/*` and `/api/jupiter/*` resolve correctly. */
+function normalizeEnvApiBase(raw: string): string {
+  let u = raw.trim().replace(/\/$/, "");
+  if (/\/api\/jupiter$/i.test(u)) u = u.replace(/\/api\/jupiter$/i, "");
+  return u.replace(/\/$/, "");
+}
+
 /**
  * Shared API base URL for backend requests.
  * - Set VITE_API_URL when the backend is on a different host (e.g. Render).
@@ -9,7 +16,7 @@
 export function getApiBase(): string {
   if (typeof window === "undefined" || !window.location?.origin) {
     if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) {
-      return String(import.meta.env.VITE_API_URL).replace(/\/$/, "");
+      return normalizeEnvApiBase(String(import.meta.env.VITE_API_URL));
     }
     return "http://localhost:3000";
   }
@@ -18,7 +25,7 @@ export function getApiBase(): string {
     origin.includes("localhost") || origin.includes("127.0.0.1");
   const isProduction = /^https:\/\//.test(origin) && !isLocal;
   const envApi = typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL
-    ? String(import.meta.env.VITE_API_URL).replace(/\/$/, "")
+    ? normalizeEnvApiBase(String(import.meta.env.VITE_API_URL))
     : "";
   if (envApi) {
     // Guard against accidental production builds pointing to localhost.
