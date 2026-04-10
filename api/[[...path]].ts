@@ -1,6 +1,6 @@
 /**
  * Vercel Serverless catch-all for residual /api/* routes not covered by standalone endpoint files.
- * Keep this lightweight and explicit so Hobby function deployments stay predictable.
+ * Hobby plan: max 12 functions per deployment — avoid duplicating these routes as separate `api/**/*.ts` files.
  */
 import type { IncomingMessage, ServerResponse } from "http";
 
