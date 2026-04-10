@@ -40,7 +40,12 @@ export default function ResearchTools() {
     if (!s || !canDoResearchLookup) return;
     const base = getApiBase();
     if (!base) {
-      setLookupResult({ found: false, symbol: s, message: "API not configured. Set VITE_API_URL for production." });
+      setLookupResult({
+        found: false,
+        symbol: s,
+        message:
+          "API unreachable. For Vercel, use same-origin /api (do not point VITE_API_URL at a VPS unless VITE_API_MODE=external).",
+      });
       return;
     }
     setLoading(true);

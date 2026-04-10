@@ -5,10 +5,18 @@ function normalizeEnvApiBase(raw: string): string {
   return u.replace(/\/$/, "");
 }
 
+/** When false (default), production HTTPS builds use same-origin `/api/*` (Vercel serverless), ignoring `VITE_API_URL`. */
+function isExternalApiMode(): boolean {
+  return (
+    typeof import.meta !== "undefined" &&
+    String(import.meta.env?.VITE_API_MODE ?? "").toLowerCase() === "external"
+  );
+}
+
 /**
  * Base URL for agent routes (`/api/agent/chat`, `/api/agent/status`, `/api/agent/config`).
- * - If `VITE_AGENT_API_URL` is set, it wins (only needed when the agent API differs from `VITE_API_URL`).
- * - Otherwise uses `getApiBase()` so agent and the rest of the API share one VPS origin.
+ * - Default: same as `getApiBase()` (Vercel monolith).
+ * - If `VITE_AGENT_API_URL` is set **and** `VITE_API_MODE=external`, use that host (split deploy).
  */
 export function getAgentApiBase(): string {
   const raw =
@@ -17,13 +25,17 @@ export function getAgentApiBase(): string {
       : "";
   if (!raw) return getApiBase();
 
-  const agentBase = normalizeEnvApiBase(raw);
   if (typeof window === "undefined" || !window.location?.origin) {
-    return agentBase;
+    return normalizeEnvApiBase(raw);
   }
   const origin = window.location.origin;
   const isLocal = origin.includes("localhost") || origin.includes("127.0.0.1");
   const isProduction = /^https:\/\//.test(origin) && !isLocal;
+  if (isProduction && !isExternalApiMode()) {
+    return getApiBase();
+  }
+
+  const agentBase = normalizeEnvApiBase(raw);
   if (isProduction && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(agentBase)) {
     return getApiBase();
   }
@@ -32,9 +44,8 @@ export function getAgentApiBase(): string {
 
 /**
  * Shared API base URL for all `/api/*` requests (market, Jupiter, wallet, agent, RPC proxy, …).
- * - **Production (Vercel, same-origin API):** leave `VITE_API_URL` **unset** so requests go to the site origin
- *   (serverless `api/` routes). See docs/DEPLOYMENT.md.
- * - **Production (API on VPS only):** set `VITE_API_URL` to the Express origin.
+ * - **Vercel (recommended):** same-origin — do **not** set `VITE_API_URL`, or set `VITE_API_MODE` to anything other than `external`.
+ * - **API on another host (VPS):** set `VITE_API_URL` **and** `VITE_API_MODE=external`.
  * - **Local dev:** leave unset; Vite proxies `/api` to port 3000.
  */
 export function getApiBase(): string {
@@ -48,11 +59,17 @@ export function getApiBase(): string {
   const isLocal =
     origin.includes("localhost") || origin.includes("127.0.0.1");
   const isProduction = /^https:\/\//.test(origin) && !isLocal;
+  const external = isExternalApiMode();
   const envApi = typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL
     ? normalizeEnvApiBase(String(import.meta.env.VITE_API_URL))
     : "";
+
+  // Production monolith: always hit the deployed site (Vercel `api/`), not a leftover VPS URL in env.
+  if (isProduction && !external) {
+    return origin;
+  }
+
   if (envApi) {
-    // Guard against accidental production builds pointing to localhost.
     if (isProduction && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(envApi)) {
       return origin;
     }

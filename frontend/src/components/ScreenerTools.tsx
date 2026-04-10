@@ -64,7 +64,7 @@ export default function ScreenerTools() {
     try {
       const base = getApiBase();
       if (!base) {
-        setError("API not configured. Set VITE_API_URL for production.");
+        setError("API unreachable. On Vercel, use same-origin /api; only set VITE_API_URL with VITE_API_MODE=external for a split backend.");
         setLoading(false);
         return;
       }

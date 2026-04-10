@@ -2,7 +2,12 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_URL?: string;
-  /** Optional: override origin for `/api/agent/*` only; use when the agent API differs from `VITE_API_URL` (rare). */
+  /**
+   * Set to `external` only when the browser must call `/api/*` on another origin (e.g. Express on a VPS).
+   * Default / unset = production uses same origin as the site (Vercel serverless `api/`).
+   */
+  readonly VITE_API_MODE?: string;
+  /** Optional: override origin for `/api/agent/*` when `VITE_API_MODE=external`. */
   readonly VITE_AGENT_API_URL?: string;
   readonly VITE_SOLANA_RPC_URL?: string;
   readonly VITE_DEV_API_PROXY?: string;
