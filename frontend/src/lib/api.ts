@@ -32,10 +32,10 @@ export function getAgentApiBase(): string {
 
 /**
  * Shared API base URL for all `/api/*` requests (market, Jupiter, wallet, agent, RPC proxy, …).
- * - **Production (Vercel):** set `VITE_API_URL` to the Express API origin on your VPS (see docs/DEPLOYMENT.md).
- * - **Local dev:** leave unset so the Vite proxy forwards `/api` to the backend on port 3000.
- * - **Production without `VITE_API_URL`:** falls back to `window.location.origin` (same-origin API). Use that only
- *   if the API is actually served from the same host as the SPA (not the default static Vercel setup).
+ * - **Production (Vercel, same-origin API):** leave `VITE_API_URL` **unset** so requests go to the site origin
+ *   (serverless `api/` routes). See docs/DEPLOYMENT.md.
+ * - **Production (API on VPS only):** set `VITE_API_URL` to the Express origin.
+ * - **Local dev:** leave unset; Vite proxies `/api` to port 3000.
  */
 export function getApiBase(): string {
   if (typeof window === "undefined" || !window.location?.origin) {

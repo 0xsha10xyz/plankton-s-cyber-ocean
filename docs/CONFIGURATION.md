@@ -169,11 +169,13 @@ Follow these steps so the treasury wallet, facilitator, and resource URL stay co
 
 ---
 
-## Production split: static UI on Vercel, API on VPS
+## Production: Vercel same-origin API vs VPS
 
-The recommended layout is **no serverless API on Vercel**: the SPA is static; **all** `/api/*` is served by Express on a VPS. Set **`VITE_API_URL`** on Vercel to that API origin, and keep API keys (Birdeye, Jupiter, LLM, RPC, Redis, …) on the **VPS** `backend/` environment only.
+For **Swap / charts / Jupiter / `POST /api/rpc`** on the **same host as the site**, deploy the root **`api/`** folder on Vercel and **do not set `VITE_API_URL`**. Put **`JUPITER_API_KEY`**, **`BIRDEYE_API_KEY`**, **`SOLANA_RPC_URL`**, etc. in **Vercel** env.
 
-See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for ownership, env vars, and CORS. Optional **`VITE_AGENT_API_URL`** is only if the agent is on a **different** host than the rest of the API (unusual).
+To send **all** `/api/*` to Express on a VPS instead, set **`VITE_API_URL`** to that API origin and run **`backend/`** with **`CORS_ORIGIN`**.
+
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for modes and optional **`VITE_AGENT_API_URL`**.
 
 ---
 

@@ -22,6 +22,7 @@ backend/data
 !.env.example
 !frontend/.env.example
 !backend/.env.example
+!api/.env.example
 *.pem
 *.key
 *secret*

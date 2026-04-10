@@ -1,50 +1,72 @@
-# Deployment architecture (Vercel + VPS)
+# Deployment architecture
 
-This document defines **who owns what** so there is **no duplicate API implementation** between platforms.
+Two supported setups:
 
-## Summary
+1. **Vercel-first (Swap, charts, market, wallet balances)** — same-origin `/api/*` via **serverless** in the root `api/` folder. **Do not set `VITE_API_URL`** in the Vercel build so the browser calls `https://your-site.com/api/...`.
+2. **Optional VPS** — run **`backend/`** (Express) for heavy features: **agent chat**, x402, long-running behavior, or if you prefer a single Node process for everything.
 
-| Layer | Owner | Responsibility |
-|--------|--------|----------------|
-| **Web UI (static assets)** | **Vercel** | Build `frontend/` → SPA in `dist/`. CDN, HTTPS, preview deployments. **No Node API on Vercel.** |
-| **HTTP API (`/api/*`)** | **VPS** (or any Node host) | Single **Express** app in `backend/`: market, Jupiter proxy, wallet, stats, agent chat, x402, RPC proxy, health. **One codebase, one process model (e.g. PM2).** |
-| **Secrets & LLM keys** | **VPS** | `backend/.env` (or host env): `GROQ_API_KEY`, `SOLANA_RPC_URL`, x402 treasury, etc. |
-| **Public URLs in the browser** | **Vercel build env** | `VITE_API_URL` = origin of the API (your VPS HTTPS URL). Optional `VITE_AGENT_API_URL` only if agent is on a **different** host than `VITE_API_URL`. |
+You can combine them: **Vercel** for the UI + market/Jupiter/RPC, **VPS** only for agent by setting **`VITE_AGENT_API_URL`** to the VPS API origin while leaving **`VITE_API_URL` unset** (see below).
 
-## Why not duplicate API on Vercel?
+---
 
-- **Single source of truth:** All routes live in `backend/src` only. Fixes and features ship once.
-- **Hobby limits:** Vercel counts each `api/**/*.ts` file as a separate serverless function; duplicate routes also duplicate maintenance.
-- **Agent / x402 / long-lived behavior:** A VPS (or similar) is the right place for consistent CORS, payment headers, and operational logging—not split across many serverless entrypoints.
+## What runs where
 
-## Vercel project settings
+| Concern | Vercel (`api/*.ts` serverless) | VPS (`backend/` Express) |
+|--------|--------------------------------|---------------------------|
+| **Static SPA** | Yes (`dist/` from `frontend/`) | No |
+| **`POST /api/rpc`** (browser → Solana JSON-RPC proxy) | Yes — **required** for Swap/wallet without public-RPC 403 | Also available if you point the UI at VPS |
+| **Jupiter** quote/swap | Yes (`api/[[...path]].ts`) | Yes (`backend`) |
+| **Market** (price, OHLCV, token-info, …) | Yes (dedicated `api/market/*.ts`) | Yes |
+| **Wallet balances** | Yes (`api/wallet/balances.ts`) | Yes |
+| **Agent chat / x402** | Possible on Vercel with secrets, but often easier on **VPS** | Typical home for LLM keys + x402 treasury |
 
-- **Root directory:** Repository root (where `vercel.json` lives).
-- **Build command:** `npm run build && npm run vercel-build` (frontend build + copy static output to `dist/`).
-- **Output directory:** `dist`
-- **Environment variables (Vercel):**  
-  - **`VITE_API_URL`**: `https://api.yourdomain.com` (your Express base URL, **no trailing slash**). **Required** for production so the SPA calls the VPS API instead of same-origin `/api/*` (which does not exist on static-only Vercel).  
-  - **`VITE_AGENT_API_URL`**: Optional; set only if the agent is hosted separately. If unset, agent calls use the same base as `getAgentApiBase()` (see `frontend/src/lib/api.ts`).  
-  - **Do not** rely on `BIRDEYE_API_KEY` / `JUPITER_API_KEY` on Vercel for API behavior—those belong on the **VPS** for `backend/`.
+**No duplicate requirement:** In **Vercel-only API mode**, you deploy `api/` and **omit** `VITE_API_URL`. The Express `backend/` is not used for those routes in the browser. If you later point **`VITE_API_URL`** at a VPS, the UI will use the VPS for `/api/*` instead — then keep serverless `api/` only if you still want fallback or previews; for clarity pick **one** API origin per environment.
 
-## VPS (Express) settings
+---
 
-- Run `backend` (e.g. `node dist/index.js` or PM2) behind HTTPS (nginx, Caddy, etc.).
-- Set **`CORS_ORIGIN`** to your Vercel site origin(s), e.g. `https://your-app.vercel.app,https://yourdomain.com`.
-- Expose the same routes documented in `backend/README.md` (`/api/health`, `/api/market/*`, `/api/agent/*`, …).
+## Mode A — Swap and market on Vercel (same origin)
+
+1. **Vercel → Environment variables**  
+   - **Do not set `VITE_API_URL`** (or remove it so production builds use the site origin).  
+   - Set API secrets used by serverless handlers, e.g. **`JUPITER_API_KEY`**, **`BIRDEYE_API_KEY`**, **`SOLANA_RPC_URL`** (used by `/api/rpc` upstream and wallet routes).  
+2. **Redeploy** after changing env.  
+3. Confirm in the browser **Network** tab: requests go to **`https://<your-domain>/api/...`**, not a separate API host.
+
+This restores **`/api/rpc`** and fixes **404** on `rpc` when the static-only deployment had no API routes.
+
+---
+
+## Mode B — Full API on VPS
+
+1. Set **`VITE_API_URL`** = `https://api.yourdomain.com` (Express origin, no trailing slash).  
+2. Run **`backend/`** on the VPS with **`CORS_ORIGIN`** including your Vercel site.  
+3. Serverless `api/` on Vercel is **not** used for those requests when the UI targets the VPS.
+
+---
+
+## Mode C — Hybrid (Vercel market + VPS agent only)
+
+1. Leave **`VITE_API_URL` unset** (same-origin for Swap/market).  
+2. Set **`VITE_AGENT_API_URL`** = VPS origin for **`POST /api/agent/chat`** (and related agent routes).  
+3. On the VPS **`CORS_ORIGIN`**, allow your Vercel frontend origin.
+
+---
+
+## Hobby plan (Vercel)
+
+Each file under `api/**/*.ts` is a separate serverless function. Stay **within your plan’s function limit** (e.g. 12 on Hobby). Avoid adding redundant handlers that duplicate `api/[[...path]].ts`.
+
+---
 
 ## Local development
 
-- **Frontend:** `npm run dev` (Vite, port 8080 by default).  
-- **Backend:** `npm run dev:backend` (Express, port 3000).  
-- Leave **`VITE_API_URL` unset** so the Vite dev server proxies `/api` to the backend (see `frontend/vite.config.ts`), matching production paths without duplicate hosts.
+- **Frontend:** `npm run dev` (Vite).  
+- **Backend (optional):** `npm run dev:backend` — Vite proxies `/api` to `http://127.0.0.1:3000` when **`VITE_API_URL` is unset**, so you develop against Express locally while paths stay `/api/...`.
 
-## What was removed from this repo
-
-Legacy **Vercel serverless** handlers under the root `api/` folder duplicated logic from `backend/` and are **removed**. Production API is **only** the Express app.
+---
 
 ## Related docs
 
-- `backend/README.md` — API routes and backend environment variables.  
-- `docs/deploy-vercel.md` — Vercel-focused checklist (static app + env).  
-- `frontend/.env.example` — `VITE_*` variables explained.
+- `docs/deploy-vercel.md` — env checklist for Vercel.  
+- `backend/README.md` — Express API when using VPS.  
+- `frontend/.env.example` — `VITE_*` variables.

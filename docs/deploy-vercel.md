@@ -1,51 +1,51 @@
-# Deploy the web app to Vercel (static frontend only)
+# Deploy to Vercel (SPA + `/api/*` serverless)
 
-The Vercel deployment hosts **only the built React app** (HTML, JS, CSS). **All `/api/*` traffic is served by your VPS** (Express `backend/`). See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for the full split and why there is no duplicate API on Vercel.
-
----
-
-## 1. Prerequisites
-
-- A running **HTTPS API** on a VPS (or other host) with the Express app from `backend/`.
-- You know that API’s public origin, e.g. `https://api.example.com`.
+The default setup keeps **Swap, charts, Jupiter, and `POST /api/rpc`** on **the same origin** as the site (Vercel serverless under `api/`). See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for modes (Vercel-only vs VPS vs hybrid).
 
 ---
 
-## 2. Import the repo in Vercel
+## 1. Import the repo
 
-1. Import the GitHub repository.
-2. **Root directory:** `.` (repository root).
-3. Confirm **Build Command** and **Output Directory** match root `vercel.json` (frontend build + `vercel-build` → output `dist/`).
-
----
-
-## 3. Required environment variables (Vercel)
-
-| Name | Required | Description |
-|------|----------|-------------|
-| **`VITE_API_URL`** | **Yes** (production) | Full origin of your Express API, e.g. `https://api.example.com`. No trailing slash. Without this, the SPA will call same-origin `/api/*` on Vercel, which does not exist in the static-only setup. |
-| **`VITE_AGENT_API_URL`** | No | Only if agent chat is on a **different** host than `VITE_API_URL`. Otherwise omit. |
-
-Secrets for Birdeye, Jupiter, LLM, RPC, Redis, etc. belong on the **VPS** `backend/` environment—not on Vercel.
+- **Root directory:** repository root (where `vercel.json` lives).  
+- **Build:** `npm run build && npm run vercel-build` (see `vercel.json`).  
+- **Output directory:** `dist`
 
 ---
 
-## 4. CORS on the VPS
+## 2. Environment variables (Vercel)
 
-Set **`CORS_ORIGIN`** on the API server to include your Vercel URL(s), e.g. `https://your-project.vercel.app`.
+### Same-origin API (recommended for Swap — **do not set `VITE_API_URL`**)
+
+| Variable | Notes |
+|----------|--------|
+| **`JUPITER_API_KEY`** | Required for reliable Jupiter quote/swap (`x-api-key`). |
+| **`BIRDEYE_API_KEY`** | Recommended for charts and market endpoints. |
+| **`SOLANA_RPC_URL`** | Used by `/api/rpc` proxy and wallet routes (Helius or similar). |
+| **`KV_REST_*` / Redis** | Optional — stats / features that need persistence. |
+
+Secrets are read **only** by Vercel serverless functions — not exposed to the browser.
+
+### If you point the entire UI at a VPS API instead
+
+Set **`VITE_API_URL`** = `https://api.example.com` (no trailing slash). Then the browser will **not** use same-origin `api/` for `/api/*`. Use one strategy per environment to avoid confusion.
+
+### Optional: agent on VPS only
+
+Leave **`VITE_API_URL` unset** and set **`VITE_AGENT_API_URL`** = your Express origin so only agent calls go cross-origin. Configure **`CORS_ORIGIN`** on the VPS.
 
 ---
 
-## 5. After deploy
+## 3. After deploy
 
-- Open the Vercel URL and verify the UI loads.
-- In the browser devtools **Network** tab, API calls should go to **`VITE_API_URL`**, not to the Vercel domain for `/api/*`.
+- Open `https://<project>.vercel.app/api/health` if exposed via `api/[[...path]].ts`, or test **`/api/rpc`** with a POST (JSON-RPC).  
+- In the app **Network** tab, **`rpc`** must return **200**, not **404**.
 
 ---
 
-## 6. Troubleshooting
+## 4. Troubleshooting
 
-- **404 on `/api/...` when calling the Vercel domain:** Expected for static-only hosting. Set **`VITE_API_URL`** to your API origin and redeploy.
-- **CORS errors:** Add your exact Vercel preview/production origin to **`CORS_ORIGIN`** on the API.
-
-For local development, leave **`VITE_API_URL`** unset and use the Vite proxy to `http://127.0.0.1:3000` (see `frontend/vite.config.ts`).
+| Issue | Fix |
+|-------|-----|
+| **404 on `/api/rpc`** | Ensure the `api/` folder is deployed (root project). Do not use a **static-only** deploy that omits `api/`. **`VITE_API_URL` must be unset** for same-origin API. |
+| **Swap quote fails** | Set **`JUPITER_API_KEY`** on Vercel. |
+| **CORS** (hybrid agent) | Add the Vercel URL to **`CORS_ORIGIN`** on the VPS. |
