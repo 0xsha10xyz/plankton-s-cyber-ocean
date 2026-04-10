@@ -11,6 +11,7 @@ import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
 import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
 import { useAccount } from "@/contexts/AccountContext";
 import { COMMON_MINTS } from "@/lib/jupiter";
+import { resolveSendBalanceToken } from "@/lib/resolveSendBalanceToken";
 import { getFallbackRpcs, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 import { Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 
@@ -882,11 +883,7 @@ export default function AgentChatPage() {
       const amountInput = parts[1].trim();
       if (!amountInput) throw new Error("Amount is missing");
 
-      let tokenEntry = pendingSendBalance.tokens.find((t) => t.symbol.toLowerCase() === tokenSymbolInput.toLowerCase());
-      if (!tokenEntry) {
-        const maybeMint = detectBase58(tokenSymbolInput)[0];
-        if (maybeMint) tokenEntry = pendingSendBalance.tokens.find((t) => t.mint === maybeMint);
-      }
+      const tokenEntry = resolveSendBalanceToken(pendingSendBalance.tokens, tokenSymbolInput);
       if (!tokenEntry) throw new Error(`Unknown token "${tokenSymbolInput}". Use the token shown in Balance details.`);
 
       const amountRaw = uiAmountToRawBigInt(amountInput, tokenEntry.decimals);
