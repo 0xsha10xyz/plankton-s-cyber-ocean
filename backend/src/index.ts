@@ -1,5 +1,8 @@
-import "dotenv/config";
+import dotenv from "dotenv";
 import express from "express";
+
+/** Load `.env` from cwd and override stale vars (e.g. PM2 may keep an old `X402_TREASURY_ADDRESS` after you remove it from `.env`). */
+dotenv.config({ override: true });
 import cors from "cors";
 import { healthRouter } from "./routes/health.js";
 import { statsRouter } from "./routes/stats.js";
