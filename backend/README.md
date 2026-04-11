@@ -15,7 +15,7 @@ cp .env.example .env   # optional: edit .env for PORT, CORS_ORIGIN
 | Command       | Description                |
 | ------------- | -------------------------- |
 | `npm run dev` | Start dev server (tsx watch) |
-| `npm run build` | Compile TypeScript to `dist/` and copy `src/data/*.json` into `dist/data/` (agent language detection) |
+| `npm run build` | Compile TypeScript to `dist/` and copy `src/data/*.json` into `dist/data/` |
 | `npm run start` | Run production build       |
 | `npm run lint`  | Type-check only            |
 
@@ -30,9 +30,9 @@ Default: **http://localhost:3000**. Set `PORT` in `.env` to change.
 
 ### Agent chat (`POST /api/agent/chat`)
 
-Requires **at least one** of: **`GROQ_API_KEY`**, **`ANTHROPIC_API_KEY`**, **`OPENAI_API_KEY`**. The server tries providers in order: **Anthropic → Groq → OpenAI** (first success wins). **Groq** is OpenAI-compatible (`api.groq.com`), fast, and works well with **`GROQ_API_KEY`** alone for development or VPS deployments.
+Requires **at least one** of: **`ANTHROPIC_API_KEY`** (Claude on VPS), **`GROQ_API_KEY`**, or **`OPENAI_API_KEY`**. Order: **Anthropic → Groq → OpenAI** (first success wins). Set **`AGENT_ANTHROPIC_ONLY=1`** to use **only** Claude (no fallback). Default Claude model: **`claude-sonnet-4-6`** (`ANTHROPIC_AGENT_MODEL`).
 
-See **`../docs/CONFIGURATION.md`** (section *Agent chat — Groq and other LLMs*) and **`../docs/backend-api.md`** for request/response shape and env vars.
+See **`../docs/CONFIGURATION.md`** (Agent chat section) and **`../docs/backend-api.md`** for request/response shape and env vars.
 
 ## Frontend
 

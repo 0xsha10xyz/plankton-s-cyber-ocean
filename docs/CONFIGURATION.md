@@ -63,17 +63,21 @@ Open **https://planktonomous.dev** and check: Dashboard, Connect Wallet, Swap (c
 
 ---
 
-## Agent chat — Groq and other LLMs
+## Agent chat — Claude (Anthropic), Groq, and OpenAI
 
-The **Plankton Agent** chat in the app calls the backend at **`POST /api/agent/chat`**. The server needs **at least one** LLM API key; otherwise the endpoint returns **503** (`LLM_DISABLED`).
+The **Plankton Agent** chat calls the backend at **`POST /api/agent/chat`**. The server needs **at least one** LLM API key; otherwise the endpoint returns **503** (`LLM_DISABLED`).
 
 ### Provider order (first success wins)
 
-1. **Anthropic** — if `ANTHROPIC_API_KEY` is set  
+1. **Anthropic (Claude)** — if `ANTHROPIC_API_KEY` is set  
 2. **Groq** — if `GROQ_API_KEY` is set (OpenAI-compatible API, fast, generous free tier)  
 3. **OpenAI** — if `OPENAI_API_KEY` is set  
 
-So **Groq is the default “budget” path** when you do not set Anthropic: add **`GROQ_API_KEY`** alone on a VPS or self-hosted backend for working chat without OpenAI/Anthropic costs.
+**VPS + Claude:** Put **`ANTHROPIC_API_KEY`** in **`backend/.env`** (from [Anthropic Console](https://console.anthropic.com/)). The default model is **`claude-sonnet-4-6`** (override with **`ANTHROPIC_AGENT_MODEL`**). Older IDs such as `claude-3-5-haiku-20241022` are **retired** and will fail.
+
+**Claude only (no fallback):** Set **`AGENT_ANTHROPIC_ONLY=1`** so failed or missing Claude requests are **not** retried with Groq/OpenAI. Requires **`ANTHROPIC_API_KEY`**.
+
+**Budget path without Anthropic:** Add **`GROQ_API_KEY`** alone on a VPS for working chat without Claude/OpenAI costs.
 
 ### Groq setup
 
@@ -89,9 +93,9 @@ So **Groq is the default “budget” path** when you do not set Anthropic: add 
 3. Optionally set **`ANTHROPIC_API_KEY`** and/or **`OPENAI_API_KEY`** if you want those providers in the fallback chain (see `backend/.env.example` for model overrides).  
 4. Restart the backend after changing env vars.
 
-The implementation uses Groq’s **OpenAI-compatible** endpoint (`https://api.groq.com/openai/v1/chat/completions`). Replies follow the **user’s last message language** (server-side hint in `backend/src/routes/agent.ts`).
+The implementation uses Groq’s **OpenAI-compatible** endpoint (`https://api.groq.com/openai/v1/chat/completions`). Agent JSON replies (**insight**, **actions**) are **English** (enforced in `backend/src/routes/agent.ts`).
 
-**Production note:** If the frontend is on Vercel and the **agent** must hit a **VPS** while Swap stays on Vercel, set **`VITE_AGENT_API_URL`** to the VPS origin (HTTPS, no trailing path). If **all** API routes should use one host, use **`VITE_API_URL`** instead.
+**Production note:** If the frontend is on Vercel and the **agent** must hit a **VPS** while Swap stays on Vercel, set **`VITE_API_MODE=external`** and **`VITE_AGENT_API_URL`** to the VPS API origin (HTTPS, no trailing path). If **all** API routes should use one host, set **`VITE_API_URL`** to that origin instead.
 
 ### Agent chat — x402 (optional, USDC on Solana)
 

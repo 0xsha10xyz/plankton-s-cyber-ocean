@@ -150,8 +150,9 @@ Powers the in-app agent chat. The backend calls LLMs in order: **Anthropic → G
 | `SOLANA_RPC_URL` | Solana RPC for wallet balances (and Jupiter proxy). If unset, uses public RPCs (Ankr, PublicNode, mainnet-beta). | Optional |
 | `GROQ_API_KEY` | **[Groq](https://console.groq.com)** OpenAI-compatible API for `POST /api/agent/chat` | Optional; required for chat unless Anthropic or OpenAI is set |
 | `GROQ_AGENT_MODEL` | Groq chat model id | `llama-3.3-70b-versatile` |
-| `ANTHROPIC_API_KEY` | Claude — tried **before** Groq if set | Optional |
-| `ANTHROPIC_AGENT_MODEL` | Anthropic model id | See `backend/.env.example` |
+| `ANTHROPIC_API_KEY` | Claude (Messages API) — tried **before** Groq if set | Optional |
+| `ANTHROPIC_AGENT_MODEL` | Anthropic model id (default `claude-sonnet-4-6`) | See `backend/.env.example` |
+| `AGENT_ANTHROPIC_ONLY` | If `1` / `true`, do not fall back to Groq/OpenAI | Optional |
 | `OPENAI_API_KEY` | OpenAI — tried **after** Groq if set | Optional |
 | `OPENAI_AGENT_MODEL` | OpenAI model id | See `backend/.env.example` |
 

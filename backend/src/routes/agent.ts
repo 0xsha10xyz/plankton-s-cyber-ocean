@@ -186,7 +186,8 @@ async function chatAnthropic(
   userBlock: string,
   signal: AbortSignal
 ): Promise<{ ok: true; raw: string } | { ok: false; status: number; msg: string; code: string }> {
-  const model = process.env.ANTHROPIC_AGENT_MODEL?.trim() || "claude-3-5-haiku-20241022";
+  // Default: current Sonnet (Haiku 3.5 / 3.5 Haiku ids were retired by Anthropic).
+  const model = process.env.ANTHROPIC_AGENT_MODEL?.trim() || "claude-sonnet-4-6";
   const system = `${CHAT_SYSTEM_PROMPT}\n\nReturn only a single JSON object matching the schema. No markdown, no code fences.`;
   const messages = buildAnthropicMessages(history, userBlock);
 
@@ -318,15 +319,31 @@ async function chatGroq(
   return { ok: true, raw };
 }
 
-/** POST /api/agent/chat — Anthropic → Groq → OpenAI (first success wins). */
+function isTruthyEnv(name: string): boolean {
+  const v = process.env[name]?.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
+/** POST /api/agent/chat — Anthropic → Groq → OpenAI (first success wins), unless AGENT_ANTHROPIC_ONLY is set. */
 agentRouter.post("/chat", async (req, res) => {
   const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
   const groqKey = process.env.GROQ_API_KEY?.trim();
   const openaiKey = process.env.OPENAI_API_KEY?.trim();
+  const anthropicOnly = isTruthyEnv("AGENT_ANTHROPIC_ONLY");
+
+  if (anthropicOnly && !anthropicKey) {
+    res.status(503).json({
+      error:
+        "AGENT_ANTHROPIC_ONLY is set but ANTHROPIC_API_KEY is missing. Add your Claude API key from console.anthropic.com.",
+      code: "LLM_DISABLED",
+    });
+    return;
+  }
+
   if (!anthropicKey && !groqKey && !openaiKey) {
     res.status(503).json({
       error:
-        "No LLM configured. Set GROQ_API_KEY (free tier), and/or ANTHROPIC_API_KEY, OPENAI_API_KEY on the server.",
+        "No LLM configured. On a VPS, set ANTHROPIC_API_KEY for Claude (recommended), and/or GROQ_API_KEY, OPENAI_API_KEY.",
       code: "LLM_DISABLED",
     });
     return;
@@ -380,13 +397,13 @@ agentRouter.post("/chat", async (req, res) => {
       else lastErr = { status: a.status, msg: a.msg, code: a.code };
     }
 
-    if (!raw && groqKey) {
+    if (!raw && !anthropicOnly && groqKey) {
       const g = await chatGroq(groqKey, history, userBlock, ac.signal);
       if (g.ok) raw = g.raw;
       else if (!lastErr) lastErr = { status: g.status, msg: g.msg, code: g.code };
     }
 
-    if (!raw && openaiKey) {
+    if (!raw && !anthropicOnly && openaiKey) {
       const o = await chatOpenAI(openaiKey, history, userBlock, ac.signal);
       if (o.ok) raw = o.raw;
       else if (!lastErr) lastErr = { status: o.status, msg: o.msg, code: o.code };
