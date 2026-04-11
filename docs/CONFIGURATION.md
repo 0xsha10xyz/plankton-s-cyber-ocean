@@ -118,7 +118,7 @@ Restart the API (`pm2 restart <name>` or your process manager). Test from the se
 
 - **Option B — Browser stays same-origin; Vercel proxies chat to the VPS**  
   **Production:** `AGENT_BACKEND_ORIGIN` = `https://your-api-host.example.com` (HTTPS origin only, no path).  
-  The serverless route **`api/agent/chat.ts`** forwards **`POST /api/agent/chat`** to your VPS. **`GET /api/agent/config`** and **`GET /api/agent/logs`** still hit Vercel unless you also set **`VITE_AGENT_API_URL`** to the VPS (use Option A if you need agent **config** / x402 to match the VPS exactly).
+  The **`api/agent/[segment].ts`** handler forwards **`POST /api/agent/chat`** to your VPS when **`AGENT_BACKEND_ORIGIN`** is set (same file as logs/status/config to stay within Vercel Hobby function limits). **`GET /api/agent/config`** and **`GET /api/agent/logs`** still hit Vercel unless you also set **`VITE_AGENT_API_URL`** to the VPS (use Option A if you need agent **config** / x402 to match the VPS exactly).
 
 **3 — Redeploy** the Vercel project after saving variables (**Deployments → Redeploy**).
 

@@ -1,11 +1,12 @@
 /**
  * GET /api/agent/logs | /api/agent/status | /api/agent/config
+ * POST /api/agent/chat — optional proxy to VPS when AGENT_BACKEND_ORIGIN is set (Hobby plan: one file, no extra function).
  */
 import type { IncomingMessage, ServerResponse } from "http";
 
 export const config = {
   runtime: "nodejs",
-  maxDuration: 10,
+  maxDuration: 60,
 };
 
 type LogLine = { id: string; time: string; message: string; type?: string };
@@ -123,12 +124,80 @@ async function handleLogs(req: IncomingMessage, res: ServerResponse): Promise<vo
   );
 }
 
+function readRequestBody(req: IncomingMessage): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (c: Buffer | string) => {
+      chunks.push(typeof c === "string" ? Buffer.from(c) : c);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+function getAgentBackendOrigin(): string | null {
+  const raw = process.env.AGENT_BACKEND_ORIGIN?.trim() || process.env.VPS_AGENT_API_ORIGIN?.trim();
+  if (!raw) return null;
+  return raw.replace(/\/$/, "");
+}
+
+/** POST /api/agent/chat → Express (Claude) on VPS when AGENT_BACKEND_ORIGIN is set. */
+async function handleChatProxy(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const origin = getAgentBackendOrigin();
+  if (!origin) {
+    res.statusCode = 503;
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "private, no-store");
+    res.end(
+      JSON.stringify({
+        error:
+          "Agent chat backend is not configured. Set AGENT_BACKEND_ORIGIN on Vercel to your VPS API origin (HTTPS, no path), or set VITE_AGENT_API_URL in the frontend.",
+        code: "AGENT_BACKEND_NOT_CONFIGURED",
+      })
+    );
+    return;
+  }
+
+  const url = `${origin}/api/agent/chat`;
+  const buf = await readRequestBody(req);
+  const headers: Record<string, string> = { Accept: "application/json" };
+  const ct = req.headers["content-type"];
+  if (ct) headers["Content-Type"] = typeof ct === "string" ? ct : ct[0] ?? "application/json";
+  for (const name of ["payment-signature", "payment-response"]) {
+    const v = req.headers[name];
+    if (v && typeof v === "string") headers[name] = v;
+    else if (Array.isArray(v) && v[0]) headers[name] = v[0];
+  }
+
+  try {
+    const upstream = await fetch(url, {
+      method: "POST",
+      headers,
+      body: buf.length ? new Uint8Array(buf) : undefined,
+    });
+    const text = await upstream.text();
+    res.statusCode = upstream.status;
+    const uct = upstream.headers.get("content-type");
+    if (uct) res.setHeader("Content-Type", uct);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.end(text);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    sendJson(res, 502, { error: `Upstream agent unreachable: ${msg}`, code: "AGENT_PROXY_ERROR" });
+  }
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = (req.url || "/").split("#")[0];
   const pathOnly = url.split("?")[0] || "/";
   const parts = pathOnly.replace(/\/+$/, "").split("/").filter(Boolean);
   const segment = parts[parts.length - 1] || "";
   const method = (req.method || "GET").toUpperCase();
+
+  if (segment === "chat" && method === "POST") {
+    await handleChatProxy(req, res);
+    return;
+  }
 
   if (segment === "status" && method === "GET") {
     sendJson(res, 200, { active: false, riskLevel: 0, profit24h: 0, totalPnL: 0 });
