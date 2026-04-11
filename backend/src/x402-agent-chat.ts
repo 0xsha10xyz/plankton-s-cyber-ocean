@@ -39,8 +39,13 @@ function usdcAssetForNetwork(network: "solana" | "solana-devnet"): TokenAsset {
 
 let handler: X402PaymentHandler | null = null;
 
-/** When `X402_TREASURY_ADDRESS` is set, agent chat requires x402 USDC payment per request. */
+/**
+ * When `X402_TREASURY_ADDRESS` is set, agent chat requires x402 USDC payment per request.
+ * Set `DISABLE_AGENT_CHAT_X402=1` to force free chat even if a treasury address is still in the environment.
+ */
 export function isAgentChatX402Enabled(): boolean {
+  const off = process.env.DISABLE_AGENT_CHAT_X402?.trim().toLowerCase();
+  if (off === "1" || off === "true" || off === "yes") return false;
   return Boolean(process.env.X402_TREASURY_ADDRESS?.trim());
 }
 

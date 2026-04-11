@@ -1,8 +1,11 @@
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import express from "express";
 
-/** Load `.env` from cwd and override stale vars (e.g. PM2 may keep an old `X402_TREASURY_ADDRESS` after you remove it from `.env`). */
-dotenv.config({ override: true });
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+/** Always load `backend/.env` (not cwd) so PM2/nginx cwd does not skip or shadow it. */
+dotenv.config({ path: path.join(__dirname, "../.env"), override: true });
 import cors from "cors";
 import { healthRouter } from "./routes/health.js";
 import { statsRouter } from "./routes/stats.js";
