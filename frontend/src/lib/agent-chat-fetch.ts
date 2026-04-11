@@ -63,6 +63,12 @@ export function toastIfAgentChatFailed(res: Response): void {
     toast.error("Agent chat is temporarily unavailable. Try again shortly.");
     return;
   }
+  if (status === 404) {
+    toast.error(
+      "Agent chat endpoint not found. If the LLM runs on a VPS, set VITE_AGENT_API_URL to that API origin on Vercel, or set AGENT_BACKEND_ORIGIN on Vercel to proxy /api/agent/chat to your VPS."
+    );
+    return;
+  }
   if (status === 401 || status === 403) {
     toast.error("Agent chat was rejected. Check your wallet connection and try again.");
     return;

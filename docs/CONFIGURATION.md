@@ -95,7 +95,34 @@ The **Plankton Agent** chat calls the backend at **`POST /api/agent/chat`**. The
 
 The implementation uses Groq’s **OpenAI-compatible** endpoint (`https://api.groq.com/openai/v1/chat/completions`). Agent JSON replies (**insight**, **actions**) are **English** (enforced in `backend/src/routes/agent.ts`).
 
-**Production note:** If the frontend is on Vercel and the **agent** must hit a **VPS** while Swap stays on Vercel, set **`VITE_API_MODE=external`** and **`VITE_AGENT_API_URL`** to the VPS API origin (HTTPS, no trailing path). If **all** API routes should use one host, set **`VITE_API_URL`** to that origin instead.
+### Vercel site + VPS Agent (Claude) — setup order (copy/paste)
+
+Use this when **`POST /api/agent/chat`** must run on **Express on your VPS** (where **`ANTHROPIC_API_KEY`** lives), while the SPA stays on Vercel.
+
+**1 — VPS (`backend/.env` on the server)**
+
+```env
+PORT=3000
+ANTHROPIC_API_KEY=your_anthropic_key
+CORS_ORIGIN=https://planktonomous.dev,https://www.planktonomous.dev
+```
+
+Restart the API (`pm2 restart <name>` or your process manager). Test from the server: `curl -sS -X POST http://127.0.0.1:3000/api/agent/chat -H "Content-Type: application/json" -d "{\"message\":\"hi\"}"` — you should get JSON with **`insight`** (not 404).
+
+**2 — Vercel (pick one)**
+
+- **Option A — Browser calls the VPS for agent routes**  
+  **Project → Settings → Environment Variables → Production:**  
+  `VITE_AGENT_API_URL` = `https://your-api-host.example.com` (HTTPS origin only, **no** `/api` path).  
+  The app sends **`POST {VITE_AGENT_API_URL}/api/agent/chat`**. Your VPS must allow **CORS** for your Vercel domain (see **`CORS_ORIGIN`** above).
+
+- **Option B — Browser stays same-origin; Vercel proxies chat to the VPS**  
+  **Production:** `AGENT_BACKEND_ORIGIN` = `https://your-api-host.example.com` (HTTPS origin only, no path).  
+  The serverless route **`api/agent/chat.ts`** forwards **`POST /api/agent/chat`** to your VPS. **`GET /api/agent/config`** and **`GET /api/agent/logs`** still hit Vercel unless you also set **`VITE_AGENT_API_URL`** to the VPS (use Option A if you need agent **config** / x402 to match the VPS exactly).
+
+**3 — Redeploy** the Vercel project after saving variables (**Deployments → Redeploy**).
+
+If **all** `/api/*` traffic should go to the VPS (not only agent), set **`VITE_API_MODE=external`** and **`VITE_API_URL`** to that API origin instead of Option A/B.
 
 ### Agent chat — x402 (optional, USDC on Solana)
 

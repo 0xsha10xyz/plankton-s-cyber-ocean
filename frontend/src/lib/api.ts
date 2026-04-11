@@ -15,8 +15,8 @@ function isExternalApiMode(): boolean {
 
 /**
  * Base URL for agent routes (`/api/agent/chat`, `/api/agent/status`, `/api/agent/config`).
- * - Default: same as `getApiBase()` (Vercel monolith).
- * - If `VITE_AGENT_API_URL` is set **and** `VITE_API_MODE=external`, use that host (split deploy).
+ * - Default: same as `getApiBase()` (same-origin Vercel `api/` or dev proxy).
+ * - If `VITE_AGENT_API_URL` is set, always use it (Claude / Express on a VPS), except when it points to localhost in production.
  */
 export function getAgentApiBase(): string {
   const raw =
@@ -28,14 +28,12 @@ export function getAgentApiBase(): string {
   if (typeof window === "undefined" || !window.location?.origin) {
     return normalizeEnvApiBase(raw);
   }
+
   const origin = window.location.origin;
   const isLocal = origin.includes("localhost") || origin.includes("127.0.0.1");
   const isProduction = /^https:\/\//.test(origin) && !isLocal;
-  if (isProduction && !isExternalApiMode()) {
-    return getApiBase();
-  }
-
   const agentBase = normalizeEnvApiBase(raw);
+
   if (isProduction && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(agentBase)) {
     return getApiBase();
   }
