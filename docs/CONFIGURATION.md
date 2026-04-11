@@ -93,7 +93,7 @@ The **Plankton Agent** chat calls the backend at **`POST /api/agent/chat`**. The
 3. Optionally set **`ANTHROPIC_API_KEY`** and/or **`OPENAI_API_KEY`** if you want those providers in the fallback chain (see `backend/.env.example` for model overrides).  
 4. Restart the backend after changing env vars.
 
-The implementation uses Groq’s **OpenAI-compatible** endpoint (`https://api.groq.com/openai/v1/chat/completions`). Agent JSON replies (**insight**, **actions**) are **English** (enforced in `backend/src/routes/agent.ts`).
+The implementation uses Groq’s **OpenAI-compatible** endpoint (`https://api.groq.com/openai/v1/chat/completions`). Agent JSON replies (**insight**, **actions**) follow the **user’s latest message language** when possible (see `backend/src/routes/agent.ts` and [Language & localization](./language-and-localization.md)).
 
 ### Vercel site + VPS Agent (Claude) — setup order (copy/paste)
 

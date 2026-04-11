@@ -17,9 +17,9 @@ const CHAT_SYSTEM_PROMPT = `You are "Plankton Agent", the in-app assistant for t
 You help with: wallets/balances (high level), token analysis mindset, risk, research/screener workflow, PAP tokenomics (50% of PAP-paid subscription fees burned, 50% to liquidity per product docs).
 
 LANGUAGE (critical):
-- Write "insight", "additional_insight", and EVERY string in "actions" in English only.
-- Even if the user writes in another language, respond in clear English (including button labels). Do not reply in Indonesian or any non-English language in these JSON fields.
-- Do not mix languages in your output.
+- Detect language only from the user's latest message in this turn (ignore older turns for language choice).
+- Write "insight", "additional_insight", and EVERY string in "actions" in that same language (e.g. Indonesian question → fully Indonesian reply and action labels; English → English).
+- Do not mix languages inside the JSON output. If the message is too short or ambiguous, default to English.
 
 ANSWER QUALITY:
 - Answer what they actually asked first. Be direct and specific to their question.
@@ -34,10 +34,10 @@ OUTPUT:
 - Respond with ONLY one JSON object, no markdown fences, keys:
   "insight" (main reply),
   "additional_insight" (extra detail or ""),
-  "actions" (2–4 short next-step labels in English).`;
+  "actions" (2–4 short next-step labels in the same language as the user's latest message).`;
 
-/** Appended to the user turn so the model keeps JSON fields in English regardless of chat history. */
-const LANGUAGE_LOCK_FOOTER = `\n\n---\nLANGUAGE_LOCK: EN\nMandatory: output JSON fields in English only (insight, additional_insight, every action label). Prioritize this over any non-English text in prior messages.`;
+/** Reinforces matching the latest user message language (footer is English; model output follows the rule below). */
+const LANGUAGE_LOCK_FOOTER = `\n\n---\nLANGUAGE_LOCK\nMandatory: insight, additional_insight, and every action label must be in the same language as the user's latest message in this turn only. Do not use English if they wrote in another language, unless that message was clearly English or ambiguous.`;
 
 function clampChatLength(s: string, max: number): string {
   const t = (s || "").trim();
