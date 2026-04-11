@@ -65,7 +65,7 @@ The in-app chat should answer questions about portfolio, risk, research, and age
 
 ### 2.1 LLM (Conversation + Reasoning)
 
-**Implemented in this repo:** `POST /api/agent/chat` uses **Anthropic (Claude) → Groq → OpenAI** (first successful response). **`ANTHROPIC_API_KEY`** targets the Messages API (default model **`claude-sonnet-4-6`**; override with **`ANTHROPIC_AGENT_MODEL`**). Set **`AGENT_ANTHROPIC_ONLY=1`** to disable Groq/OpenAI fallback. **[Groq](https://console.groq.com)** works via the OpenAI-compatible API (`GROQ_API_KEY`, optional `GROQ_AGENT_MODEL`). Setting **`GROQ_API_KEY`** alone is enough for agent chat without Anthropic on a VPS.
+**Implemented in this repo:** `POST /api/agent/chat` uses **Anthropic (Claude) → Groq → OpenAI** (first successful response). **`ANTHROPIC_API_KEY`** targets the Messages API (default model **`claude-sonnet-4-6`**; override with **`ANTHROPIC_AGENT_MODEL`**). Set **`AGENT_ANTHROPIC_ONLY=1`** to disable Groq/OpenAI fallback. **[Groq](https://console.groq.com)** works via the OpenAI-compatible API (`GROQ_API_KEY`, optional `GROQ_AGENT_MODEL`). Setting **`GROQ_API_KEY`** alone is enough for agent chat without Anthropic on a VPS. Reply language follows the **user’s latest message** when possible (see **`backend/src/routes/agent.ts`**). For a consolidated list of wired services, see **[Integrations](./INTEGRATIONS.md)**.
 
 | API | Purpose | Notes |
 |-----|---------|--------|

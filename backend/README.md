@@ -30,9 +30,9 @@ Default: **http://localhost:3000**. Set `PORT` in `.env` to change.
 
 ### Agent chat (`POST /api/agent/chat`)
 
-Requires **at least one** of: **`ANTHROPIC_API_KEY`** (Claude on VPS), **`GROQ_API_KEY`**, or **`OPENAI_API_KEY`**. Order: **Anthropic → Groq → OpenAI** (first success wins). Set **`AGENT_ANTHROPIC_ONLY=1`** to use **only** Claude (no fallback). Default Claude model: **`claude-sonnet-4-6`** (`ANTHROPIC_AGENT_MODEL`).
+Requires **at least one** of: **`ANTHROPIC_API_KEY`** (Claude on VPS), **`GROQ_API_KEY`**, or **`OPENAI_API_KEY`**. Order: **Anthropic → Groq → OpenAI** (first success wins). Set **`AGENT_ANTHROPIC_ONLY=1`** to use **only** Claude (no fallback). Default Claude model: **`claude-sonnet-4-6`** (`ANTHROPIC_AGENT_MODEL`). Replies follow the **user’s latest message language** when possible. Optional **x402** paid chat: **`X402_TREASURY_ADDRESS`**; use **`DISABLE_AGENT_CHAT_X402=1`** to force free chat.
 
-See **`../docs/CONFIGURATION.md`** (Agent chat section) and **`../docs/backend-api.md`** for request/response shape and env vars.
+See **`../docs/CONFIGURATION.md`**, **`../docs/backend-api.md`**, and **`../docs/INTEGRATIONS.md`**.
 
 ## Frontend
 

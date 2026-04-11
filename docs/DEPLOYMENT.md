@@ -21,7 +21,7 @@ The **`api/`** folder must live at the **repository root** relative to your Verc
 |--------|--------------------------------|---------------------------|
 | **Static SPA** | Yes (`dist/` from `frontend/`) | No |
 | **`POST /api/rpc`** (browser → Solana JSON-RPC proxy) | Yes — **required** for Swap/wallet without public-RPC 403 | Also available if you point the UI at VPS |
-| **Jupiter** quote/swap | Yes (`api/[[...path]].ts`) | Yes (`backend`) |
+| **Jupiter** quote/swap | Yes (`api/jupiter/[endpoint].ts`) | Yes (`backend`) |
 | **Market** (price, OHLCV, token-info, …) | Yes (`api/market/*.ts`) | Yes |
 | **Wallet balances** | Yes (`api/wallet/balances.ts`) | Yes |
 | **Agent chat / x402** | Possible on Vercel with secrets; often easier on **VPS** | Typical home for LLM keys + x402 treasury |
@@ -68,6 +68,7 @@ Each file under `api/**/*.ts` is a separate serverless function. Stay within you
 
 ## Related docs
 
+- **[Integrations](./INTEGRATIONS.md)** — external APIs (LLM, Jupiter, Birdeye, RPC, x402).  
 - `docs/deploy-vercel.md` — env checklist.  
 - `backend/README.md` — Express API when using VPS.  
 - `frontend/.env.example` — `VITE_*` variables.

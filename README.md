@@ -44,9 +44,9 @@ Backend runs at **http://localhost:3000**. Use `frontend/.env` with `VITE_API_UR
 - **Health:** `GET /api/health`, `/api/health/live`, `/api/health/ready`
 - **Research:** `GET /api/research/feeds`, `GET /api/research/lookup?symbol=`, `GET /api/research/screener` (query: `limit`, `sort`, `minVolume`, `minMarketCap`, `minChange24h`, `maxChange24h`)
 - **Subscription:** `GET /api/subscription/tiers`, `GET /api/subscription/tiers/:id`, `GET /api/subscription/me?wallet=` (tier by wallet)
-- **Agent:** `GET /api/agent/status`, `GET /api/agent/config`
+- **Agent:** `GET /api/agent/status`, `GET /api/agent/config`, **`POST /api/agent/chat`** (LLM; often run on a VPS with `ANTHROPIC_API_KEY`)
 
-See `backend/README.md` for setup and env vars.
+See `backend/README.md` for setup and env vars. **External services** (Claude, Groq, Jupiter, Birdeye, Redis, x402, etc.) are summarized in **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**.
 
 ## Deploy
 
@@ -73,8 +73,9 @@ User-facing documentation is available in the app: use **Docs** on the page and 
 
 - **In-app / PDF:** `frontend/public/plankton-documentation.html` (served at `/plankton-documentation.html`). No environment variables or secrets are included; a link to the project repository is included for source code and updates only.
 - **Source (for maintainers):** `docs/plankton-documentation.md`. Keep `.env` and any secrets out of all docs for user security.
-- **API recommendations (for integration):** `docs/api-recommendations.md` — which external APIs to use for autonomous agent trading, research, AI chat, Command Center, and supporting features.
-- **Language:** All UI copy and documentation are in **English**. Use English for any new user-facing strings or docs. See **[docs/language-and-localization.md](docs/language-and-localization.md)** for UI vs. agent chat behavior.
+- **Integrations (wired services):** `docs/INTEGRATIONS.md` — Claude, Groq, OpenAI, Jupiter, Birdeye, Solana RPC, Redis/KV, x402, Vercel vs VPS.
+- **API recommendations (roadmap):** `docs/api-recommendations.md` — additional external APIs for future agent and research features.
+- **Language:** User-facing **UI** and **maintainer docs** are in **English**. The **Plankton Agent** chat replies in the **same language as the user’s latest message** when possible. See **[docs/language-and-localization.md](docs/language-and-localization.md)** and **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**.
 
 ## Demo video
 

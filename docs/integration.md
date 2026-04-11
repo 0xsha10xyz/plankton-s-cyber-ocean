@@ -1,22 +1,30 @@
 # Integration guide
 
-How to use the Plankton backend API from the frontend.
+How the frontend reaches the Plankton API (Vercel serverless, local Express, or a VPS).
 
 ## Configure API base URL
 
-Create or edit `frontend/.env` (you can copy `frontend/.env.example` if it exists, or create a new file). See **[Configuration](./CONFIGURATION.md)** for full env options.
+Create or edit `frontend/.env` (copy **`frontend/.env.example`** as a starting point). See **[Configuration](./CONFIGURATION.md)** for production (same-origin Vercel vs `VITE_API_URL` vs `VITE_AGENT_API_URL`).
+
+**Local development** with Express on port 3000:
 
 ```env
 VITE_API_URL=http://localhost:3000
 ```
 
-Use it in the app:
+In application code, prefer the shared helpers in **`frontend/src/lib/api.ts`** instead of raw `import.meta.env` everywhere:
+
+- **`getApiBase()`** — market, Jupiter, RPC, wallet, stats, etc.
+- **`getAgentApiBase()`** — **`/api/agent/*`** (chat, config, logs); uses **`VITE_AGENT_API_URL`** when set so agent traffic can target a VPS while the rest of the app stays on Vercel.
 
 ```ts
-const API_BASE = import.meta.env.VITE_API_URL || "";
+import { getApiBase, getAgentApiBase } from "@/lib/api";
+
+const marketUrl = `${getApiBase()}/api/market/price`;
+const chatUrl = `${getAgentApiBase()}/api/agent/chat`;
 ```
 
-If `VITE_API_URL` is not set, the app can keep using mock/local data.
+If `VITE_API_URL` is unset in dev, Vite proxies `/api` to the backend (see `vite.config.ts`).
 
 ## Fetching from the API
 

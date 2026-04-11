@@ -85,7 +85,7 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 
 #### `POST /api/agent/chat`
 
-Powers the in-app agent chat. The backend calls LLMs in order: **Anthropic → Groq → OpenAI** (first successful response wins).
+Powers the in-app agent chat. The backend calls LLMs in order: **Anthropic → Groq → OpenAI** (first successful response wins). Reply text (**`insight`**, **`actions`**, etc.) follows the **user’s latest message language** when possible.
 
 **Request body (JSON):**
 
@@ -98,7 +98,7 @@ Powers the in-app agent chat. The backend calls LLMs in order: **Anthropic → G
 
 **Success response:** `{ "insight": string, "additional_insight": string, "actions": string[] }` (parsed from model JSON).
 
-**Errors:** `400` invalid message; `503` no LLM keys (`LLM_DISABLED`); `502` parse/model failure. See **[Configuration — Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)** for **Groq** (`GROQ_API_KEY`) and other env vars.
+**Errors:** `400` invalid message; `503` no LLM keys (`LLM_DISABLED`); `402` if **x402** paid chat is enabled (`X402_TREASURY_ADDRESS`) without payment; `502` parse/model failure. Optional: **`DISABLE_AGENT_CHAT_X402=1`** for free chat. See **[Configuration — Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)** and **[Integrations](./INTEGRATIONS.md)**.
 
 ---
 
@@ -155,8 +155,10 @@ Powers the in-app agent chat. The backend calls LLMs in order: **Anthropic → G
 | `AGENT_ANTHROPIC_ONLY` | If `1` / `true`, do not fall back to Groq/OpenAI | Optional |
 | `OPENAI_API_KEY` | OpenAI — tried **after** Groq if set | Optional |
 | `OPENAI_AGENT_MODEL` | OpenAI model id | See `backend/.env.example` |
+| `X402_TREASURY_ADDRESS` | Enables x402 USDC payment per chat message | Optional |
+| `DISABLE_AGENT_CHAT_X402` | If `1` / `true`, disable paid chat even if treasury env is set | Optional |
 
-Create `backend/.env` from **`backend/.env.example`** and add variables as needed. For **Groq** setup and provider order, see **[Configuration — Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)**.
+Create `backend/.env` from **`backend/.env.example`**. The server loads **`backend/.env`** with path resolution so PM2 cwd does not skip it. For provider order and x402, see **[Configuration — Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)** and **[Integrations](./INTEGRATIONS.md)**.
 
 ## Running the server
 
