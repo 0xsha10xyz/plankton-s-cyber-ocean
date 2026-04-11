@@ -1,6 +1,10 @@
 /**
  * Vercel build: copy frontend/dist -> repo-root dist/ for static hosting.
  * Serverless routes live in repo-root `api/` (see docs/DEPLOYMENT.md).
+ *
+ * We merge into dist/ without deleting the folder first. Clearing dist/ caused
+ * ENOENT on plankton-documentation.html when Vercel analyzed outputDirectory
+ * between delete and copy.
  */
 const fs = require("fs");
 const path = require("path");
@@ -16,24 +20,12 @@ if (!fs.existsSync(frontSrc)) {
   process.exit(1);
 }
 
-/**
- * Clear `dist/` contents but keep the directory. Deleting the whole `dist` folder
- * can race with Vercel analyzing `outputDirectory` (ENOENT on plankton-documentation.html).
- */
-function emptyDirInPlace(dir) {
-  fs.mkdirSync(dir, { recursive: true });
-  for (const name of fs.readdirSync(dir)) {
-    fs.rmSync(path.join(dir, name), { recursive: true, force: true });
-  }
-}
-
-emptyDirInPlace(frontDest);
+fs.mkdirSync(frontDest, { recursive: true });
 fs.cpSync(frontSrc, frontDest, { recursive: true });
 
 const docOut = path.join(frontDest, "plankton-documentation.html");
-if (!fs.existsSync(docOut) && fs.existsSync(docFallback)) {
+if (fs.existsSync(docFallback)) {
   fs.copyFileSync(docFallback, docOut);
-  console.log("Restored plankton-documentation.html from frontend/public");
 }
 
 console.log("Copied frontend/dist -> dist");
