@@ -1,6 +1,6 @@
 # Configuration — Swap with real data
 
-These steps are **manual**: create or edit `.env` files and fill in the required values.
+These steps are **manual**: create or edit `.env` files and fill in the required values. For a concise list of **third-party integrations** (LLM, Jupiter, Birdeye, RPC, Redis, x402), see **[Integrations](./INTEGRATIONS.md)**.
 
 ---
 

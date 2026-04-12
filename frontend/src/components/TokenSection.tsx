@@ -1,5 +1,13 @@
 import { motion } from "framer-motion";
-import { Flame, Coins, Info } from "lucide-react";
+import { Flame, Coins } from "lucide-react";
+import {
+  formatPapMintShort,
+  formatPapTotalSupplyDisplay,
+  PAP_SOLSCAN_TOKEN_URL,
+  PAP_TOKEN_MINT,
+  PAP_TOKEN_STATUS,
+} from "@/lib/papToken";
+import { PapHoldersMetric } from "@/components/PapHoldersMetric";
 
 const TokenSection = () => {
   return (
@@ -22,7 +30,18 @@ const TokenSection = () => {
         <div className="space-y-4">
           <div className="flex justify-between items-center py-2 border-b border-border/30">
             <span className="text-sm text-muted-foreground">Total Supply</span>
-            <span className="font-mono font-bold text-foreground">TBA</span>
+            <span className="font-mono font-bold text-foreground text-right max-w-[60%]">
+              {formatPapTotalSupplyDisplay()} PAP
+            </span>
+          </div>
+          <div className="flex justify-between items-center py-2 border-b border-border/30">
+            <span
+              className="text-sm text-muted-foreground"
+              title="Unique wallets with a non-zero PAP balance (Jupiter index; approximate)"
+            >
+              Holders
+            </span>
+            <PapHoldersMetric />
           </div>
           <div className="flex justify-between items-center py-2 border-b border-border/30">
             <span className="text-sm text-muted-foreground">Network</span>
@@ -30,12 +49,20 @@ const TokenSection = () => {
           </div>
           <div className="flex justify-between items-center py-2 border-b border-border/30">
             <span className="text-sm text-muted-foreground">Contract</span>
-            <span className="font-mono text-xs text-muted-foreground">TBA</span>
+            <a
+              href={PAP_SOLSCAN_TOKEN_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={PAP_TOKEN_MINT}
+              className="font-mono text-xs text-primary hover:underline text-right max-w-[60%] break-all"
+            >
+              {formatPapMintShort()}
+            </a>
           </div>
           <div className="flex justify-between items-center py-2">
             <span className="text-sm text-muted-foreground">Status</span>
             <span className="text-xs px-3 py-1 rounded-full bg-accent/10 text-accent border border-accent/20 font-semibold">
-              TBA
+              {PAP_TOKEN_STATUS}
             </span>
           </div>
         </div>

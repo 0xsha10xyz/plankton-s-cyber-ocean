@@ -5,6 +5,14 @@ import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
+import {
+  formatPapMintShort,
+  formatPapTotalSupplyDisplay,
+  PAP_SOLSCAN_TOKEN_URL,
+  PAP_TOKEN_MINT,
+  PAP_TOKEN_STATUS,
+} from "@/lib/papToken";
+import { PapHoldersMetric } from "@/components/PapHoldersMetric";
 
 const sidebarSections = [
   { id: "overview", label: "Overview", icon: Book },
@@ -210,7 +218,20 @@ const Docs = () => {
                   <tbody>
                     <tr className="border-b border-border/20">
                       <td className="py-3 text-muted-foreground">Total Supply</td>
-                      <td className="py-3 text-right font-mono font-bold text-foreground">TBA</td>
+                      <td className="py-3 text-right font-mono font-bold text-foreground">
+                        {formatPapTotalSupplyDisplay()} PAP
+                      </td>
+                    </tr>
+                    <tr className="border-b border-border/20">
+                      <td
+                        className="py-3 text-muted-foreground"
+                        title="Unique wallets with a non-zero PAP balance (Jupiter index; approximate)"
+                      >
+                        Holders
+                      </td>
+                      <td className="py-3 text-right">
+                        <PapHoldersMetric variant="table" />
+                      </td>
                     </tr>
                     <tr className="border-b border-border/20">
                       <td className="py-3 text-muted-foreground">Network</td>
@@ -218,7 +239,18 @@ const Docs = () => {
                     </tr>
                     <tr className="border-b border-border/20">
                       <td className="py-3 text-muted-foreground">Contract</td>
-                      <td className="py-3 text-right font-mono text-muted-foreground/60 text-xs">TBA</td>
+                      <td className="py-3 text-right">
+                        <a
+                          href={PAP_SOLSCAN_TOKEN_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={PAP_TOKEN_MINT}
+                          className="font-mono text-xs text-primary hover:underline inline-flex items-center gap-1"
+                        >
+                          {formatPapMintShort()}
+                          <ExternalLink size={12} className="opacity-70" />
+                        </a>
+                      </td>
                     </tr>
                     <tr className="border-b border-border/20">
                       <td className="py-3 text-muted-foreground flex items-center gap-1.5">
@@ -233,7 +265,7 @@ const Docs = () => {
                       <td className="py-3 text-muted-foreground">Status</td>
                       <td className="py-3 text-right">
                         <span className="text-xs px-3 py-1 rounded-full bg-accent/10 text-accent border border-accent/20 font-semibold">
-                          TBA
+                          {PAP_TOKEN_STATUS}
                         </span>
                       </td>
                     </tr>
