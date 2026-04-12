@@ -4,8 +4,6 @@ import { Link } from "react-router-dom";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import HeroPlankton from "@/components/HeroPlankton";
-import CommandCenter from "@/components/command-center/CommandCenter";
-import AutoPilot from "@/components/AutoPilot";
 import ResearchTools from "@/components/ResearchTools";
 import ScreenerTools from "@/components/ScreenerTools";
 import TokenSection from "@/components/TokenSection";
@@ -14,7 +12,6 @@ import PricingSection from "@/components/PricingSection";
 import Roadmap from "@/components/Roadmap";
 import Footer from "@/components/Footer";
 import { TotalUsersStat } from "@/components/TotalUsersStat";
-import { AgentChatInlinePreview } from "@/components/AgentChatInlinePreview";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import { PAP_TOKEN_MINT, PUMP_FUN_COIN_URL } from "@/lib/papToken";
@@ -63,14 +60,16 @@ const Index = () => {
             <HeroPlankton />
             <TotalUsersStat variant="hero" className="mb-8" />
             <div className="flex gap-3 flex-wrap justify-center">
-              <motion.button
+              <motion.a
+                href="/launch-agent"
+                target="_blank"
+                rel="noopener noreferrer"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => document.getElementById("command")?.scrollIntoView({ behavior: "smooth" })}
-                className="neon-button text-primary font-bold"
+                className="neon-button text-primary font-bold inline-block text-center"
               >
-                Launch App
-              </motion.button>
+                Launch Agent
+              </motion.a>
               <Link to="/swap">
                 <motion.span
                   className="inline-block px-6 py-3 rounded-lg bg-secondary/50 text-foreground border border-border/50 hover:border-primary/30 transition-all font-semibold"
@@ -118,19 +117,6 @@ const Index = () => {
         </section>
 
         <div className="container mx-auto px-4">
-          {/* Command Center */}
-          <Section title="Command Center" id="command">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <CommandCenter />
-              <AutoPilot />
-            </div>
-
-            {/* Agent Chat preview (pict 3) below Command Center */}
-            <div className="mt-6">
-              <AgentChatInlinePreview />
-            </div>
-          </Section>
-
           {/* Research & Screening — manual tools, wallet-gated, tier limits */}
           <Section title="Research & Screening" id="research">
             <p className="text-sm text-muted-foreground mb-6">

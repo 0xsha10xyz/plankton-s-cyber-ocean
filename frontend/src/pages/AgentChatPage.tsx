@@ -1025,7 +1025,7 @@ export default function AgentChatPage() {
           type="button"
           variant="secondary"
           className="h-9 w-9 p-0"
-          onClick={() => navigate("/#command")}
+          onClick={() => navigate("/launch-agent")}
         >
           <ArrowLeft size={18} />
         </Button>

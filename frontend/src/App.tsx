@@ -20,6 +20,7 @@ import DocsLayout from "@/components/docs/DocsLayout";
 import DocsHome from "@/components/docs/DocsHome";
 import DocArticle from "@/components/docs/DocArticle";
 import AgentChatPage from "./pages/AgentChatPage";
+import LaunchAgentPage from "./pages/LaunchAgentPage";
 import { AppConfigProvider } from "@/hooks/useAppConfig";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
                     <Route path=":slug" element={<DocArticle />} />
                   </Route>
                   <Route path="/agent-chat" element={<AgentChatPage />} />
+                  <Route path="/launch-agent" element={<LaunchAgentPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>

@@ -18,7 +18,7 @@ The product is designed for both end users and investor-facing demos with a clea
 
 ### 0) Demo Video (Landing Page)
 
-- The landing page includes a **Demo** button next to **Launch App** and **Swap**
+- The landing page includes a **Demo** button next to **Launch Agent** and **Swap**
 - Clicking **Demo** opens a modal and plays a short walkthrough video
 - The video asset is served from `frontend/public/plankton-demo.mp4`
 

@@ -83,6 +83,6 @@ See **[SECURITY.md](SECURITY.md)** for details and what must never be pushed to 
 
 ## Demo video
 
-The landing page includes a **Demo** button (next to **Launch App** and **Swap**) that opens a modal and plays the walkthrough video:
+The landing page includes a **Demo** button (next to **Launch Agent** and **Swap**) that opens a modal and plays the walkthrough video:
 
 - **Asset path:** `frontend/public/plankton-demo.mp4` (served at `/plankton-demo.mp4`)
