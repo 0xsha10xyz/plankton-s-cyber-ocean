@@ -84,11 +84,6 @@ export default function CommandCenter(): JSX.Element {
         <FilterBar enabled={enabled} onToggle={toggle} />
       </div>
       <TerminalFeed lines={lines} />
-      <p className="px-4 py-2 text-[10px] text-muted-foreground/80 border-t border-border/30">
-        {bitqueryToken
-          ? "Client-side feeds: DexScreener · Bitquery · Solana RPC (staking). No extra Vercel invocations."
-          : "Set BITQUERY_TOKEN on the host (see /api/config) for large trade & transfer streams."}
-      </p>
     </div>
   );
 }
