@@ -46,6 +46,9 @@ backend/data/*
 # Legacy Vercel Express bundle (no longer produced by copy-dist; safe to delete locally)
 vercel-express-bundle
 
+# Cursor IDE — local workspace state (do not commit)
+.cursor/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

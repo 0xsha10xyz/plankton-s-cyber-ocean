@@ -2,7 +2,7 @@
 
 ## What **must not** be committed or pushed to GitHub
 
-- **`.env` files** (backend, frontend, root, `api/`) — contain API keys (Birdeye, Groq, Anthropic, OpenAI, RPC URLs with keys) and CORS settings. They are listed in `.gitignore`.
+- **`.env` files** (backend, frontend, root, `api/`) — contain API keys (Birdeye, Groq, Anthropic, OpenAI, Bitquery, Shyft, Helius, RPC URLs with keys) and CORS settings. They are listed in `.gitignore`.
 - **`.env.*` variants** — e.g. `.env.local`, `.env.production`, `.env.backup` — ignored; use hosting dashboards or server-only files for real values.
 - **`backend/data/`** — stores the list of connected wallets (Total Users). This folder is ignored; data stays on the server or in memory (Vercel).
 - **Other secret/key files:** `*.pem`, `*.key`, `*secret*`, `*credentials*`, `wallet.json`, `keystore*`, `mnemonic*` — patterns are in `.gitignore`.
@@ -30,6 +30,7 @@
 
 ## Local editor / MCP
 
+- The **`.cursor/`** directory (local Cursor workspace data) is **ignored**; do not force-add it.
 - Files such as Cursor **MCP** configs may contain API keys. Keep them **out of the repo**; if you must store a template, use placeholders only.
 
 ## Check before pushing

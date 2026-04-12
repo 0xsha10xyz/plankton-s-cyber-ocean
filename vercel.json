@@ -3,5 +3,16 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/config",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "s-maxage=3600, stale-while-revalidate=86400"
+        }
+      ]
+    }
   ]
 }

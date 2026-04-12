@@ -60,7 +60,7 @@ The frontend loads public config from **`GET /api/config`**, which returns `bitq
 
 ### Local development
 
-For a local frontend pointing at the same-origin API, set **`BITQUERY_TOKEN`** (and RPC-related vars) in **Vercel** for preview/production; for purely local API, mirror those variables in the environment your **`api/`** serverless or dev proxy loads (see project root and `frontend` env examples). Never commit real tokens.
+For a local frontend pointing at the same-origin API, set **`BITQUERY_TOKEN`** (and RPC-related vars) in **Vercel** for preview/production; for purely local API, mirror those variables in the environment your **`api/`** serverless or dev proxy loads (see project root and `frontend` env examples). **Never commit real tokens** — only empty placeholders in **`.env.example`** files. See **[SECURITY.md](../SECURITY.md)** for what must stay out of git.
 
 ---
 

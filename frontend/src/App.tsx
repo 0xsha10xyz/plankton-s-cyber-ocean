@@ -20,12 +20,14 @@ import DocsLayout from "@/components/docs/DocsLayout";
 import DocsHome from "@/components/docs/DocsHome";
 import DocArticle from "@/components/docs/DocArticle";
 import AgentChatPage from "./pages/AgentChatPage";
+import { AppConfigProvider } from "@/hooks/useAppConfig";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
+      <AppConfigProvider>
       <SolanaWalletProviders>
         <StatsProvider>
           <WalletModalProvider>
@@ -62,6 +64,7 @@ const App = () => (
         </WalletModalProvider>
         </StatsProvider>
       </SolanaWalletProviders>
+      </AppConfigProvider>
     </QueryClientProvider>
   </ErrorBoundary>
 );

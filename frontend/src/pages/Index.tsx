@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import HeroPlankton from "@/components/HeroPlankton";
-import AITerminal from "@/components/AITerminal";
+import CommandCenter from "@/components/command-center/CommandCenter";
 import AutoPilot from "@/components/AutoPilot";
 import ResearchTools from "@/components/ResearchTools";
 import ScreenerTools from "@/components/ScreenerTools";
@@ -121,7 +121,7 @@ const Index = () => {
           {/* Command Center */}
           <Section title="Command Center" id="command">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <AITerminal />
+              <CommandCenter />
               <AutoPilot />
             </div>
 
