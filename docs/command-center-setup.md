@@ -2,6 +2,8 @@
 
 Quick setup so the Command Center shows **LIVE** and receives **real on-chain data**.
 
+**Bitquery, DexScreener, and `BITQUERY_TOKEN` on Vercel** (feeds for transfers, trades, launches) are documented in **[Configuration — Command Center feeds](./CONFIGURATION.md#command-center-feeds--bitquery-dexscreener-and-rpc-vercel)**.
+
 ---
 
 ## API configuration (required)

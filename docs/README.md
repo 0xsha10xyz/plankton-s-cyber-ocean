@@ -14,7 +14,7 @@ Documentation for **Plankton's Cyber Ocean** — frontend app, backend API, wall
 | Doc | Description |
 |-----|-------------|
 | [Getting started](./getting-started.md) | Install, run, and project structure (`frontend/`, `backend/`, `api/`) |
-| [Configuration](./CONFIGURATION.md) | Environment variables, charts, RPC, agent chat, Vercel vs VPS, Hobby function limit |
+| [Configuration](./CONFIGURATION.md) | Environment variables, charts, RPC, agent chat, Command Center (Bitquery, DexScreener), Vercel vs VPS, Hobby function limit |
 | [API gateway](./API_GATEWAY.md) | Optional API keys, Bearer auth, rate limits (`/api/v1` on Express) |
 | [Deployment](./DEPLOYMENT.md) | Vercel SPA + root `api/` (Root Directory **`.`**) vs optional VPS |
 | [Integrations](./INTEGRATIONS.md) | External APIs (Claude, Groq, Jupiter, Birdeye, Solana RPC, Redis, x402) |

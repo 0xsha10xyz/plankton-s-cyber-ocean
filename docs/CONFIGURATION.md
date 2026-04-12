@@ -26,6 +26,44 @@ Each file under `api/**/*.ts` becomes a **separate** serverless function. The **
 
 ---
 
+## Command Center feeds — Bitquery, DexScreener, and RPC (Vercel)
+
+The dashboard **Command Center** combines several data paths. **DexScreener** and **Bitquery WebSocket** calls run **in the browser**; they do **not** add one serverless invocation per poll or per stream tick. Only **`GET /api/config`** (cached) and **`POST /api/rpc`** (when the app reads chain state) consume Vercel functions as usual.
+
+### What to set on Vercel (production)
+
+| Variable | Purpose |
+|----------|---------|
+| **`BITQUERY_TOKEN`** | Required for **large transfers, large buys, and large sells** (Bitquery GraphQL over WebSocket). Without it, those streams stay off; **new token launches** from DexScreener can still work. |
+| **`SOLANA_RPC_URL`** | Upstream URL for **`/api/rpc`** (wallet flows, creator resolution for launch rows, staking helpers). Use a reliable mainnet RPC (Helius, QuickNode, Ankr, etc.). |
+| **`HELIUS_API_KEY`** | Optional; if your deployment uses Helius as the RPC upstream in `api/rpc.ts`, set this in Vercel so the serverless proxy can reach Helius. |
+| **`SHYFT_API_KEY`** | Optional; exposed to the client via `/api/config` as `shyftKey` if you use Shyft-powered features. |
+
+Do **not** add new `api/*.ts` routes for these feeds unless you must; that would count against the [Hobby serverless function limit](#vercel-hobby-serverless-function-limit).
+
+### Obtaining **`BITQUERY_TOKEN`** (Bitquery dashboard)
+
+1. Sign in at **[bitquery.io](https://bitquery.io)** and open **Applications** (or **Access Tokens**, depending on the UI version).
+2. Create a **Manual** application when offered: it is intended for long-lived access tokens (avoid **Automatic** unless you run OAuth/token refresh on a **server**; Automatic tokens are typically short-lived, e.g. 24 hours or less).
+3. Set **access token lifespan** to a **long** value (months or years). A lifespan of seconds or minutes is not suitable for production.
+4. Copy the **access token** from the **Access Tokens** tab (or the token Bitquery shows after creation). Use that string as **`BITQUERY_TOKEN`**.  
+   - The **Application ID** (UUID in the Applications table) is **not** the same as the API key used for **`X-API-KEY`** on the streaming endpoint.  
+   - **Client secrets** are for server-side OAuth flows; this app passes a single token from **`GET /api/config`** to the browser for WebSocket auth, so treat Bitquery’s terms and quotas as binding and rotate the token if it leaks.
+
+5. In Vercel: **Settings → Environment Variables** → **`BITQUERY_TOKEN`** = *(paste token)* → **Save** → **Redeploy**.
+
+The frontend loads public config from **`GET /api/config`**, which returns `bitqueryToken` from `process.env.BITQUERY_TOKEN` (see `api/config.ts`). The browser then connects to Bitquery’s streaming URL with that value in the **`X-API-KEY`** header (`frontend/src/hooks/useBitqueryStream.ts`).
+
+### DexScreener (launches)
+
+**No API key** is required for the token-profile poll the app uses. Do not route DexScreener through new Vercel functions unless you have a specific need.
+
+### Local development
+
+For a local frontend pointing at the same-origin API, set **`BITQUERY_TOKEN`** (and RPC-related vars) in **Vercel** for preview/production; for purely local API, mirror those variables in the environment your **`api/`** serverless or dev proxy loads (see project root and `frontend` env examples). Never commit real tokens.
+
+---
+
 ## Custom domain (planktonomous.dev) — checklist
 
 Your domain **planktonomous.dev** is already showing **Valid Configuration** on Vercel. To keep the project running well in production:
