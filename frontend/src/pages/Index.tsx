@@ -1,6 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@/contexts/WalletModalContext";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import HeroPlankton from "@/components/HeroPlankton";
@@ -31,6 +33,9 @@ const Section = ({ title, id, children }: { title: string; id: string; children:
 );
 
 const Index = () => {
+  const { connected } = useWallet();
+  const { openWalletModal } = useWalletModal();
+
   useEffect(() => {
     const hash = window.location.hash.replace(/^#/, "");
     if (!hash) return;
@@ -59,17 +64,22 @@ const Index = () => {
           >
             <HeroPlankton />
             <TotalUsersStat variant="hero" className="mb-8" />
-            <div className="flex gap-3 flex-wrap justify-center">
-              <motion.a
-                href="/launch-agent"
-                target="_blank"
-                rel="noopener noreferrer"
+            <div className="flex gap-3 flex-wrap justify-center items-start">
+              <motion.button
+                type="button"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="neon-button text-primary font-bold inline-block text-center"
+                className="neon-button text-primary font-bold"
+                onClick={() => {
+                  if (!connected) {
+                    openWalletModal();
+                    return;
+                  }
+                  window.open("/launch-agent", "_blank", "noopener,noreferrer");
+                }}
               >
                 Launch Agent
-              </motion.a>
+              </motion.button>
               <Link to="/swap">
                 <motion.span
                   className="inline-block px-6 py-3 rounded-lg bg-secondary/50 text-foreground border border-border/50 hover:border-primary/30 transition-all font-semibold"
