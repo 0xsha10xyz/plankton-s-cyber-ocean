@@ -45,10 +45,7 @@ const SectionHeading = ({ eyebrow, title, subtitle }: { eyebrow: string; title: 
     <p className="docs-eyebrow text-[10px] md:text-[11px] font-mono uppercase tracking-[0.1em] text-[#5eead4]/80 mb-2 pl-3 border-l-2 border-[#2DD4BF]/70">
       {eyebrow}
     </p>
-    <h2
-      className="text-2xl md:text-3xl lg:text-[2rem] font-bold tracking-tight text-foreground"
-      style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-    >
+    <h2 className="text-2xl md:text-3xl lg:text-[2rem] font-bold tracking-tight text-foreground font-sans">
       {title}
     </h2>
     {subtitle ? (
@@ -112,10 +109,7 @@ export default function DocsHome() {
               <p className="docs-eyebrow inline-flex items-center gap-2 text-[10px] md:text-[11px] font-mono uppercase tracking-[0.1em] text-[#5eead4]/90 mb-4 px-3 py-1.5 rounded-md border border-[#2DD4BF]/25 bg-[#2DD4BF]/08">
                 Protocol documentation · Solana
               </p>
-              <h1
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-extrabold tracking-tight leading-[1.1] mb-5"
-                style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-              >
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.25rem] font-extrabold tracking-tight leading-[1.1] mb-5 font-sans">
                 <span className="glow-text bg-gradient-to-r from-primary via-cyan-300 to-primary bg-clip-text text-transparent">
                   Plankton
                 </span>
@@ -526,7 +520,7 @@ export default function DocsHome() {
         className="rounded-2xl border border-primary/15 bg-gradient-to-br from-secondary/40 to-primary/[0.04] px-6 py-8 md:px-10 md:py-10 text-center"
       >
         <p className="text-[10px] font-mono uppercase tracking-[0.1em] text-[#5eead4]/75 mb-2">Repository</p>
-        <p className="text-foreground font-semibold text-lg mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+        <p className="text-foreground font-semibold text-lg mb-2 font-sans">
           Continue in the repo
         </p>
         <p className="text-sm docs-body-muted max-w-xl mx-auto mb-6 leading-[1.7]">

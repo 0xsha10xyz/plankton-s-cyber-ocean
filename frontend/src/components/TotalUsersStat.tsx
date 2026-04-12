@@ -18,7 +18,7 @@ export function TotalUsersStat({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4, duration: 0.5 }}
-        className={`inline-flex flex-col items-center gap-1 rounded-2xl border border-primary/30 bg-primary/5 px-8 py-4 ${className}`}
+        className={`inline-flex flex-col items-center gap-1.5 rounded-2xl border border-primary/35 bg-gradient-to-b from-primary/[0.07] to-primary/[0.02] px-8 py-5 shadow-surface-sm ${className}`}
       >
         <span className="text-xs font-semibold uppercase tracking-wider text-primary/90">
           Total Users

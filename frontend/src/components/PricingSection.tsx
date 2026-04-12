@@ -42,8 +42,8 @@ const PricingSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
           viewport={{ once: true }}
-          className={`glass-card rounded-xl p-6 relative ${
-            tierOption.highlight ? "border-primary/40 glow-border" : ""
+          className={`glass-card rounded-2xl p-7 relative shadow-surface-sm ${
+            tierOption.highlight ? "border-primary/45 ring-1 ring-primary/20 shadow-glow-sm" : ""
           }`}
         >
           {tierOption.highlight && (

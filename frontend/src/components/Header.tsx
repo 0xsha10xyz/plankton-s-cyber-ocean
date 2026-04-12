@@ -107,8 +107,8 @@ const Header = () => {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 glass-card border-b border-border/50">
-        <div className="container mx-auto flex items-center justify-between px-4 py-3">
+      <header className="fixed top-0 left-0 right-0 z-50 header-shell">
+        <div className="container mx-auto flex items-center justify-between px-4 sm:px-6 py-3.5">
           <div className="flex items-center gap-3">
             <Link
               to="/"
@@ -134,7 +134,7 @@ const Header = () => {
           </div>
 
           {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center flex-nowrap gap-0.5 xl:gap-1">
+          <nav className="hidden lg:flex items-center flex-nowrap gap-0.5 xl:gap-1 rounded-full border border-border/40 bg-background/35 px-1.5 py-1 shadow-inner">
             {NAV_CONFIG.map((item) => {
               const sectionId = "sectionId" in item ? item.sectionId : undefined;
               const path = "path" in item ? item.path : undefined;

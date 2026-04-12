@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import ParticleBackground from "@/components/ParticleBackground";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Bot, Send, User, ArrowLeft, Wallet } from "lucide-react";
@@ -261,8 +262,8 @@ function AgentBubble({ msg, onAction }: { msg: ChatMessage; onAction: (action: s
   return (
     <div
       className={cn(
-        "max-w-[85%] rounded-xl px-4 py-2.5 text-sm",
-        msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-secondary/60 text-foreground border border-border/50"
+        "max-w-[85%] px-4 py-2.5 text-sm",
+        msg.role === "user" ? "chat-bubble-user" : "chat-bubble-agent"
       )}
     >
       <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -1019,21 +1020,23 @@ export default function AgentChatPage() {
   const sendDisabled = !connected || sending || !input.trim();
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="sticky top-0 z-40 glass-card border-b border-border/50 px-4 py-3 flex items-center gap-3">
+    <div className="relative min-h-[100dvh] flex flex-col bg-background">
+      <ParticleBackground />
+      <div className="relative z-10 flex min-h-[100dvh] flex-col">
+      <header className="chat-page-header">
         <Button
           type="button"
           variant="secondary"
-          className="h-9 w-9 p-0"
+          className="h-10 w-10 p-0 rounded-xl border-border/50 bg-secondary/45 shadow-surface-sm shrink-0"
           onClick={() => navigate("/launch-agent")}
         >
           <ArrowLeft size={18} />
         </Button>
-        <div className="flex items-center gap-2">
-          <Bot size={18} className="text-primary" />
-          <div className="font-semibold">Agent Chat</div>
+        <div className="flex items-center gap-2 min-w-0">
+          <Bot size={18} className="text-primary shrink-0" />
+          <div className="font-semibold tracking-tight truncate">Agent Chat</div>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           {connected ? (
             <span className="text-xs text-muted-foreground flex items-center gap-2">
               <Wallet size={14} /> Connected
@@ -1043,7 +1046,7 @@ export default function AgentChatPage() {
               type="button"
               size="sm"
               variant="secondary"
-              className="bg-accent/15 border-accent/40 text-accent hover:bg-accent/30"
+              className="rounded-xl bg-accent/15 border border-accent/40 text-accent hover:bg-accent/25 shadow-surface-sm"
               onClick={openWalletModal}
             >
               Connect Wallet
@@ -1052,21 +1055,24 @@ export default function AgentChatPage() {
         </div>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4 min-h-0">
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}
+            className={cn(
+              "flex gap-3",
+              msg.role === "user" ? "justify-end flex-row-reverse" : "justify-start"
+            )}
           >
             {msg.role === "agent" && (
-              <div className="shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                <Bot size={14} className="text-primary" />
+              <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shadow-surface-sm">
+                <Bot size={15} className="text-primary" />
               </div>
             )}
             <AgentBubble msg={msg} onAction={onAction} />
             {msg.role === "user" && (
-              <div className="shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                <User size={14} className="text-primary" />
+              <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shadow-surface-sm">
+                <User size={15} className="text-primary" />
               </div>
             )}
           </div>
@@ -1074,17 +1080,17 @@ export default function AgentChatPage() {
 
         {sending && (
           <div className="flex gap-3 justify-start">
-            <div className="shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <Bot size={14} className="text-primary" />
+            <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center">
+              <Bot size={15} className="text-primary" />
             </div>
-            <div className="rounded-xl px-4 py-2.5 bg-secondary/60 border border-border/50">
+            <div className="chat-bubble-agent px-4 py-2.5">
               <span className="text-xs text-muted-foreground">Typing…</span>
             </div>
           </div>
         )}
       </div>
 
-      <div className="p-4 border-t border-border/50">
+      <div className="p-4 md:px-5 border-t border-border/45 bg-gradient-to-b from-transparent to-secondary/20 backdrop-blur-sm">
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
             {quickActions.map((a) => (
@@ -1093,7 +1099,7 @@ export default function AgentChatPage() {
                 type="button"
                 size="sm"
                 variant="secondary"
-                className="h-7 px-3 text-xs"
+                className="h-8 px-3 text-xs rounded-xl border-border/50 bg-secondary/45 hover:border-primary/35 shadow-surface-sm"
                 disabled={!connected || sending || awaitingWalletAddress}
                 onClick={() => handleSendWithText(a)}
               >
@@ -1115,7 +1121,7 @@ export default function AgentChatPage() {
                       ? "glad to see you"
                       : "glad to help you..."
               }
-              className="min-h-[44px] max-h-32 resize-none"
+              className="min-h-[44px] max-h-32 resize-none rounded-xl border-border/50 bg-secondary/35"
               disabled={!connected || sending}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -1128,7 +1134,7 @@ export default function AgentChatPage() {
             />
             <Button
               size="icon"
-              className="shrink-0 h-11 w-11"
+              className="shrink-0 h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-teal-600 hover:opacity-95 text-primary-foreground border border-primary/30 shadow-glow-sm"
               onClick={() => {
                 if (pendingSendBalance && input.trim()) executeSendBalanceTransfer(input);
                 else if (!pendingSendBalance) handleSendWithText(input);
@@ -1153,6 +1159,7 @@ export default function AgentChatPage() {
             </div>
           ) : null}
         </div>
+      </div>
       </div>
     </div>
   );

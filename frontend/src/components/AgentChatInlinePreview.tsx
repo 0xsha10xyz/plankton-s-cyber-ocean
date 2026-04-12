@@ -194,10 +194,8 @@ function AgentMessageBubble({
   return (
     <div
       className={cn(
-        "max-w-[100%] rounded-xl px-3 py-2.5 text-sm",
-        msg.role === "user"
-          ? "bg-primary text-primary-foreground"
-          : "bg-secondary/60 text-foreground border border-border/50"
+        "max-w-[100%] px-3.5 py-2.5 text-sm",
+        msg.role === "user" ? "chat-bubble-user" : "chat-bubble-agent"
       )}
     >
       {msg.role === "agent" && parsed ? (
@@ -974,15 +972,15 @@ export function AgentChatInlinePreview() {
   const sendDisabled = !connected || sending || !input.trim();
 
   return (
-    <section className="lg:col-span-2 glass-card rounded-xl overflow-hidden border border-border/40">
-      <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Bot size={18} className="text-primary" />
-          <div className="font-semibold">Agent Chat</div>
+    <section className="workspace-card w-full">
+      <div className="workspace-toolbar justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <Bot size={18} className="text-primary shrink-0" />
+          <div className="font-semibold tracking-tight truncate">Agent Chat</div>
         </div>
 
         {connected ? (
-          <div className="text-xs text-muted-foreground flex items-center gap-2">
+          <div className="text-xs text-muted-foreground flex items-center gap-2 shrink-0">
             <User size={14} /> Connected
           </div>
         ) : (
@@ -990,7 +988,7 @@ export function AgentChatInlinePreview() {
             type="button"
             size="sm"
             variant="secondary"
-            className="bg-accent/15 border-accent/40 text-accent hover:bg-accent/30"
+            className="rounded-xl bg-accent/15 border border-accent/40 text-accent hover:bg-accent/25 shadow-surface-sm shrink-0"
             onClick={openWalletModal}
           >
             Connect Wallet
@@ -999,19 +997,22 @@ export function AgentChatInlinePreview() {
       </div>
 
       <div className="flex flex-col" style={{ height: "420px" }}>
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4 min-h-0">
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}
+              className={cn(
+                "flex gap-3",
+                msg.role === "user" ? "justify-end flex-row-reverse" : "justify-start"
+              )}
             >
               {msg.role === "agent" ? (
-                <div className="shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Bot size={14} className="text-primary" />
+                <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shadow-surface-sm">
+                  <Bot size={15} className="text-primary" />
                 </div>
               ) : (
-                <div className="shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                  <User size={14} className="text-primary" />
+                <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shadow-surface-sm">
+                  <User size={15} className="text-primary" />
                 </div>
               )}
 
@@ -1021,17 +1022,17 @@ export function AgentChatInlinePreview() {
 
           {sending ? (
             <div className="flex gap-3 justify-start">
-              <div className="shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                <Bot size={14} className="text-primary" />
+              <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center">
+                <Bot size={15} className="text-primary" />
               </div>
-              <div className="rounded-xl px-4 py-2.5 bg-secondary/60 border border-border/50 text-xs text-muted-foreground">
-                Generating alpha...
+              <div className="chat-bubble-agent px-4 py-2.5 text-xs text-muted-foreground">
+                Generating alpha…
               </div>
             </div>
           ) : null}
         </div>
 
-        <div className="border-t border-border/50 p-4">
+        <div className="border-t border-border/45 bg-gradient-to-b from-transparent to-secondary/20 p-4 md:px-5">
           <div className="flex flex-wrap gap-2 mb-3">
             {defaultQuickActions.map((a) => (
               <button
@@ -1039,7 +1040,7 @@ export function AgentChatInlinePreview() {
                 type="button"
                 onClick={() => onAction(a)}
                 disabled={!connected || awaitingWalletAddress}
-                className="px-3 py-1 rounded-lg bg-secondary/50 border border-border/50 text-xs text-foreground hover:border-primary/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 rounded-xl text-xs font-medium bg-secondary/45 border border-border/50 text-foreground hover:border-primary/35 hover:shadow-surface-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {a}
               </button>
@@ -1060,7 +1061,7 @@ export function AgentChatInlinePreview() {
                       ? "glad to see you"
                       : "glad to help you..."
               }
-              className="min-h-[44px] max-h-32 resize-none"
+              className="min-h-[44px] max-h-32 resize-none rounded-xl border-border/50 bg-secondary/35"
               rows={1}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -1072,7 +1073,7 @@ export function AgentChatInlinePreview() {
             />
             <Button
               size="icon"
-              className="shrink-0 h-11 w-11"
+              className="shrink-0 h-11 w-11 rounded-xl bg-gradient-to-br from-primary to-teal-600 hover:opacity-95 text-primary-foreground border border-primary/30 shadow-glow-sm"
               onClick={() => {
                 if (pendingSendBalance && input.trim()) executeSendBalanceTransfer(input);
                 else if (!pendingSendBalance) handleSendWithText(input);

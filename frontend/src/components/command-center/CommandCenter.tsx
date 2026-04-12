@@ -69,11 +69,15 @@ export default function CommandCenter(): JSX.Element {
   }, []);
 
   return (
-    <div className="glass-card rounded-xl overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/50">
-        <Terminal size={16} className="text-primary" />
-        <span className="text-sm font-mono font-semibold text-primary">PLANKTON AGENT v4.0</span>
-        <div className="ml-auto flex items-center gap-2">
+    <div className="workspace-card">
+      <div className="workspace-toolbar">
+        <div className="flex items-center gap-2 min-w-0">
+          <Terminal size={16} className="text-primary shrink-0" />
+          <span className="text-sm font-mono font-semibold tracking-wide text-primary truncate">
+            PLANKTON AGENT v4.0
+          </span>
+        </div>
+        <div className="ml-auto flex items-center gap-2 shrink-0">
           <div className={`w-2 h-2 rounded-full ${live ? "bg-accent animate-pulse-glow" : "bg-muted-foreground/60"}`} />
           <span className={`text-xs font-mono ${live ? "text-accent" : "text-muted-foreground"}`}>
             {live ? "LIVE" : "CONNECTING"}

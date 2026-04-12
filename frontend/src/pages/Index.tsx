@@ -19,12 +19,13 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { PAP_TOKEN_MINT, PUMP_FUN_COIN_URL } from "@/lib/papToken";
 
 const Section = ({ title, id, children }: { title: string; id: string; children: React.ReactNode }) => (
-  <section id={id} className="mb-20 scroll-mt-24">
+  <section id={id} className="mb-24 md:mb-28 scroll-mt-28">
     <motion.h2
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className="section-title mb-8"
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.45 }}
+      className="section-title mb-9 md:mb-10"
     >
       {title}
     </motion.h2>
@@ -55,7 +56,7 @@ const Index = () => {
 
       <main className="relative z-10 pt-24">
         {/* Hero / Dashboard */}
-        <section id="dashboard" className="container mx-auto px-4 py-16 md:py-24 text-center scroll-mt-24">
+        <section id="dashboard" className="container mx-auto px-4 sm:px-6 py-20 md:py-28 text-center scroll-mt-24">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -64,12 +65,12 @@ const Index = () => {
           >
             <HeroPlankton />
             <TotalUsersStat variant="hero" className="mb-8" />
-            <div className="flex gap-3 flex-wrap justify-center items-start">
+            <div className="flex gap-3 sm:gap-4 flex-wrap justify-center items-center">
               <motion.button
                 type="button"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="neon-button text-primary font-bold"
+                whileHover={{ scale: 1.02, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                className="btn-hero-primary font-semibold shadow-glow-sm"
                 onClick={() => {
                   if (!connected) {
                     openWalletModal();
@@ -82,9 +83,9 @@ const Index = () => {
               </motion.button>
               <Link to="/swap">
                 <motion.span
-                  className="inline-block px-6 py-3 rounded-lg bg-secondary/50 text-foreground border border-border/50 hover:border-primary/30 transition-all font-semibold"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  className="inline-block btn-hero-secondary"
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   Swap
                 </motion.span>
@@ -93,9 +94,9 @@ const Index = () => {
                 <DialogTrigger asChild>
                   <motion.button
                     type="button"
-                    className="inline-flex items-center px-6 py-3 rounded-lg bg-secondary/50 text-foreground border border-border/50 hover:border-primary/30 transition-all font-semibold"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    className="inline-flex items-center btn-hero-secondary"
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    whileTap={{ scale: 0.98 }}
                   >
                     Demo
                   </motion.button>
@@ -126,7 +127,7 @@ const Index = () => {
           </motion.div>
         </section>
 
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 sm:px-6">
           {/* Research & Screening — manual tools, wallet-gated, tier limits */}
           <Section title="Research & Screening" id="research">
             <p className="text-sm text-muted-foreground mb-6">

@@ -97,10 +97,7 @@ export default function DocArticle() {
       <p className="docs-eyebrow text-[10px] font-mono uppercase tracking-[0.1em] text-[#5eead4]/80 mb-2">
         Documentation
       </p>
-      <h1
-        className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground mb-8"
-        style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-      >
+      <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-foreground mb-8 font-sans">
         {titleizeSlug(slug)}
       </h1>
       <div className="prose prose-invert prose-headings:font-bold prose-headings:tracking-tight max-w-none prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:text-foreground/95 docs-article-prose">

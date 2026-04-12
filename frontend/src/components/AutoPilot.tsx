@@ -56,11 +56,11 @@ const AutoPilot = () => {
   const formatSol = (n: number) => (n >= 0 ? `+${n.toFixed(1)}` : n.toFixed(1)) + " SOL";
 
   return (
-    <div className="glass-card rounded-xl p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h3 className="text-lg font-bold text-foreground">Autonomous Agent Protocol</h3>
-          <p className="text-xs text-muted-foreground mt-1">Auto Pilot - Your Agent Partner</p>
+    <div className="workspace-card p-0 overflow-hidden flex flex-col">
+      <div className="workspace-toolbar justify-between items-start sm:items-center gap-3">
+        <div className="min-w-0 text-left">
+          <h3 className="text-base md:text-lg font-bold text-foreground tracking-tight">Autonomous Agent</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Auto Pilot · risk & execution</p>
         </div>
         {connected && (
           <motion.button
@@ -83,20 +83,21 @@ const AutoPilot = () => {
         )}
       </div>
 
+      <div className="p-6 md:p-7 flex-1 flex flex-col">
       {!connected ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="rounded-xl bg-secondary/40 border border-border/40 p-6 text-center"
+          className="rounded-2xl bg-secondary/35 border border-border/45 p-8 text-center shadow-surface-sm"
         >
-          <p className="text-sm text-muted-foreground mb-4">
-            Connect your wallet to access the setup guide, how it works, and benefits.
+          <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+            Connect your wallet to configure Auto Pilot, view P/L, and align risk with your subscription tier.
           </p>
           <motion.button
-            whileHover={{ scale: 1.03 }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={openWalletModal}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent/20 border border-accent/40 text-accent font-semibold hover:bg-accent/30 transition-colors"
+            className="btn-hero-primary inline-flex items-center gap-2 px-8"
           >
             <Wallet size={18} />
             Connect Wallet
@@ -112,7 +113,7 @@ const AutoPilot = () => {
             >
               {/* P/L Tracker */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-secondary/50 rounded-lg p-4 border border-border/30">
+                <div className="bg-secondary/45 rounded-xl p-4 border border-border/40 shadow-surface-sm">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
                     <TrendingUp size={14} />
                     <span>Profit (24h)</span>
@@ -125,7 +126,7 @@ const AutoPilot = () => {
                     {formatSol(profit24h)}
                   </motion.span>
                 </div>
-                <div className="bg-secondary/50 rounded-lg p-4 border border-border/30">
+                <div className="bg-secondary/45 rounded-xl p-4 border border-border/40 shadow-surface-sm">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
                     <TrendingDown size={14} />
                     <span>Total P/L</span>
@@ -167,11 +168,13 @@ const AutoPilot = () => {
           )}
 
           {/* SOON — only when connected */}
-          <div className="w-full mt-5 border-t border-border/30 pt-5">
-            <p className="text-sm font-semibold text-primary">SOON</p>
+          <div className="w-full mt-6 border-t border-border/35 pt-6">
+            <p className="text-sm font-semibold text-primary tracking-wide">SOON</p>
+            <p className="text-xs text-muted-foreground mt-1">Deeper execution controls ship next.</p>
           </div>
         </>
       )}
+      </div>
     </div>
   );
 };

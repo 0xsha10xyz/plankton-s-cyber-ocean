@@ -16,8 +16,17 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Space Grotesk", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
+        sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+        display: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+      },
+      boxShadow: {
+        surface:
+          "0 0 0 1px hsl(0 0% 100% / 0.04) inset, 0 24px 48px -24px hsl(220 60% 2% / 0.85), 0 8px 16px -8px hsl(200 40% 6% / 0.45)",
+        "surface-sm":
+          "0 0 0 1px hsl(0 0% 100% / 0.03) inset, 0 12px 32px -16px hsl(220 60% 4% / 0.65)",
+        glow: "0 0 40px -8px hsl(180 90% 50% / 0.35)",
+        "glow-sm": "0 0 24px -6px hsl(180 85% 48% / 0.28)",
       },
       colors: {
         border: "hsl(var(--border))",

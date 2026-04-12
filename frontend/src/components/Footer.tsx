@@ -24,8 +24,9 @@ const socials = [
 
 const Footer = () => {
   return (
-    <footer className="border-t border-border/30 mt-20">
-      <div className="container mx-auto px-4 py-12">
+    <footer className="relative mt-24 border-t border-border/40 bg-gradient-to-b from-transparent to-[hsl(222_50%_5%/0.85)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
+      <div className="container mx-auto px-4 sm:px-6 py-14 md:py-16">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <img
@@ -47,7 +48,7 @@ const Footer = () => {
                 href={s.href}
                 target={s.href.startsWith("http") ? "_blank" : undefined}
                 rel={s.href.startsWith("http") ? "noopener noreferrer" : undefined}
-                className="w-10 h-10 rounded-lg bg-secondary/50 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors"
+                className="w-10 h-10 rounded-xl bg-secondary/45 border border-border/45 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 hover:shadow-glow-sm hover:-translate-y-0.5 transition-all duration-300"
                 title={s.name}
               >
                 <s.icon />

@@ -533,19 +533,23 @@ export default function Swap() {
       <div className="relative min-h-screen">
         <ParticleBackground />
         <Header />
-        <main className="relative z-10 pt-24 container mx-auto px-4 py-16">
-          <div className="glass-card rounded-xl p-8 max-w-md mx-auto text-center">
-            <Wallet className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <h1 className="text-xl font-bold text-foreground mb-2">Connect wallet to swap</h1>
-            <p className="text-sm text-muted-foreground mb-6">
-              Manual swap is available after you connect your Solana wallet. Use the chart and swap form to trade until the autonomous agent is ready.
+        <main className="relative z-10 pt-28 container mx-auto px-4 sm:px-6 py-16 md:py-20">
+          <div className="workspace-card max-w-lg mx-auto p-10 md:p-12 text-center">
+            <p className="text-[11px] font-semibold tracking-[0.22em] text-primary/75 uppercase mb-3">Trading</p>
+            <Wallet className="mx-auto mb-5 h-14 w-14 text-primary/85 p-3 rounded-2xl bg-primary/10 border border-primary/25 shadow-surface-sm" />
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-b from-foreground to-foreground/80 bg-clip-text text-transparent mb-3">
+              Connect wallet to swap
+            </h1>
+            <p className="text-sm text-muted-foreground mb-8 leading-relaxed max-w-sm mx-auto">
+              Manual swap unlocks after you connect. Route through Jupiter with live chart context—same stack as the agent workspace.
             </p>
-            <Button onClick={openWalletModal} className="gap-2">
+            <button type="button" onClick={openWalletModal} className="btn-hero-primary inline-flex items-center justify-center gap-2 px-10">
               <Wallet size={18} />
               Connect Wallet
-            </Button>
+            </button>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
@@ -554,21 +558,26 @@ export default function Swap() {
     <div className="relative min-h-screen">
       <ParticleBackground />
       <Header />
-      <main className="relative z-10 pt-24 container mx-auto px-4 py-8">
+      <main className="relative z-10 pt-28 pb-16 container mx-auto px-4 sm:px-6">
         <div>
-        <motion.h1
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="section-title mb-6"
-        >
-          Swap
-        </motion.h1>
-        <div className="flex flex-wrap items-center gap-4 mb-8">
+        <div className="mb-10 md:mb-12">
+          <p className="text-[11px] font-semibold tracking-[0.22em] text-primary/75 uppercase mb-2">Trading</p>
+          <motion.h1
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            className="section-title mb-2"
+          >
+            Swap
+          </motion.h1>
+          <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
+            Quotes and execution via Jupiter. Chart reflects your selected pair or USD reference.
+          </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <div className="glass-card rounded-xl p-6">
+            <div className="workspace-card p-6 md:p-7">
               <TradingChart
                 pairLabel={pairLabel}
                 inputMint={chartBaseMint}
@@ -579,13 +588,13 @@ export default function Swap() {
             </div>
           </div>
 
-          <div className="glass-card rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <ArrowDownLeft size={18} className="text-primary" />
-              <h2 className="text-base font-semibold text-foreground">Swap</h2>
+          <div className="workspace-card p-0 overflow-hidden flex flex-col">
+            <div className="workspace-toolbar">
+              <ArrowDownLeft size={18} className="text-primary shrink-0" />
+              <h2 className="text-base font-semibold text-foreground tracking-tight">Execute trade</h2>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 p-6 md:p-7">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">From</label>
                 <div className="flex gap-2">
@@ -605,7 +614,7 @@ export default function Swap() {
                       step="any"
                       value={amount}
                       onChange={(e) => { setAmount(e.target.value); setQuote(null); }}
-                      className="w-full bg-secondary/50 border-border"
+                      className="w-full rounded-xl bg-secondary/45 border-border/60 h-11 text-base"
                     />
                     <p className="text-xs text-muted-foreground">
                       Balance: {getBalanceForToken(inputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })} {getSymbol(inputToken.mint)}
@@ -627,10 +636,10 @@ export default function Swap() {
               <div className="flex justify-center">
                 <motion.button
                   type="button"
-                  whileHover={{ scale: 1.05 }}
+                  whileHover={{ scale: 1.05, y: -1 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={switchTokens}
-                  className="p-2 rounded-lg border border-border/50 hover:bg-secondary/50 text-muted-foreground hover:text-foreground"
+                  className="p-2.5 rounded-xl border border-border/55 bg-secondary/35 shadow-surface-sm text-muted-foreground hover:text-primary hover:border-primary/35 transition-colors"
                   aria-label="Switch tokens"
                 >
                   <ArrowDownLeft size={20} className="rotate-180" />
@@ -661,7 +670,7 @@ export default function Swap() {
                             })()
                           : ""
                       }
-                      className="w-full bg-secondary/30 border-border text-muted-foreground"
+                      className="w-full rounded-xl bg-secondary/30 border-border/50 text-muted-foreground h-11"
                     />
                     <p className="text-xs text-muted-foreground">
                       Balance: {getBalanceForToken(outputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })} {getSymbol(outputToken.mint)}
@@ -693,12 +702,12 @@ export default function Swap() {
                 </p>
               )}
 
-              <div className="flex gap-2 pt-2">
+              <div className="flex gap-3 pt-3">
                 <Button
                   variant="secondary"
                   onClick={fetchQuote}
                   disabled={quoteLoading || !amount.trim() || hasInsufficientBalance}
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-2 h-11 rounded-xl border border-border/55 bg-secondary/45 hover:bg-secondary/65 shadow-surface-sm"
                 >
                   {quoteLoading ? <Loader2 size={16} className="animate-spin" /> : null}
                   Get quote
@@ -706,7 +715,7 @@ export default function Swap() {
                 <Button
                   onClick={() => void executeSwap()}
                   disabled={swapLoading || !quote}
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-2 h-11 rounded-xl bg-gradient-to-r from-primary to-teal-600 hover:opacity-95 text-primary-foreground border border-primary/35 shadow-glow-sm disabled:opacity-40"
                 >
                   {swapLoading ? <Loader2 size={16} className="animate-spin" /> : null}
                   Swap

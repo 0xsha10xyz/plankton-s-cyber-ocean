@@ -60,11 +60,7 @@ export function IntegrationsSection() {
         <p className="text-[11px] font-semibold tracking-[0.3em] text-muted-foreground uppercase">
           Ecosystem
         </p>
-        <h2
-          id="partners-title"
-          className="text-2xl md:text-3xl font-bold text-foreground mt-2"
-          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-        >
+        <h2 id="partners-title" className="section-title section-title--center mt-3 md:text-[1.85rem]">
           Partners &amp; Integrations
         </h2>
         <p className="mt-3 text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
@@ -73,7 +69,7 @@ export function IntegrationsSection() {
         </p>
       </div>
 
-      <div className="relative overflow-hidden rounded-3xl">
+      <div className="relative overflow-hidden rounded-3xl border border-border/30 bg-gradient-to-b from-secondary/20 to-transparent shadow-surface-sm">
         {/* Edge fades */}
         <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-24 bg-gradient-to-r from-background to-transparent z-10" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-24 bg-gradient-to-l from-background to-transparent z-10" />
