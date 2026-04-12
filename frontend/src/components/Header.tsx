@@ -149,6 +149,19 @@ const Header = () => {
                 active &&
                 "after:content-[''] after:absolute after:left-2 after:right-2 after:bottom-0 after:h-0.5 after:bg-primary after:rounded-full after:opacity-60";
               if (path) {
+                if (path === "/docs") {
+                  return (
+                    <a
+                      key={path}
+                      href={path}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(linkClass, activeUnderline)}
+                    >
+                      {item.label}
+                    </a>
+                  );
+                }
                 return (
                   <Link
                     key={path}
@@ -297,6 +310,20 @@ const Header = () => {
                     active ? "text-primary font-semibold bg-primary/10 border-l-2 border-primary" : "text-muted-foreground hover:text-primary"
                   );
                   if (path) {
+                    if (path === "/docs") {
+                      return (
+                        <a
+                          key={path}
+                          href={path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={mobileItemClass}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          {item.label}
+                        </a>
+                      );
+                    }
                     return (
                       <Link
                         key={path}
