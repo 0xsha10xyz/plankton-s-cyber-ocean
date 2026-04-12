@@ -678,6 +678,37 @@ marketRouter.get("/token-info", async (req: Request, res: Response) => {
     return;
   }
 
+  if (req.query.holders === "1") {
+    const jupiterSearchUrls = [
+      `https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`,
+      `https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`,
+    ];
+    for (const jupUrl of jupiterSearchUrls) {
+      try {
+        const jupRes = await fetch(jupUrl, { headers: { Accept: "application/json" } });
+        if (!jupRes.ok) continue;
+        const arr = (await jupRes.json()) as unknown;
+        const list = Array.isArray(arr) ? arr : [];
+        const row =
+          list.find((x: unknown) => x && typeof x === "object" && (x as { id?: string }).id === mint) ??
+          list[0];
+        const hc =
+          row && typeof row === "object" && typeof (row as { holderCount?: unknown }).holderCount === "number"
+            ? (row as { holderCount: number }).holderCount
+            : null;
+        if (hc !== null && Number.isFinite(hc) && hc >= 0) {
+          res.setHeader("Cache-Control", "public, max-age=90, s-maxage=180");
+          res.json({ mint, holderCount: Math.floor(hc) });
+          return;
+        }
+      } catch {
+        continue;
+      }
+    }
+    res.status(502).json({ error: "Holder count unavailable" });
+    return;
+  }
+
   const apiKey = process.env.BIRDEYE_API_KEY;
   if (apiKey) {
     try {
@@ -795,42 +826,4 @@ marketRouter.get("/token-info", async (req: Request, res: Response) => {
   }
 
   res.status(404).json({ error: "Token not found or invalid mint" });
-});
-
-/**
- * GET /api/market/pap-holders
- * Wallets with indexed PAP balance (Jupiter tokens API). Mint: keep in sync with `frontend/src/lib/papToken.ts`.
- */
-const PAP_MINT_HOLDERS = "65Fp9stRoiF9AY4FqmpLTGGaeTkiv7duwiRCZrUGpump";
-
-marketRouter.get("/pap-holders", async (_req: Request, res: Response) => {
-  const jupiterSearchUrls = [
-    `https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(PAP_MINT_HOLDERS)}`,
-    `https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(PAP_MINT_HOLDERS)}`,
-  ];
-
-  for (const jupUrl of jupiterSearchUrls) {
-    try {
-      const jupRes = await fetch(jupUrl, { headers: { Accept: "application/json" } });
-      if (!jupRes.ok) continue;
-      const arr = (await jupRes.json()) as unknown;
-      const list = Array.isArray(arr) ? arr : [];
-      const row =
-        list.find((x: unknown) => x && typeof x === "object" && (x as { id?: string }).id === PAP_MINT_HOLDERS) ??
-        list[0];
-      const hc =
-        row && typeof row === "object" && typeof (row as { holderCount?: unknown }).holderCount === "number"
-          ? (row as { holderCount: number }).holderCount
-          : null;
-      if (hc !== null && Number.isFinite(hc) && hc >= 0) {
-        res.setHeader("Cache-Control", "public, max-age=90, s-maxage=180");
-        res.json({ mint: PAP_MINT_HOLDERS, holderCount: hc });
-        return;
-      }
-    } catch {
-      continue;
-    }
-  }
-
-  res.status(502).json({ error: "Holder count unavailable" });
 });

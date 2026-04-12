@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getApiBase } from "@/lib/api";
+import { PAP_TOKEN_MINT } from "@/lib/papToken";
 
 export type PapHolderCountState =
   | { status: "loading"; holderCount: null }
@@ -7,7 +8,7 @@ export type PapHolderCountState =
   | { status: "error"; holderCount: null };
 
 /**
- * Live count of wallets holding PAP (Jupiter index via same-origin `/api/market/pap-holders`).
+ * Live count of wallets holding PAP (Jupiter index via `GET /api/market/token-info?mint=...&holders=1`).
  */
 export function usePapHolderCount(): PapHolderCountState {
   const [state, setState] = useState<PapHolderCountState>({ status: "loading", holderCount: null });
@@ -15,7 +16,8 @@ export function usePapHolderCount(): PapHolderCountState {
   useEffect(() => {
     const ac = new AbortController();
     const base = getApiBase();
-    fetch(`${base.replace(/\/$/, "")}/api/market/pap-holders`, { signal: ac.signal })
+    const q = new URLSearchParams({ mint: PAP_TOKEN_MINT, holders: "1" });
+    fetch(`${base.replace(/\/$/, "")}/api/market/token-info?${q.toString()}`, { signal: ac.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((j: { holderCount?: unknown }) => {
         const n = j?.holderCount;

@@ -8,7 +8,7 @@ type Props = {
 };
 
 /**
- * Renders live PAP holder count from `/api/market/pap-holders` (Jupiter-indexed).
+ * Renders live PAP holder count from `/api/market/token-info?mint=...&holders=1` (Jupiter-indexed).
  */
 export function PapHoldersMetric({ className, variant = "card" }: Props) {
   const { status, holderCount } = usePapHolderCount();

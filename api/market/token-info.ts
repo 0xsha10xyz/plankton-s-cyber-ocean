@@ -1,5 +1,6 @@
 /**
  * Vercel serverless: GET /api/market/token-info?mint=...
+ * - Optional `holders=1`: returns `{ mint, holderCount }` only (Jupiter v2 search; avoids a 13th serverless fn on Hobby).
  * Resolves token name/symbol + decimals (Birdeye/Jupiter/RPC fallback).
  *
  * UI expects a readable "token name" (not CA-like truncation). To achieve that reliably,
@@ -207,6 +208,40 @@ async function getMetaplexMetadata(
   }
 }
 
+/** Jupiter tokens v2 search — holder index (same source as former `/api/market/pap-holders`). */
+async function fetchJupiterHolderCount(mint: string): Promise<number | null> {
+  const jupiterSearchUrls = [
+    `https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`,
+    `https://api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`,
+  ];
+  const apiKey =
+    process.env.JUPITER_API_KEY ||
+    process.env.JUPITER_TOKEN_API_KEY ||
+    process.env.JUP_AGGREGATOR_API_KEY;
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (apiKey) headers["x-api-key"] = apiKey;
+
+  for (const jupUrl of jupiterSearchUrls) {
+    try {
+      const jupRes = await fetch(jupUrl, { headers });
+      if (!jupRes.ok) continue;
+      const arr = (await jupRes.json()) as unknown;
+      const list = Array.isArray(arr) ? arr : [];
+      const row =
+        list.find((x: unknown) => x && typeof x === "object" && (x as { id?: string }).id === mint) ??
+        list[0];
+      const hc =
+        row && typeof row === "object" && typeof (row as { holderCount?: unknown }).holderCount === "number"
+          ? (row as { holderCount: number }).holderCount
+          : null;
+      if (hc !== null && Number.isFinite(hc) && hc >= 0) return Math.floor(hc);
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if ((req.method || "GET").toUpperCase() !== "GET") {
     sendJson(res, 405, { error: "Method not allowed" });
@@ -219,6 +254,23 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   if (!mint || mint.length < 32 || mint.length > 44) {
     sendJson(res, 400, { error: "Missing or invalid mint (expected 32–44 character base58)" });
+    return;
+  }
+
+  /** `holders=1` — only return Jupiter-indexed holder count (keeps Hobby plan ≤12 serverless functions). */
+  if (searchParams.get("holders") === "1") {
+    const holderCount = await fetchJupiterHolderCount(mint);
+    if (holderCount !== null) {
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader("Cache-Control", "public, max-age=90, s-maxage=180");
+      res.end(JSON.stringify({ mint, holderCount }));
+      return;
+    }
+    res.statusCode = 502;
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "public, max-age=30");
+    res.end(JSON.stringify({ error: "Holder count unavailable" }));
     return;
   }
 
