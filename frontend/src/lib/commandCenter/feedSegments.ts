@@ -51,9 +51,10 @@ export function feedEventToSegments(ev: FeedEvent): FeedSegment[] {
           : isPumpFunMint(ev.mintAddress)
             ? `Coin on pump.fun: ${ev.mintAddress}`
             : profileLabel;
+      const title =
+        ev.tokenDisplayName?.trim() || shortAddr(ev.mintAddress);
       const out: FeedSegment[] = [
-        s("[NEW_TOKEN] "),
-        s(ev.symbol ?? "?"),
+        s(title),
         s(" · "),
         s(shortAddr(ev.mintAddress), DEXSCREENER_SOLANA_TOKEN(ev.mintAddress), `Token on DexScreener: ${ev.mintAddress}`),
       ];

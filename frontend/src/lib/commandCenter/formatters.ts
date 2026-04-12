@@ -5,7 +5,7 @@ export function formatFeedEvent(ev: FeedEvent): string {
   switch (ev.type) {
     case "NEW_TOKEN": {
       const profile = ev.boostActive === true ? "boosted" : "profile";
-      const sym = ev.symbol ?? "?";
+      const sym = ev.tokenDisplayName?.trim() || shortAddr(ev.mintAddress);
       const dex = ev.dex ? ` · ${ev.dex}` : "";
       const creator =
         ev.creatorAddress != null
@@ -13,7 +13,7 @@ export function formatFeedEvent(ev: FeedEvent): string {
           : isPumpFunMint(ev.mintAddress)
             ? " · creator (pump.fun)"
             : "";
-      return `[NEW_TOKEN] ${sym} · ${shortAddr(ev.mintAddress)}${dex}${creator} · ${profile}`;
+      return `${sym} · ${shortAddr(ev.mintAddress)}${dex}${creator} · ${profile}`;
     }
     case "LARGE_TRANSFER": {
       const usd = ev.valueUSD ? ` · $${ev.valueUSD}` : "";
