@@ -14,6 +14,11 @@ function s(text: string, href?: string, label?: string): FeedSegment {
   return href ? { text, href, label: label ?? text } : { text };
 }
 
+/** DexScreener uses "twitter" for X links — show the current product name in the terminal. */
+function dexLinkDisplayName(rawKey: string): string {
+  return rawKey.toLowerCase() === "twitter" ? "X" : rawKey;
+}
+
 function appendDexLinks(links: Record<string, string> | undefined, out: FeedSegment[]): void {
   if (!links) return;
   const entries = Object.entries(links).filter(
@@ -22,8 +27,9 @@ function appendDexLinks(links: Record<string, string> | undefined, out: FeedSegm
   const max = 4;
   for (let i = 0; i < Math.min(entries.length, max); i += 1) {
     const [name, url] = entries[i];
+    const label = dexLinkDisplayName(name);
     out.push(s(" · "));
-    out.push(s(name, url, `${name} (opens in new tab)`));
+    out.push(s(label, url, `${label} (opens in new tab)`));
   }
 }
 
