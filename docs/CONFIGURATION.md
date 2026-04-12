@@ -28,7 +28,7 @@ Each file under `api/**/*.ts` becomes a **separate** serverless function. The **
 
 ## Command Center feeds — Bitquery, DexScreener, and RPC (Vercel)
 
-The dashboard **Command Center** combines several data paths. **DexScreener** and **Bitquery WebSocket** calls run **in the browser**; they do **not** add one serverless invocation per poll or per stream tick. Only **`GET /api/config`** (cached) and **`POST /api/rpc`** (when the app reads chain state) consume Vercel functions as usual.
+The dashboard **Command Center** combines several data paths. **DexScreener** and **Bitquery WebSocket** calls run **in the browser**; they do **not** add one serverless invocation per poll or per stream tick. The browser still calls **`GET /api/config`**, which Vercel **rewrites** to **`GET /api/health?mode=config`** (same serverless function as **`/api/health`**, to stay within the Hobby **12-function** limit). **`POST /api/rpc`** runs when the app reads chain state.
 
 ### What to set on Vercel (production)
 
@@ -52,7 +52,7 @@ Do **not** add new `api/*.ts` routes for these feeds unless you must; that would
 
 5. In Vercel: **Settings → Environment Variables** → **`BITQUERY_TOKEN`** = *(paste token)* → **Save** → **Redeploy**.
 
-The frontend loads public config from **`GET /api/config`**, which returns `bitqueryToken` from `process.env.BITQUERY_TOKEN` (see `api/config.ts`). The browser then connects to Bitquery’s streaming URL with that value in the **`X-API-KEY`** header (`frontend/src/hooks/useBitqueryStream.ts`).
+The frontend loads public config from **`GET /api/config`** (implemented by **`api/health.ts`** when `mode=config`; see `vercel.json` rewrite). It returns `bitqueryToken` from `process.env.BITQUERY_TOKEN`. The browser then connects to Bitquery’s streaming URL with that value in the **`X-API-KEY`** header (`frontend/src/hooks/useBitqueryStream.ts`).
 
 ### DexScreener (launches)
 

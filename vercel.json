@@ -2,6 +2,10 @@
   "buildCommand": "npm run build && npm run vercel-build",
   "outputDirectory": "dist",
   "rewrites": [
+    {
+      "source": "/api/config",
+      "destination": "/api/health?mode=config"
+    },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "headers": [

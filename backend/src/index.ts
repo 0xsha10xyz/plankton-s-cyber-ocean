@@ -91,7 +91,7 @@ if (process.env.API_GATEWAY_ENABLED !== "0") {
   app.use("/api/v1", gatewayRouter);
 }
 
-/** Same JSON as Vercel `api/config.ts` — used when Vite proxies /api to this server in local dev. */
+/** Same JSON as Vercel `GET /api/health?mode=config` (and rewrite `/api/config` → that) — local dev when Vite proxies `/api` here. */
 app.get("/api/config", (_req, res) => {
   res.setHeader("Cache-Control", "private, max-age=60");
   res.json({
