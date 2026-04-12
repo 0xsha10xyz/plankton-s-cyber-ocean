@@ -27,23 +27,31 @@ This installs dependencies for all workspaces (frontend and backend).
 
 ```
 plankton-s-cyber-ocean/
-├── frontend/          # Vite + React app
+├── frontend/          # Vite + React app (SPA)
 │   ├── src/
-│   │   ├── components/  # UI components, Account sidebar, Agent chat, etc.
-│   │   ├── contexts/   # Wallet, Account, WalletModal
-│   │   ├── pages/      # Index, NotFound
+│   │   ├── components/  # UI, Account sidebar, Agent chat, etc.
+│   │   ├── contexts/   # Wallet, Account, Subscription, …
+│   │   ├── pages/      # Index, Swap, Docs, Agent chat, …
 │   │   └── ...
+│   ├── public/         # Static assets (e.g. printable documentation HTML)
 │   ├── package.json
 │   └── ...
-├── backend/           # Express + TypeScript API
+├── api/               # Vercel serverless (Node) — same-origin /api/* in production
+│   ├── market/        # price, OHLCV, token-info, …
+│   ├── jupiter/       # quote/swap proxy
+│   └── ...
+├── backend/           # Express + TypeScript API (local dev or full VPS deploy)
 │   ├── src/
-│   │   ├── routes/     # health, research, subscription, agent
+│   │   ├── routes/     # health, research, subscription, agent, market, …
 │   │   └── index.ts
 │   ├── package.json
 │   └── ...
-├── docs/              # This documentation
+├── docs/              # Maintainer documentation (this folder)
+├── SECURITY.md        # Secrets and safe contribution (repo root)
 └── package.json       # Root workspace config
 ```
+
+For **secrets and `.env`**, see **[SECURITY.md](../SECURITY.md)** and **[Configuration](./CONFIGURATION.md)**.
 
 ## Environment (optional)
 

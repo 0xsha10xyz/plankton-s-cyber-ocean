@@ -69,13 +69,17 @@ See **[SECURITY.md](SECURITY.md)** for details and what must never be pushed to 
 
 ## Documentation
 
-User-facing documentation is available in the app: use **Docs** on the page and click **Open documentation**. That opens a readable doc (HTML) that users can also **print to PDF** from their browser.
+| Audience | Where | Notes |
+|----------|--------|--------|
+| **Forks & deployers** | **[docs/README.md](docs/README.md)** → **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)** | Env vars, Vercel vs VPS, integrations |
+| **Security** | **[SECURITY.md](SECURITY.md)** | Never commit `.env`; key rotation |
+| **In-app users** | **Docs** route in the app + **[plankton-documentation.html](frontend/public/plankton-documentation.html)** (`/plankton-documentation.html`) | Printable PDF-friendly HTML; no secrets |
+| **Maintainer source** | **[docs/plankton-documentation.md](docs/plankton-documentation.md)** | Same content as the HTML; keep secrets out |
 
-- **In-app / PDF:** `frontend/public/plankton-documentation.html` (served at `/plankton-documentation.html`). No environment variables or secrets are included; a link to the project repository is included for source code and updates only.
-- **Source (for maintainers):** `docs/plankton-documentation.md`. Keep `.env` and any secrets out of all docs for user security.
-- **Integrations (wired services):** `docs/INTEGRATIONS.md` — Claude, Groq, OpenAI, Jupiter, Birdeye, Solana RPC, Redis/KV, x402, Vercel vs VPS.
-- **API recommendations (roadmap):** `docs/api-recommendations.md` — additional external APIs for future agent and research features.
-- **Language:** User-facing **UI** and **maintainer docs** are in **English**. The **Plankton Agent** chat replies in the **same language as the user’s latest message** when possible. See **[docs/language-and-localization.md](docs/language-and-localization.md)** and **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**.
+- **Integrations:** **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)** — Claude, Groq, OpenAI, Jupiter, Birdeye, Solana RPC, Redis/KV, x402, Vercel vs VPS.
+- **Deployment:** **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — Root Directory `.`, Hobby serverless limits, hybrid setups.
+- **API gateway (optional):** **[docs/API_GATEWAY.md](docs/API_GATEWAY.md)** — hashed API keys and `/api/v1` on the Express backend for external integrations.
+- **Language:** UI and maintainer docs are **English**. The Plankton Agent replies in the **same language as the user’s latest message** when possible. See **[docs/language-and-localization.md](docs/language-and-localization.md)**.
 
 ## Demo video
 

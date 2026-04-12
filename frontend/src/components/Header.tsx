@@ -90,7 +90,10 @@ const Header = () => {
   };
 
   const isActive = (item: (typeof NAV_CONFIG)[number]) => {
-    if (item.path) return pathname === item.path;
+    if (item.path) {
+      if (item.path === "/docs") return pathname === "/docs" || pathname.startsWith("/docs/");
+      return pathname === item.path;
+    }
     return pathname === "/" && activeSection === item.sectionId;
   };
 
@@ -146,21 +149,6 @@ const Header = () => {
                 active &&
                 "after:content-[''] after:absolute after:left-2 after:right-2 after:bottom-0 after:h-0.5 after:bg-primary after:rounded-full after:opacity-60";
               if (path) {
-                const isDocs = path === "/docs";
-                // Open docs in a new tab to keep main app state
-                if (isDocs) {
-                  return (
-                    <a
-                      key={path}
-                      href={path}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={cn(linkClass, activeUnderline)}
-                    >
-                      {item.label}
-                    </a>
-                  );
-                }
                 return (
                   <Link
                     key={path}
@@ -308,23 +296,7 @@ const Header = () => {
                     "min-h-[44px] flex items-center px-3 py-3 text-sm transition-colors text-left rounded-md hover:bg-secondary/50",
                     active ? "text-primary font-semibold bg-primary/10 border-l-2 border-primary" : "text-muted-foreground hover:text-primary"
                   );
-                  // Direct route (e.g. /swap, /docs)
                   if (path) {
-                    const isDocs = path === "/docs";
-                    if (isDocs) {
-                      return (
-                        <a
-                          key={path}
-                          href={path}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={mobileItemClass}
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          {item.label}
-                        </a>
-                      );
-                    }
                     return (
                       <Link
                         key={path}

@@ -128,6 +128,111 @@
     @apply text-2xl md:text-3xl font-bold tracking-tight;
     color: hsl(var(--foreground));
   }
+
+  /* Docs hub — authority + file links */
+  .docs-page .docs-body-muted {
+    color: #9bbfba;
+  }
+
+  .doc-link {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.875em;
+    color: var(--color-cyan, #2dd4bf);
+    background: rgba(45, 212, 191, 0.08);
+    border: 1px solid rgba(45, 212, 191, 0.2);
+    border-radius: 4px;
+    padding: 1px 6px;
+    text-decoration: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .doc-link:hover {
+    background: rgba(45, 212, 191, 0.16);
+    border-color: rgba(45, 212, 191, 0.4);
+    text-decoration: underline;
+  }
+
+  .docs-cmd {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8125em;
+    color: #2dd4bf;
+    background: rgba(15, 35, 32, 0.95);
+    border: 1px solid rgba(45, 212, 191, 0.18);
+    border-radius: 4px;
+    padding: 2px 7px;
+  }
+
+  .docs-info-card {
+    background: linear-gradient(135deg, #0f2320 0%, #0a1a18 100%);
+    border: 1px solid hsl(180 85% 45% / 0.22);
+    border-top: 2px solid #2dd4bf;
+    box-shadow:
+      0 0 0 1px hsl(180 90% 50% / 0.06) inset,
+      0 24px 48px -24px hsl(200 80% 5% / 0.55);
+  }
+
+  .docs-hero-shell {
+    background:
+      linear-gradient(135deg, hsl(200 60% 10% / 0.88) 0%, hsl(195 50% 8% / 0.92) 45%, hsl(220 45% 7% / 0.96) 100%);
+    box-shadow: 0 32px 64px -32px hsl(210 80% 4% / 0.75), inset 0 1px 0 hsl(180 90% 55% / 0.12);
+  }
+
+  .docs-hero-mesh {
+    position: absolute;
+    inset: 0;
+    opacity: 0.55;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 20%, hsl(180 90% 50% / 0.14), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 85% 30%, hsl(195 80% 45% / 0.1), transparent 50%),
+      radial-gradient(ellipse 60% 40% at 40% 90%, hsl(160 70% 40% / 0.08), transparent 50%);
+    animation: docs-mesh-shift 14s ease-in-out infinite;
+  }
+
+  .docs-hero-dots {
+    position: absolute;
+    inset: 0;
+    opacity: 0.35;
+    background-image: radial-gradient(hsl(180 90% 70% / 0.12) 1px, transparent 1px);
+    background-size: 18px 18px;
+    mask-image: linear-gradient(to bottom, black, transparent 92%);
+  }
+
+  @keyframes docs-mesh-shift {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(-2%, 1%) scale(1.02);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .docs-hero-mesh {
+      animation: none;
+    }
+  }
+
+  .docs-trust-chip {
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .docs-trust-chip:hover {
+    box-shadow: 0 0 8px rgba(45, 212, 191, 0.35);
+    border-color: rgba(45, 212, 191, 0.45);
+  }
+
+  .docs-md-pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+
+  .docs-article-prose p,
+  .docs-article-prose li {
+    color: #9bbfba;
+    line-height: 1.7;
+  }
 }
 
 @layer utilities {

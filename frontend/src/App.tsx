@@ -16,7 +16,9 @@ import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Swap from "./pages/Swap";
-import Docs from "./pages/Docs";
+import DocsLayout from "@/components/docs/DocsLayout";
+import DocsHome from "@/components/docs/DocsHome";
+import DocArticle from "@/components/docs/DocArticle";
 import AgentChatPage from "./pages/AgentChatPage";
 
 const queryClient = new QueryClient();
@@ -43,7 +45,10 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/swap" element={<Swap />} />
-                  <Route path="/docs" element={<Docs />} />
+                  <Route path="/docs" element={<DocsLayout />}>
+                    <Route index element={<DocsHome />} />
+                    <Route path=":slug" element={<DocArticle />} />
+                  </Route>
                   <Route path="/agent-chat" element={<AgentChatPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>

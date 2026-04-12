@@ -2,6 +2,28 @@
 
 These steps are **manual**: create or edit `.env` files and fill in the required values. For a concise list of **third-party integrations** (LLM, Jupiter, Birdeye, RPC, Redis, x402), see **[Integrations](./INTEGRATIONS.md)**.
 
+## Who this is for
+
+- **Forking the repo** — Use this file together with **[README.md](../README.md)**, **[DEPLOYMENT.md](./DEPLOYMENT.md)**, and **[SECURITY.md](../SECURITY.md)**. Copy `frontend/.env.example` and `backend/.env.example` to `.env` (never commit real values).
+- **Security first** — If a key ever leaks, revoke it at the provider and rotate. Do not paste secrets into GitHub Issues, Discussions, or Discord without redacting.
+
+## Documentation map (read order)
+
+| Order | File | Purpose |
+|-------|------|---------|
+| 1 | [docs/README.md](./README.md) | Index of all maintainer docs |
+| 2 | [getting-started.md](./getting-started.md) | Install, run, structure |
+| 3 | **This file** | Environment variables, agent, Vercel/VPS |
+| 4 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Where the SPA, `api/`, and VPS fit |
+| 5 | [INTEGRATIONS.md](./INTEGRATIONS.md) | External services |
+| 6 | [SECURITY.md](../SECURITY.md) | What must never be committed |
+
+## Vercel Hobby: serverless function limit
+
+Each file under `api/**/*.ts` becomes a **separate** serverless function. The **Hobby** plan allows **12** functions per deployment. Adding a new top-level route file can push the project over the limit and fail the build. Prefer **extending an existing handler** (e.g. extra query parameters on `token-info`) instead of adding another `api/...` file unless you are on a higher plan or have removed another route.
+
+**Example:** Live PAP **holder count** is served as `GET /api/market/token-info?mint=<MINT>&holders=1` (returns `{ mint, holderCount }` from Jupiter’s index), not as a separate endpoint — to stay within the function budget.
+
 ---
 
 ## Custom domain (planktonomous.dev) — checklist

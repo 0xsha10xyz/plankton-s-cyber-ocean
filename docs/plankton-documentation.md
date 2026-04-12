@@ -31,11 +31,12 @@ This installs dependencies for the frontend and backend.
 
 ### Project structure
 
-- **frontend/** — Vite + React app (UI, wallet, account, AI chat).
-- **backend/** — Express + TypeScript API (health, research, subscription, agent).
-- **docs/** — Documentation source files.
+- **frontend/** — Vite + React app (UI, wallet, account, AI chat, Swap, Docs page).
+- **api/** — Vercel serverless handlers at the repo root (`/api/market/*`, `/api/jupiter/*`, etc.); production builds use same-origin `/api/*` when deployed with Root Directory **`.`**.
+- **backend/** — Express + TypeScript API (health, research, subscription, agent, market proxies for local dev or a full VPS).
+- **docs/** — Maintainer documentation (`CONFIGURATION.md`, `DEPLOYMENT.md`, `INTEGRATIONS.md`, …).
 
-Configuration is done via environment files in the frontend and backend. See **docs/CONFIGURATION.md** in the repository for step-by-step setup (Birdeye, RPC, production). These files are not included in the documentation for security. Do not share or commit them.
+Configuration is done via environment files in the frontend, backend, and hosting (e.g. Vercel). See **docs/CONFIGURATION.md** for step-by-step setup. Never commit real secrets; see **SECURITY.md** in the repository root.
 
 ### Build
 
@@ -125,9 +126,11 @@ The server allows requests from the frontend origin (e.g. http://localhost:8080 
 - `GET /api/stats/users` — Returns `{ count }`: number of unique wallets that have connected to the app. Used to display Total Users on the frontend.
 - `POST /api/stats/connect` — Body: `{ wallet: "<address>" }`. Registers a wallet (idempotent). Returns `{ count, isNew }`. The frontend calls this when a user connects their wallet so the count updates immediately.
 
-**Market (chart OHLCV)**
+**Market (chart OHLCV, token metadata)**
 
-- `GET /api/market/ohlcv?mint=<token_mint>&range=1H|4H|1D|1W` — Returns `{ data: [ { time, price }, ... ] }` from Birdeye. Requires `BIRDEYE_API_KEY` in backend env; if missing or request fails, returns `{ data: [] }` and the frontend uses sample data.
+- `GET /api/market/ohlcv?mint=<token_mint>&range=1H|4H|1D|1W` — Returns `{ data: [ { time, price }, ... ] }` from Birdeye when configured; otherwise sample data may be used.
+- `GET /api/market/token-info?mint=<mint>` — Symbol, name, decimals for a mint (Birdeye/Jupiter/RPC fallbacks).
+- `GET /api/market/token-info?mint=<mint>&holders=1` — Returns `{ mint, holderCount }` from Jupiter’s token index (used for PAP holder count on the dashboard; avoids an extra serverless function on small Vercel plans).
 
 **Wallet (balances)**
 
@@ -163,19 +166,21 @@ The backend allows the frontend origin in CORS. For other origins or deployment,
 
 ## 5. Roadmap
 
-The protocol roadmap is shown on the app and summarized here:
+The roadmap on the landing page is the source of truth; this table stays aligned with it.
 
-| Phase | Title | Description | Status |
-|-------|--------|-------------|--------|
-| 0 | Narrative | Plankton The Autonomous Protocol — All on Solana. | LIVE |
-| 1 | Foundation | Core infrastructure deployment. | LIVE |
-| 2 | Development | Protocol architecture design. | LIVE |
-| 3 | Pre Launch | MVP, Community building, Agent onboarding program. | SOON |
-| 4 | Security | Security audits. | SOON |
-| 5 | Token Launch | PAP deployment. | SOON |
-| 6 | Expansion | Marketing & partnerships. | SOON |
-| 7 | Governance | PAP Utility. | SOON |
-| 8 | Full Launch | The Autonomous Protocol. | SOON |
+| Phase | Title | Status |
+|-------|--------|--------|
+| 0 — Narrative | Vision and brand for Plankton on Solana | LIVE |
+| 1 — Foundation | Infrastructure, API, wallet, app shell | LIVE |
+| 2 — Core Development | Market data, Jupiter, chart, research, subscriptions | LIVE |
+| 3 — Pre Launch Mainnet | Soft-launch, community, trading UX iterations | LIVE |
+| 4 — Security & Reliability | Audits, hardening, monitoring | SOON |
+| 5 — Protocol Value & PAP Utility | PAP in the economic loop (fees, subscriptions) | SOON |
+| 6 — Expansion | Marketing and ecosystem integrations | SOON |
+| 7 — Governance | PAP-holder governance | SOON |
+| 8 — Full Launch | Mature autonomous protocol experience | SOON |
+
+**PAP (Plankton Autonomous Protocol)** is an SPL token on Solana; live mint and explorer links appear in the app **Tokenomics** section and **Docs** page.
 
 ---
 

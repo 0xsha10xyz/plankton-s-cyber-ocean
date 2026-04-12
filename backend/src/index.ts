@@ -16,6 +16,7 @@ import { researchRouter } from "./routes/research.js";
 import { subscriptionRouter } from "./routes/subscription.js";
 import { agentRouter } from "./routes/agent.js";
 import { rpcRouter } from "./routes/rpc.js";
+import { gatewayRouter } from "./gateway/router.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
@@ -43,6 +44,7 @@ app.use(
       "payment-signature",
       "PAYMENT-RESPONSE",
       "payment-response",
+      "X-Gateway-Admin-Secret",
     ],
   })
 );
@@ -69,7 +71,7 @@ app.options("/api/*", (_req, res) => {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, PAYMENT-SIGNATURE, PAYMENT-RESPONSE"
+    "Content-Type, Authorization, PAYMENT-SIGNATURE, PAYMENT-RESPONSE, X-Gateway-Admin-Secret"
   );
   res.setHeader("Access-Control-Max-Age", "86400");
   res.status(204).end();
@@ -85,11 +87,16 @@ app.use("/api/subscription", subscriptionRouter);
 app.use("/api/agent", agentRouter);
 app.use("/api/rpc", rpcRouter);
 
+if (process.env.API_GATEWAY_ENABLED !== "0") {
+  app.use("/api/v1", gatewayRouter);
+}
+
 app.get("/", (_req, res) => {
   res.json({
     name: "Plankton API",
     version: "0.0.0",
     docs: "/api/health",
+    gateway_v1: "/api/v1",
   });
 });
 

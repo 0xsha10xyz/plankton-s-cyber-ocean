@@ -1,28 +1,40 @@
 # Plankton Documentation
 
-Documentation for **Plankton's Cyber Ocean** — frontend app, backend API, wallet integration, Command Center, and AI agent.
+Documentation for **Plankton's Cyber Ocean** — frontend app, backend API, wallet integration, Command Center, and AI agent. This folder is for **operators and contributors** who fork or deploy the project.
 
 **Language:** **UI** and **maintainer documentation** are in **English**. The **Plankton Agent** matches the user’s latest message language when possible. See **[Language & localization](./language-and-localization.md)**.
+
+## Security (read first)
+
+- **[SECURITY.md](../SECURITY.md)** (repo root) — what must never be committed, wallet data handling, key rotation.
+- Never commit `.env` files; use `.env.example` templates with placeholders only.
 
 ## Contents
 
 | Doc | Description |
 |-----|-------------|
-| [Integrations](./INTEGRATIONS.md) | External APIs and services (Claude, Groq, Jupiter, Birdeye, Solana RPC, Redis, x402, Vercel vs VPS) |
+| [Getting started](./getting-started.md) | Install, run, and project structure (`frontend/`, `backend/`, `api/`) |
+| [Configuration](./CONFIGURATION.md) | Environment variables, charts, RPC, agent chat, Vercel vs VPS, Hobby function limit |
+| [API gateway](./API_GATEWAY.md) | Optional API keys, Bearer auth, rate limits (`/api/v1` on Express) |
+| [Deployment](./DEPLOYMENT.md) | Vercel SPA + root `api/` (Root Directory **`.`**) vs optional VPS |
+| [Integrations](./INTEGRATIONS.md) | External APIs (Claude, Groq, Jupiter, Birdeye, Solana RPC, Redis, x402) |
 | [Language & localization](./language-and-localization.md) | English UI/docs; agent reply language |
-| [Getting started](./getting-started.md) | Setup, run, and project structure |
-| [Configuration](./CONFIGURATION.md) | Environment variables, Birdeye, RPC, agent chat, Vercel + VPS |
-| [Deployment](./DEPLOYMENT.md) | Vercel SPA + root `api/` (set Root Directory to `.`) vs optional VPS |
 | [Frontend](./frontend.md) | App features, wallet, Account, AI chat, navigation |
 | [Backend API](./backend-api.md) | API reference, endpoints, and environment variables |
 | [Integration](./integration.md) | Using the API from the frontend |
-| [Deploy to Vercel](./deploy-vercel.md) | Static app on Vercel; `VITE_API_URL` points to the VPS API |
+| [Deploy to Vercel](./deploy-vercel.md) | Env checklist; same-origin `/api/*` |
 | [Helius setup](./helius-setup.md) | Helius webhook, agent logs, transaction types |
-| [Command Center (Redis & Helius)](./command-center-setup.md) | Configure Redis + Helius so Command Center is LIVE / real-time |
-| [MVP Overview](./mvp-overview.md) | Product overview, MVP features, technical flow, setup, usage, and roadmap |
+| [Command Center (Redis & Helius)](./command-center-setup.md) | Redis + Helius for Command Center |
+| [MVP Overview](./mvp-overview.md) | Product overview, MVP features, roadmap |
+
+## In-app Docs vs this folder
+
+- **In-app “Docs” page** (`/docs` route) — high-level overview, PAP token table, security principles, links into this documentation.
+- **`docs/plankton-documentation.md`** (+ **`frontend/public/plankton-documentation.html`**) — printable user-facing summary without secrets.
+- **This `docs/` directory** — full configuration and deployment detail for adopters.
 
 ## Quick links
 
 - **Run frontend:** `npm run dev` (from repo root) → http://localhost:8080  
 - **Run backend:** `npm run dev:backend` → http://localhost:3000  
-- **Repo structure:** `frontend/`, **`api/`** (Vercel serverless — must stay at repo root), `backend/` (optional VPS)
+- **Repo structure:** `frontend/`, **`api/`** (Vercel serverless — must stay at repo root), `backend/` (Express for local or VPS)
