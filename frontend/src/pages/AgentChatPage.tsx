@@ -149,8 +149,10 @@ function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonRes
 
   if (lower.includes("patties") || lower.includes("pap") || lower.includes("tokenomics") || lower.includes("burn")) {
     return {
-      insight: "PAP tokenomics: 50% of subscription fees paid in PAP are permanently burned, and the remaining 50% is used to add liquidity.",
-      additional_insight: "Track burn/liquidity cadence to anticipate volatility regime changes as PAP utility deepens.",
+      insight:
+        "PAP tokenomics: subscription payments in PAP are allocated 50% to permanent burn, 20% to liquidity, and 30% to marketing.",
+      additional_insight:
+        "Track burn, liquidity, and marketing allocation cadence as PAP utility deepens.",
       actions: ["Open Tokenomics", "Review Burn Mechanism", "Check PAP utility"],
     };
   }

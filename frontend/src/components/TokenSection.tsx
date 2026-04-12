@@ -81,8 +81,10 @@ const TokenSection = () => {
         </div>
 
         <p className="text-sm text-muted-foreground mb-6">
-          50% of all subscription fees paid in PAP are permanently burned and the remaining 50% to add liquidity.
-          PAP utility and supply mechanics will be finalized before the Protocol Value &amp; PAP Utility phase is activated.
+          Subscription payments made in PAP are allocated as follows: <span className="text-foreground/90">50%</span> is
+          permanently burned, <span className="text-foreground/90">20%</span> is added to liquidity, and{" "}
+          <span className="text-foreground/90">30%</span> is allocated to marketing. PAP utility and supply mechanics will be
+          finalized before the Protocol Value &amp; PAP Utility phase is activated.
         </p>
 
         {/* Fire animation - dramatic burn */}

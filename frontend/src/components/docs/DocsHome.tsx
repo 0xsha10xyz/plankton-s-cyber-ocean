@@ -400,11 +400,12 @@ export default function DocsHome() {
                 </tr>
                 <tr className="border-b border-border/15">
                   <td className="py-4 docs-body-muted flex items-center gap-2">
-                    <FireIcon /> Subscription burn (PAP)
+                    <FireIcon /> PAP subscription allocation
                   </td>
-                  <td className="py-4 text-right">
-                    <span className="font-mono font-bold text-destructive">50%</span>
-                    <span className="text-xs text-[#9BBFBA]/80 ml-2">burned · 50% to liquidity</span>
+                  <td className="py-4 text-right text-xs sm:text-sm font-mono text-[#9BBFBA]">
+                    <span className="font-bold text-destructive">50%</span> burn ·{" "}
+                    <span className="text-primary/90">20%</span> liquidity ·{" "}
+                    <span className="text-foreground/85">30%</span> marketing
                   </td>
                 </tr>
                 <tr>
@@ -425,8 +426,9 @@ export default function DocsHome() {
               <span className="text-sm font-semibold text-destructive tracking-wide">Burn mechanism</span>
             </div>
             <p className="text-xs md:text-sm docs-body-muted leading-[1.7] max-w-3xl">
-              50% of subscription fees paid in PAP are permanently burned; the remaining 50% is directed to liquidity. Further
-              utility detail ships with the Protocol Value &amp; PAP Utility phase on the public roadmap.
+              Subscription fees collected in PAP are allocated as follows: 50% is permanently burned, 20% is added to liquidity,
+              and 30% is allocated to marketing. Further utility detail ships with the Protocol Value &amp; PAP Utility phase on
+              the public roadmap.
             </p>
           </div>
         </HoloCard>
