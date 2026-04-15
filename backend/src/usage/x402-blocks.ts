@@ -24,8 +24,9 @@ function normalizeX402HeaderCasing(
   // Some runtimes (Express/Node) lowercase incoming header keys, while x402 v2 documentation uses uppercase.
   // `x402-solana` may accept either, but normalizing avoids brittle casing mismatches across proxies.
   const out: Record<string, string | string[] | undefined> = { ...headers };
-  const ps = out["payment-signature"] ?? out["PAYMENT-SIGNATURE"];
-  const pr = out["payment-response"] ?? out["PAYMENT-RESPONSE"];
+  // v2 canonical keys
+  const ps = out["payment-signature"] ?? out["PAYMENT-SIGNATURE"] ?? out["x-payment"];
+  const pr = out["payment-response"] ?? out["PAYMENT-RESPONSE"] ?? out["x-payment-response"];
   if (ps && !out["PAYMENT-SIGNATURE"]) out["PAYMENT-SIGNATURE"] = ps;
   if (ps && !out["payment-signature"]) out["payment-signature"] = ps;
   if (pr && !out["PAYMENT-RESPONSE"]) out["PAYMENT-RESPONSE"] = pr;
