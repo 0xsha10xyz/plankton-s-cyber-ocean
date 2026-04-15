@@ -805,12 +805,35 @@ export default function AgentChatPage() {
       try {
         if (!wallet.signMessage || !connectedWallet) {
           toast.error("Wallet must support message signing to use chat.");
+          reply = JSON.stringify({
+            insight: "Wallet signature required to send messages.",
+            additional_insight: "Your wallet must support signMessage. If you cancelled the prompt, try sending again.",
+            actions: [],
+          } satisfies AgentJsonResponse);
           return;
         }
+
         const usageTs = Date.now();
-        const usageMsg = usageSignMessage({ wallet: connectedWallet, ts: usageTs, path: "/api/agent/chat", method: "POST" });
-        const usageSigBytes = await wallet.signMessage(new TextEncoder().encode(usageMsg));
-        const usageSignature = btoa(String.fromCharCode(...usageSigBytes));
+        const usageMsg = usageSignMessage({
+          wallet: connectedWallet,
+          ts: usageTs,
+          path: "/api/agent/chat",
+          method: "POST",
+        });
+        let usageSignature = "";
+        try {
+          const usageSigBytes = await wallet.signMessage(new TextEncoder().encode(usageMsg));
+          usageSignature = btoa(String.fromCharCode(...usageSigBytes));
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          toast.error("Message signature cancelled or failed.");
+          reply = JSON.stringify({
+            insight: "Signature cancelled.",
+            additional_insight: msg,
+            actions: [],
+          } satisfies AgentJsonResponse);
+          return;
+        }
 
         const agentOrigin = getAgentApiBase();
         const chatUrl = `${agentOrigin}/api/agent/chat`;
@@ -840,6 +863,9 @@ export default function AgentChatPage() {
         }
       } catch {
         /* fallback: reply already set to local buildAgentResponse */
+      } finally {
+        // Ensure UI does not get stuck on "Generating..." if we returned early above.
+        setSending(false);
       }
 
       const agentMsg: ChatMessage = {
@@ -849,7 +875,6 @@ export default function AgentChatPage() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, agentMsg]);
-      setSending(false);
     })();
   };
 
