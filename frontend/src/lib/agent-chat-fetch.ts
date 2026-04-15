@@ -1,5 +1,5 @@
 import { createX402Client } from "x402-solana/client";
-import type { VersionedTransaction } from "@solana/web3.js";
+import { Connection, PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
 import { getPrimaryRpcEndpoint } from "@/lib/solana-rpc";
@@ -45,6 +45,34 @@ export async function fetchAgentConfigWithX402(agentOrigin: string): Promise<Age
 function maxPaymentAtomic(expected: bigint): bigint {
   if (expected <= 0n) return 1_000_000n;
   return expected * 25n;
+}
+
+function fmt(n: number, digits = 6): string {
+  if (!Number.isFinite(n)) return "0";
+  return n.toLocaleString(undefined, { maximumFractionDigits: digits });
+}
+
+async function tryGetBalances(opts: {
+  wallet: WalletContextState;
+  usdcMint: string;
+}): Promise<{ sol: number; usdc: number } | null> {
+  try {
+    if (!opts.wallet.publicKey) return null;
+    const rpcUrl = getPrimaryRpcEndpoint();
+    const conn = new Connection(rpcUrl, { commitment: "confirmed" });
+    const solLamports = await conn.getBalance(opts.wallet.publicKey, "confirmed");
+    const sol = solLamports / 1e9;
+
+    // Minimal USDC balance check (first token account if present).
+    const mint = new PublicKey(opts.usdcMint);
+    const { value } = await conn.getTokenAccountsByOwner(opts.wallet.publicKey, { mint });
+    if (!value.length) return { sol, usdc: 0 };
+    const bal = await conn.getTokenAccountBalance(value[0].pubkey, "confirmed");
+    const ui = Number(bal.value.uiAmount ?? (bal.value.uiAmountString ? parseFloat(bal.value.uiAmountString) : 0));
+    return { sol, usdc: Number.isFinite(ui) ? ui : 0 };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -110,7 +138,20 @@ export async function fetchAgentChat(
   });
 
   try {
-    return await client.fetch(chatUrl, init);
+    const res = await client.fetch(chatUrl, init);
+    // If we still got 402, help the user understand the common root cause (insufficient USDC/SOL).
+    if (res.status === 402) {
+      const b = await tryGetBalances({ wallet: w, usdcMint: x.usdcMint });
+      const neededUsdc = Number(BigInt(x.amountAtomic)) / 10 ** (x.decimals ?? 6);
+      if (b) {
+        if (b.usdc + 1e-9 < neededUsdc) {
+          toast.error(`Insufficient USDC for x402 payment: have ${fmt(b.usdc)} USDC, need ${fmt(neededUsdc)} USDC.`);
+        } else if (b.sol < 0.0005) {
+          toast.error(`Low SOL balance for fees: have ${fmt(b.sol, 4)} SOL. Add a little SOL then retry payment.`);
+        }
+      }
+    }
+    return res;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     // Surface client-side payment flow failures (RPC, facilitator, insufficient funds, wallet rejection, etc.).
