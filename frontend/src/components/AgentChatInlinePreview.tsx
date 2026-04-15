@@ -12,6 +12,7 @@ import {
   toastIfAgentChatFailed,
   type AgentChatX402Info,
 } from "@/lib/agent-chat-fetch";
+import { usageSignMessage } from "@/lib/x402-usage";
 import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
 import { useTokenSymbol } from "@/contexts/TokenSymbolContext";
 import { useAccount } from "@/contexts/AccountContext";
@@ -20,6 +21,7 @@ import { resolveSendBalanceToken } from "@/lib/resolveSendBalanceToken";
 import { parseSendBalanceTransferInput } from "@/lib/parseSendBalanceTransfer";
 import { getFallbackRpcs, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 import { Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
+import { toast } from "sonner";
 
 type ChatMessage = {
   id: string;
@@ -743,6 +745,15 @@ export function AgentChatInlinePreview() {
       const priorForHistory = messagesRef.current.filter((m) => m.id !== "welcome");
       const history = chatMessagesToHistory(priorForHistory);
       try {
+        if (!wallet.signMessage || !connectedWallet) {
+          toast.error("Wallet must support message signing to use chat.");
+          return;
+        }
+        const usageTs = Date.now();
+        const usageMsg = usageSignMessage({ wallet: connectedWallet, ts: usageTs, path: "/api/agent/chat", method: "POST" });
+        const usageSigBytes = await wallet.signMessage(new TextEncoder().encode(usageMsg));
+        const usageSignature = btoa(String.fromCharCode(...usageSigBytes));
+
         const agentOrigin = getAgentApiBase();
         const chatUrl = `${agentOrigin}/api/agent/chat`;
         const res = await fetchAgentChat(
@@ -752,6 +763,8 @@ export function AgentChatInlinePreview() {
             history,
             context: nextContext,
             wallet: connectedWallet,
+            usageTs,
+            usageSignature,
           },
           { x402: agentX402, wallet }
         );
