@@ -96,6 +96,32 @@ function resourceUrl(req: Request): string {
   return `${proto}://${host}${req.baseUrl}${req.path}`;
 }
 
+/**
+ * Facilitator verify/settle expects the same `paymentRequirements` object that was issued in the 402
+ * challenge. Calling `createPaymentRequirements` again on retry often yields a different `feePayer` etc.,
+ * so verification fails and clients loop on 402 forever.
+ */
+const paymentRequirementsCache = new Map<string, { pr: PaymentRequirements; exp: number }>();
+const PAYMENT_REQUIREMENTS_TTL_MS = 15 * 60 * 1000;
+
+function paymentRequirementsCacheKey(wallet: string, component: UsageComponent, rUrl: string): string {
+  return `${wallet.trim()}|${component}|${rUrl}`;
+}
+
+function getCachedPaymentRequirements(key: string): PaymentRequirements | null {
+  const row = paymentRequirementsCache.get(key);
+  if (!row) return null;
+  if (Date.now() > row.exp) {
+    paymentRequirementsCache.delete(key);
+    return null;
+  }
+  return row.pr;
+}
+
+function setCachedPaymentRequirements(key: string, pr: PaymentRequirements): void {
+  paymentRequirementsCache.set(key, { pr, exp: Date.now() + PAYMENT_REQUIREMENTS_TTL_MS });
+}
+
 let x402Singleton: X402PaymentHandler | null = null;
 
 function getX402(): X402PaymentHandler | null {
@@ -255,22 +281,42 @@ export async function requireBlockPaymentAndCredit(opts: {
   const asset = usdcAssetForNetwork(network);
   const amount = blockPriceAtomic();
   const rUrl = resourceUrl(opts.req);
-  const paymentRequirements = await x402.createPaymentRequirements(
-    {
-      amount,
-      asset,
-      description: opts.component === "info" ? "Unlock 10 info responses" : "Unlock 5 chat messages",
-      mimeType: "application/json",
-    },
-    rUrl
-  );
+  const cacheKey = paymentRequirementsCacheKey(opts.wallet, opts.component, rUrl);
 
   const paymentHeader = x402.extractPayment(
     normalizeX402HeaderCasing(opts.req.headers as Record<string, string | string[] | undefined>)
   );
+
   if (!paymentHeader) {
+    const paymentRequirements = await x402.createPaymentRequirements(
+      {
+        amount,
+        asset,
+        description: opts.component === "info" ? "Unlock 10 info responses" : "Unlock 5 chat messages",
+        mimeType: "application/json",
+      },
+      rUrl
+    );
+    setCachedPaymentRequirements(cacheKey, paymentRequirements);
     const { status, body } = x402.create402Response(paymentRequirements, rUrl);
     // Important: return the exact x402 402 body shape. Some clients expect strict fields.
+    return { type: "need_payment", status, body };
+  }
+
+  let paymentRequirements = getCachedPaymentRequirements(cacheKey);
+  if (!paymentRequirements) {
+    // Challenge missing (restart, TTL, cold cache): issue a fresh 402 instead of verify with a new PR.
+    const fresh = await x402.createPaymentRequirements(
+      {
+        amount,
+        asset,
+        description: opts.component === "info" ? "Unlock 10 info responses" : "Unlock 5 chat messages",
+        mimeType: "application/json",
+      },
+      rUrl
+    );
+    setCachedPaymentRequirements(cacheKey, fresh);
+    const { status, body } = x402.create402Response(fresh, rUrl);
     return { type: "need_payment", status, body };
   }
 

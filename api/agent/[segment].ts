@@ -141,6 +141,28 @@ function getAgentBackendOrigin(): string | null {
   return raw.replace(/\/$/, "");
 }
 
+/** GET /api/agent/config → VPS when AGENT_BACKEND_ORIGIN is set (must match chat x402 flags or the browser never enables x402-solana). */
+async function handleConfigProxy(_req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const origin = getAgentBackendOrigin();
+  if (!origin) {
+    sendJson(res, 200, { x402AgentChat: { enabled: false } });
+    return;
+  }
+  const url = `${origin}/api/agent/config`;
+  try {
+    const upstream = await fetch(url, { method: "GET", headers: { Accept: "application/json" } });
+    const text = await upstream.text();
+    res.statusCode = upstream.status;
+    const uct = upstream.headers.get("content-type");
+    if (uct) res.setHeader("Content-Type", uct);
+    res.setHeader("Cache-Control", "private, max-age=5");
+    res.end(text);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    sendJson(res, 502, { error: `Upstream agent config unreachable: ${msg}`, code: "AGENT_CONFIG_PROXY_ERROR" });
+  }
+}
+
 /** POST /api/agent/chat → Express (Claude) on VPS when AGENT_BACKEND_ORIGIN is set. */
 async function handleChatProxy(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const origin = getAgentBackendOrigin();
@@ -301,7 +323,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
   if (segment === "config" && method === "GET") {
-    sendJson(res, 200, { x402AgentChat: { enabled: false } });
+    await handleConfigProxy(req, res);
     return;
   }
   if (segment === "logs" && method === "GET") {
