@@ -5,7 +5,8 @@ import { getPrimaryRpcEndpoint } from "@/lib/solana-rpc";
 const MPL_METADATA = new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
 
 function stripMetadataString(s: string): string {
-  return s.replace(/\u0000/g, "").trim();
+  // Avoid regex control-character lint; explicit split/join is clearer here.
+  return s.split("\u0000").join("").trim();
 }
 
 /** Token-2022 mint extension `tokenMetadata.state.name`. */

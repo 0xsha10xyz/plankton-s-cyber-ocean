@@ -187,6 +187,87 @@ async function handleChatProxy(req: IncomingMessage, res: ServerResponse): Promi
   }
 }
 
+/**
+ * POST /api/agent/info — “Info Agent” hosted on Vercel, but usage/payments verified on VPS.
+ *
+ * Browser sends JSON: { wallet, ts, signature, prompt }
+ * - `wallet/ts/signature` are used by VPS `/api/usage/info` (prevents quota spoofing).
+ * - When quota is exceeded, VPS returns HTTP 402 with x402 requirements; we forward as-is.
+ * - On success, we return an info response (placeholder; replace with your real info logic).
+ */
+async function handleInfo(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const origin = getAgentBackendOrigin();
+  if (!origin) {
+    sendJson(res, 503, { error: "Usage backend not configured. Set AGENT_BACKEND_ORIGIN.", code: "USAGE_BACKEND_NOT_CONFIGURED" });
+    return;
+  }
+
+  const buf = await readRequestBody(req);
+  let body: any = null;
+  try {
+    body = buf.length ? JSON.parse(buf.toString("utf8")) : {};
+  } catch {
+    sendJson(res, 400, { error: "Invalid JSON body" });
+    return;
+  }
+
+  const wallet = typeof body.wallet === "string" ? body.wallet.trim() : "";
+  const ts = typeof body.ts === "number" ? body.ts : Number(body.ts);
+  const signature = typeof body.signature === "string" ? body.signature.trim() : "";
+  const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+  if (!wallet || !Number.isFinite(ts) || !signature || !prompt) {
+    sendJson(res, 400, { error: "Missing wallet/ts/signature/prompt", code: "BAD_REQUEST" });
+    return;
+  }
+
+  const usageUrl = `${origin}/api/usage/info`;
+  const headers: Record<string, string> = { "Content-Type": "application/json", Accept: "application/json" };
+  for (const name of ["payment-signature", "payment-response"]) {
+    const v = req.headers[name];
+    if (v && typeof v === "string") headers[name] = v;
+    else if (Array.isArray(v) && v[0]) headers[name] = v[0];
+  }
+
+  let usageRes: globalThis.Response;
+  try {
+    usageRes = await fetch(usageUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ wallet, ts, signature }),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    sendJson(res, 502, { error: `Usage backend unreachable: ${msg}`, code: "USAGE_PROXY_ERROR" });
+    return;
+  }
+
+  if (usageRes.status === 402) {
+    const text = await usageRes.text();
+    res.statusCode = 402;
+    const ct = usageRes.headers.get("content-type");
+    if (ct) res.setHeader("Content-Type", ct);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.end(text);
+    return;
+  }
+  if (!usageRes.ok) {
+    const text = await usageRes.text();
+    sendJson(res, 502, { error: "Usage backend error", upstreamStatus: usageRes.status, upstreamBody: text.slice(0, 400) });
+    return;
+  }
+
+  // Allowed -> return your info response. Replace with your real “Info Agent” logic.
+  sendJson(
+    res,
+    200,
+    {
+      ok: true,
+      answer: `Info Agent response (placeholder). Prompt: ${prompt.slice(0, 500)}`,
+    },
+    "private, no-store"
+  );
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = (req.url || "/").split("#")[0];
   const pathOnly = url.split("?")[0] || "/";
@@ -196,6 +277,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   if (segment === "chat" && method === "POST") {
     await handleChatProxy(req, res);
+    return;
+  }
+  if (segment === "info" && method === "POST") {
+    await handleInfo(req, res);
     return;
   }
 

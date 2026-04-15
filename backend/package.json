@@ -18,6 +18,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "redis": "^4.6.0",
+    "tweetnacl": "^1.0.3",
     "x402-solana": "^2.0.4"
   },
   "devDependencies": {

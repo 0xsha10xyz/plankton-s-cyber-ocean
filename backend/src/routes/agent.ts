@@ -1,9 +1,9 @@
 import { Router } from "express";
 import {
-  enforceAgentChatX402,
   getAgentChatX402PublicConfig,
-  settleAgentChatX402IfNeeded,
 } from "../x402-agent-chat.js";
+import { consumeUsageOrBlock, requireBlockPaymentAndCredit } from "../usage/x402-blocks.js";
+import { verifyUsageSignature } from "../usage/verify-wallet.js";
 
 export const agentRouter = Router();
 
@@ -362,7 +362,41 @@ agentRouter.post("/chat", async (req, res) => {
     return;
   }
 
-  if (!(await enforceAgentChatX402(req, res))) {
+  // Block-based x402 gating: 5 free, then 0.1 USDC to unlock next 5.
+  // Require a signed message to prevent spoofing another wallet's quota.
+  const wallet = typeof body.wallet === "string" ? body.wallet.trim() : "";
+  const usageTs = typeof (body as any).usageTs === "number" ? (body as any).usageTs : Number((body as any).usageTs);
+  const usageSig = typeof (body as any).usageSignature === "string" ? (body as any).usageSignature.trim() : "";
+  if (!wallet || !Number.isFinite(usageTs) || !usageSig) {
+    res.status(401).json({ error: "Wallet signature required", code: "WALLET_SIGNATURE_REQUIRED" });
+    return;
+  }
+  const sigOk = verifyUsageSignature({
+    wallet,
+    ts: usageTs,
+    signatureB64: usageSig,
+    path: "/api/agent/chat",
+    method: "POST",
+  });
+  if (!sigOk) {
+    res.status(401).json({ error: "Invalid wallet signature", code: "WALLET_SIGNATURE_INVALID" });
+    return;
+  }
+
+  const decision = await consumeUsageOrBlock({ wallet, component: "chat" });
+  if (!decision.allowed) {
+    // Require x402 payment to credit the next block, then client retries this same /api/agent/chat call.
+    const pay = await requireBlockPaymentAndCredit({ req, wallet, component: "chat" });
+    if (pay.type === "need_payment") {
+      res.status(pay.status).json(pay.body);
+      return;
+    }
+    if (pay.type === "error") {
+      res.status(pay.status).json(pay.body);
+      return;
+    }
+    // credited: do not consume on this request (client will retry and get charged 1 message).
+    res.status(200).json({ allowed: true, remainingInBlock: pay.remainingInBlock, requiresPayment: false });
     return;
   }
 
@@ -427,7 +461,6 @@ agentRouter.post("/chat", async (req, res) => {
     const msg = e instanceof Error ? e.message : String(e);
     res.status(504).json({ error: msg, code: "LLM_TIMEOUT_OR_NETWORK" });
   } finally {
-    await settleAgentChatX402IfNeeded(res);
     clearTimeout(t);
   }
 });
