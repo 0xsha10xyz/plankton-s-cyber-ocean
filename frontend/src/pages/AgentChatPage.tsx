@@ -858,12 +858,72 @@ export default function AgentChatPage() {
           { x402: agentX402, wallet }
         );
         if (res.ok) {
-          const data = (await res.json()) as Partial<AgentJsonResponse>;
-          if (typeof data.insight === "string" && Array.isArray(data.actions)) {
+          const data: unknown = await res.json().catch(() => null);
+          // Normal path: model returned the expected JSON schema.
+          if (
+            data &&
+            typeof data === "object" &&
+            "insight" in data &&
+            typeof (data as { insight?: unknown }).insight === "string" &&
+            "actions" in data &&
+            Array.isArray((data as { actions?: unknown }).actions)
+          ) {
+            const o = data as { insight: string; additional_insight?: unknown; actions: unknown[] };
             reply = JSON.stringify({
-              insight: data.insight,
-              additional_insight: typeof data.additional_insight === "string" ? data.additional_insight : "",
-              actions: data.actions.map((a) => String(a)),
+              insight: o.insight,
+              additional_insight: typeof o.additional_insight === "string" ? o.additional_insight : "",
+              actions: o.actions.map((a) => String(a)),
+            } satisfies AgentJsonResponse);
+          } else if (data && typeof data === "object" && "allowed" in data) {
+            // Control response: payment just credited / quota gate. Retry once to get the actual model answer.
+            const retry = await fetchAgentChat(
+              chatUrl,
+              {
+                message: trimmed,
+                history,
+                context: nextContext,
+                wallet: connectedWallet,
+                usageTs,
+                usageSignature,
+              },
+              { x402: agentX402, wallet }
+            );
+            if (retry.ok) {
+              const r2: unknown = await retry.json().catch(() => null);
+              if (
+                r2 &&
+                typeof r2 === "object" &&
+                "insight" in r2 &&
+                typeof (r2 as { insight?: unknown }).insight === "string" &&
+                "actions" in r2 &&
+                Array.isArray((r2 as { actions?: unknown }).actions)
+              ) {
+                const o2 = r2 as { insight: string; additional_insight?: unknown; actions: unknown[] };
+                reply = JSON.stringify({
+                  insight: o2.insight,
+                  additional_insight: typeof o2.additional_insight === "string" ? o2.additional_insight : "",
+                  actions: o2.actions.map((a) => String(a)),
+                } satisfies AgentJsonResponse);
+              } else {
+                reply = JSON.stringify({
+                  insight: "Unexpected server response.",
+                  additional_insight: "Server returned OK but not the expected chat schema.",
+                  actions: ["Retry"],
+                } satisfies AgentJsonResponse);
+              }
+            } else {
+              toastIfAgentChatFailed(retry);
+              reply = JSON.stringify({
+                insight: "Chat request failed.",
+                additional_insight: `HTTP ${retry.status}`,
+                actions: ["Retry"],
+              } satisfies AgentJsonResponse);
+            }
+          } else {
+            reply = JSON.stringify({
+              insight: "Unexpected server response.",
+              additional_insight: "Server returned OK but not the expected chat schema.",
+              actions: ["Retry"],
             } satisfies AgentJsonResponse);
           }
         } else {
