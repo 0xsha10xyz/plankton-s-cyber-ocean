@@ -252,6 +252,7 @@ export function AgentChatInlinePreview() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<ChatMessage[]>(messages);
   const usageSigRef = useRef<{ wallet: string; ts: number; sig: string } | null>(null);
+  const lastUserTextRef = useRef<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -294,7 +295,9 @@ export function AgentChatInlinePreview() {
   }, [connected, username, walletLabel]);
 
   const handleSendWithText = async (text: string) => {
-    const trimmed = text.trim();
+    const raw = text.trim();
+    const isRetryAction = raw.toLowerCase() === "retry" || raw.toLowerCase() === "retry after payment";
+    const trimmed = isRetryAction ? lastUserTextRef.current.trim() : raw;
     if (!trimmed || sending) return;
 
     if (!connected) {
@@ -730,15 +733,17 @@ export function AgentChatInlinePreview() {
     const nextContext = applyContextFromUserMessage(trimmed, context);
     setContext(nextContext);
 
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: trimmed,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
+    if (!isRetryAction) {
+      lastUserTextRef.current = trimmed;
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: "user",
+        content: trimmed,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      setInput("");
+    }
     setSending(true);
 
     void (async () => {

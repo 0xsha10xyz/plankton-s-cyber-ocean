@@ -297,6 +297,7 @@ export default function AgentChatPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<ChatMessage[]>(messages);
   const usageSigRef = useRef<{ wallet: string; ts: number; sig: string } | null>(null);
+  const lastUserTextRef = useRef<string>("");
 
   const walletLabel = connected && publicKey ? shortenAddress(publicKey.toBase58()) : undefined;
 
@@ -346,7 +347,9 @@ export default function AgentChatPage() {
   }, []);
 
   const handleSendWithText = (text: string) => {
-    const trimmed = text.trim();
+    const raw = text.trim();
+    const isRetryAction = raw.toLowerCase() === "retry" || raw.toLowerCase() === "retry after payment";
+    const trimmed = isRetryAction ? lastUserTextRef.current.trim() : raw;
     if (!trimmed || sending) return;
     if (!connected) return; // locked mode: visible but disabled
 
@@ -788,15 +791,17 @@ export default function AgentChatPage() {
     const nextContext = applyContextFromUserMessage(trimmed, context);
     setContext(nextContext);
 
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: trimmed,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
+    if (!isRetryAction) {
+      lastUserTextRef.current = trimmed;
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: "user",
+        content: trimmed,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      setInput("");
+    }
     setSending(true);
 
     void (async () => {
