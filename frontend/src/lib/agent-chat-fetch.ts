@@ -2,6 +2,7 @@ import { createX402Client } from "x402-solana/client";
 import type { VersionedTransaction } from "@solana/web3.js";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
+import { getPrimaryRpcEndpoint } from "@/lib/solana-rpc";
 
 export type AgentChatX402Info = {
   enabled: boolean;
@@ -102,6 +103,8 @@ export async function fetchAgentChat(
       signTransaction: async (tx: VersionedTransaction) => w.signTransaction!(tx),
     },
     network: x.network,
+    // Critical: avoid browser POSTs to public Solana RPC (often 403/CORS). Use same-origin `/api/rpc`.
+    rpcUrl: getPrimaryRpcEndpoint(),
     amount: maxPaymentAtomic(BigInt(x.amountAtomic)),
     verbose: Boolean(import.meta.env?.DEV),
   });
