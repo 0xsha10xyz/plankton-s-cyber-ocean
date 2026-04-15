@@ -296,6 +296,7 @@ export default function AgentChatPage() {
   const [agentX402, setAgentX402] = useState<AgentChatX402Info | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<ChatMessage[]>(messages);
+  const usageSigRef = useRef<{ wallet: string; ts: number; sig: string } | null>(null);
 
   const walletLabel = connected && publicKey ? shortenAddress(publicKey.toBase58()) : undefined;
 
@@ -813,26 +814,33 @@ export default function AgentChatPage() {
           return;
         }
 
-        const usageTs = Date.now();
-        const usageMsg = usageSignMessage({
-          wallet: connectedWallet,
-          ts: usageTs,
-          path: "/api/agent/chat",
-          method: "POST",
-        });
-        let usageSignature = "";
-        try {
-          const usageSigBytes = await wallet.signMessage(new TextEncoder().encode(usageMsg));
-          usageSignature = btoa(String.fromCharCode(...usageSigBytes));
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          toast.error("Message signature cancelled or failed.");
-          reply = JSON.stringify({
-            insight: "Signature cancelled.",
-            additional_insight: msg,
-            actions: [],
-          } satisfies AgentJsonResponse);
-          return;
+        const SIGNATURE_TTL_MS = 2 * 60 * 1000; // reduce repeated Phantom prompts
+        const now = Date.now();
+        const cached = usageSigRef.current;
+        const canReuse = cached && cached.wallet === connectedWallet && now - cached.ts <= SIGNATURE_TTL_MS;
+        const usageTs = canReuse ? cached.ts : now;
+        let usageSignature = canReuse ? cached.sig : "";
+        if (!canReuse) {
+          const usageMsg = usageSignMessage({
+            wallet: connectedWallet,
+            ts: usageTs,
+            path: "/api/agent/chat",
+            method: "POST",
+          });
+          try {
+            const usageSigBytes = await wallet.signMessage(new TextEncoder().encode(usageMsg));
+            usageSignature = btoa(String.fromCharCode(...usageSigBytes));
+            usageSigRef.current = { wallet: connectedWallet, ts: usageTs, sig: usageSignature };
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            toast.error("Message signature cancelled or failed.");
+            reply = JSON.stringify({
+              insight: "Signature cancelled.",
+              additional_insight: msg,
+              actions: [],
+            } satisfies AgentJsonResponse);
+            return;
+          }
         }
 
         const agentOrigin = getAgentApiBase();
