@@ -121,8 +121,16 @@ export async function fetchAgentChat(
 
   const x = options.x402;
   const w = options.wallet;
-  if (!x?.enabled || !w.connected || !w.publicKey || !w.signTransaction) {
+  if (!x?.enabled || !w.connected || !w.publicKey) {
     return fetch(chatUrl, init);
+  }
+  if (!w.signTransaction) {
+    // x402-solana requires signing a transaction; some wallets only support signMessage.
+    const res = await fetch(chatUrl, init);
+    if (res.status === 402) {
+      toast.error("Your wallet cannot sign transactions, so it cannot pay via x402. Switch to Phantom or Solflare.");
+    }
+    return res;
   }
 
   const client = createX402Client({
