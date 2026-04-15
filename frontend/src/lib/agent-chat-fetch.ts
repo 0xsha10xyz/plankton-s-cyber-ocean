@@ -124,6 +124,20 @@ export async function fetchAgentChat(
   if (!x?.enabled || !w.connected || !w.publicKey) {
     return fetch(chatUrl, init);
   }
+  /**
+   * Some proxies (e.g. Vercel edge) may drop non-standard headers like `PAYMENT-SIGNATURE` on the
+   * browser → serverless hop. Duplicate the value under a stable custom header we forward explicitly.
+   */
+  const rawFetch = globalThis.fetch.bind(globalThis);
+  const customFetch: typeof fetch = async (input, init) => {
+    if (!init?.headers) return rawFetch(input, init);
+    const h = new Headers(init.headers as HeadersInit);
+    const sig =
+      h.get("PAYMENT-SIGNATURE") || h.get("payment-signature") || h.get("Payment-Signature");
+    if (sig) h.set("X-X402-Payment-Signature", sig);
+    return rawFetch(input, { ...init, headers: h });
+  };
+
   if (!w.signTransaction) {
     // x402-solana requires signing a transaction; some wallets only support signMessage.
     const res = await fetch(chatUrl, init);
@@ -143,6 +157,7 @@ export async function fetchAgentChat(
     rpcUrl: getPrimaryRpcEndpoint(),
     amount: maxPaymentAtomic(BigInt(x.amountAtomic)),
     verbose: Boolean(import.meta.env?.DEV),
+    customFetch,
   });
 
   try {

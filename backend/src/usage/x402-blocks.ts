@@ -25,7 +25,11 @@ function normalizeX402HeaderCasing(
   // `x402-solana` may accept either, but normalizing avoids brittle casing mismatches across proxies.
   const out: Record<string, string | string[] | undefined> = { ...headers };
   // v2 canonical keys
-  const ps = out["payment-signature"] ?? out["PAYMENT-SIGNATURE"] ?? out["x-payment"];
+  const ps =
+    out["payment-signature"] ??
+    out["PAYMENT-SIGNATURE"] ??
+    out["x-payment"] ??
+    out["x-x402-payment-signature"];
   const pr = out["payment-response"] ?? out["PAYMENT-RESPONSE"] ?? out["x-payment-response"];
   if (ps && !out["PAYMENT-SIGNATURE"]) out["PAYMENT-SIGNATURE"] = ps;
   if (ps && !out["payment-signature"]) out["payment-signature"] = ps;
