@@ -34,6 +34,25 @@ function normalizeX402HeaderCasing(
   return out;
 }
 
+/**
+ * `x402-solana` browser client prefers the `PAYMENT-REQUIRED` response header for v2.
+ * If it is missing, the client falls back to parsing the JSON body as "v1" and retries with `X-PAYMENT`,
+ * while `X402PaymentHandler.extractPayment()` only reads `PAYMENT-SIGNATURE` — so payment never verifies.
+ * Base64-encode the same JSON body the client already receives.
+ */
+export function paymentRequiredHeaderB64(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const o = body as Record<string, unknown>;
+  if (!Array.isArray(o.accepts)) return null;
+  return Buffer.from(JSON.stringify(body), "utf8").toString("base64");
+}
+
+export function sendJsonWithPaymentRequiredHeader(res: Response, status: number, body: unknown): void {
+  const hdr = paymentRequiredHeaderB64(body);
+  if (hdr) res.setHeader("PAYMENT-REQUIRED", hdr);
+  res.status(status).json(body);
+}
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -183,7 +202,7 @@ export async function maybeUnlockWithX402(opts: {
   });
 
   if (result.type === "need_payment") {
-    opts.res.status(result.status).json(result.body);
+    sendJsonWithPaymentRequiredHeader(opts.res, result.status, result.body);
     return { unlocked: false };
   }
   if (result.type === "error") {

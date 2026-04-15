@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
 } from "../x402-agent-chat.js";
-import { consumeUsageOrBlock, requireBlockPaymentAndCredit } from "../usage/x402-blocks.js";
+import { consumeUsageOrBlock, requireBlockPaymentAndCredit, sendJsonWithPaymentRequiredHeader } from "../usage/x402-blocks.js";
 import { verifyUsageSignature } from "../usage/verify-wallet.js";
 
 export const agentRouter = Router();
@@ -416,7 +416,7 @@ agentRouter.post("/chat", async (req, res) => {
     // Require x402 payment to credit the next block, then client retries this same /api/agent/chat call.
     const pay = await requireBlockPaymentAndCredit({ req, wallet, component: "chat" });
     if (pay.type === "need_payment") {
-      res.status(pay.status).json(pay.body);
+      sendJsonWithPaymentRequiredHeader(res, pay.status, pay.body);
       return;
     }
     if (pay.type === "error") {

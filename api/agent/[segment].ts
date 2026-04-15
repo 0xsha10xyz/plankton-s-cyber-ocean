@@ -180,6 +180,9 @@ async function handleChatProxy(req: IncomingMessage, res: ServerResponse): Promi
     res.statusCode = upstream.status;
     const uct = upstream.headers.get("content-type");
     if (uct) res.setHeader("Content-Type", uct);
+    // x402-solana v2 browser client needs PAYMENT-REQUIRED on 402 so it uses PAYMENT-SIGNATURE retry (not X-PAYMENT).
+    const paymentRequired = upstream.headers.get("payment-required");
+    if (paymentRequired) res.setHeader("PAYMENT-REQUIRED", paymentRequired);
     res.setHeader("Cache-Control", "private, no-store");
     res.end(text);
   } catch (e) {
@@ -247,6 +250,8 @@ async function handleInfo(req: IncomingMessage, res: ServerResponse): Promise<vo
     res.statusCode = 402;
     const ct = usageRes.headers.get("content-type");
     if (ct) res.setHeader("Content-Type", ct);
+    const paymentRequired = usageRes.headers.get("payment-required");
+    if (paymentRequired) res.setHeader("PAYMENT-REQUIRED", paymentRequired);
     res.setHeader("Cache-Control", "private, no-store");
     res.end(text);
     return;
