@@ -229,17 +229,8 @@ export async function requireBlockPaymentAndCredit(opts: {
   const paymentHeader = x402.extractPayment(opts.req.headers as Record<string, string | string[] | undefined>);
   if (!paymentHeader) {
     const { status, body } = x402.create402Response(paymentRequirements, rUrl);
-    // Keep your app-friendly fields but respond with real 402 so x402 clients auto-pay.
-    return {
-      type: "need_payment",
-      status,
-      body: {
-        ...(typeof body === "object" && body ? (body as object) : { payment: body }),
-        allowed: false,
-        remainingInBlock: 0,
-        requiresPayment: true,
-      } satisfies UsageDecision & Record<string, unknown>,
-    };
+    // Important: return the exact x402 402 body shape. Some clients expect strict fields.
+    return { type: "need_payment", status, body };
   }
 
   const verified = await x402.verifyPayment(paymentHeader, paymentRequirements);
