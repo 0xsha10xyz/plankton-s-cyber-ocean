@@ -56,7 +56,7 @@ export function toastIfAgentChatFailed(res: Response): void {
   const status = res.status;
   if (status === 402) {
     toast.error(
-      "Paid agent chat (x402): approve the USDC payment in your wallet, or add about $0.01 USDC on Solana mainnet plus a little SOL for fees."
+      "Paid agent chat (x402): approve the 0.1 USDC payment (unlocks 5 messages). Make sure you also have a little SOL for network fees."
     );
     return;
   }
@@ -109,5 +109,13 @@ export async function fetchAgentChat(
     verbose: Boolean(import.meta.env?.DEV),
   });
 
-  return client.fetch(chatUrl, init);
+  try {
+    return await client.fetch(chatUrl, init);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    // Surface client-side payment flow failures (RPC, facilitator, insufficient funds, wallet rejection, etc.).
+    console.error("[x402] client.fetch failed:", e);
+    toast.error(`x402 payment flow failed: ${msg || "Unknown error"}`);
+    throw e;
+  }
 }

@@ -960,8 +960,13 @@ export default function AgentChatPage() {
             actions: status === 402 ? ["Retry after payment"] : ["Retry"],
           } satisfies AgentJsonResponse);
         }
-      } catch {
-        /* fallback: reply already set to local buildAgentResponse */
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        reply = JSON.stringify({
+          insight: "Chat/payment flow failed.",
+          additional_insight: msg || "Unknown error",
+          actions: ["Retry"],
+        } satisfies AgentJsonResponse);
       } finally {
         // Ensure UI does not get stuck on "Generating..." if we returned early above.
         setSending(false);

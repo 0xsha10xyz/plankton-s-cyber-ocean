@@ -900,8 +900,13 @@ export function AgentChatInlinePreview() {
             actions: status === 402 ? ["Retry after payment"] : ["Retry"],
           } satisfies AgentJsonResponse);
         }
-      } catch {
-        /* fallback: local buildAgentResponse */
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      reply = JSON.stringify({
+        insight: "Chat/payment flow failed.",
+        additional_insight: msg || "Unknown error",
+        actions: ["Retry"],
+      } satisfies AgentJsonResponse);
       } finally {
         setSending(false);
       }
