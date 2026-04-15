@@ -18,6 +18,21 @@ const USDC_DEVNET: TokenAsset = {
 const DEFAULT_FACILITATOR = "https://facilitator.payai.network";
 const DEFAULT_BLOCK_PRICE_ATOMIC = "100000"; // 0.1 USDC (6 decimals)
 
+function normalizeX402HeaderCasing(
+  headers: Record<string, string | string[] | undefined>
+): Record<string, string | string[] | undefined> {
+  // Some runtimes (Express/Node) lowercase incoming header keys, while x402 v2 documentation uses uppercase.
+  // `x402-solana` may accept either, but normalizing avoids brittle casing mismatches across proxies.
+  const out: Record<string, string | string[] | undefined> = { ...headers };
+  const ps = out["payment-signature"] ?? out["PAYMENT-SIGNATURE"];
+  const pr = out["payment-response"] ?? out["PAYMENT-RESPONSE"];
+  if (ps && !out["PAYMENT-SIGNATURE"]) out["PAYMENT-SIGNATURE"] = ps;
+  if (ps && !out["payment-signature"]) out["payment-signature"] = ps;
+  if (pr && !out["PAYMENT-RESPONSE"]) out["PAYMENT-RESPONSE"] = pr;
+  if (pr && !out["payment-response"]) out["payment-response"] = pr;
+  return out;
+}
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -226,7 +241,9 @@ export async function requireBlockPaymentAndCredit(opts: {
     rUrl
   );
 
-  const paymentHeader = x402.extractPayment(opts.req.headers as Record<string, string | string[] | undefined>);
+  const paymentHeader = x402.extractPayment(
+    normalizeX402HeaderCasing(opts.req.headers as Record<string, string | string[] | undefined>)
+  );
   if (!paymentHeader) {
     const { status, body } = x402.create402Response(paymentRequirements, rUrl);
     // Important: return the exact x402 402 body shape. Some clients expect strict fields.
