@@ -810,6 +810,32 @@ export function AgentChatInlinePreview() {
           }
         } else {
           toastIfAgentChatFailed(res);
+          const errBody: unknown = await res.json().catch(() => null);
+          const errText =
+            errBody && typeof errBody === "object" && "error" in errBody
+              ? String((errBody as { error?: unknown }).error ?? "")
+              : "";
+          const codeText =
+            errBody && typeof errBody === "object" && "code" in errBody
+              ? String((errBody as { code?: unknown }).code ?? "")
+              : "";
+          const status = res.status;
+          reply = JSON.stringify({
+            insight:
+              status === 402
+                ? "Payment required."
+                : status === 401
+                  ? "Request rejected."
+                  : "Chat request failed.",
+            additional_insight: [
+              status ? `HTTP ${status}` : "",
+              codeText ? `Code: ${codeText}` : "",
+              errText ? `Error: ${errText}` : "",
+            ]
+              .filter(Boolean)
+              .join("\n"),
+            actions: status === 402 ? ["Retry after payment"] : ["Retry"],
+          } satisfies AgentJsonResponse);
         }
       } catch {
         /* fallback: local buildAgentResponse */
