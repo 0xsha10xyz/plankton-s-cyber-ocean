@@ -163,10 +163,12 @@ async function handleChatProxy(req: IncomingMessage, res: ServerResponse): Promi
   const headers: Record<string, string> = { Accept: "application/json" };
   const ct = req.headers["content-type"];
   if (ct) headers["Content-Type"] = typeof ct === "string" ? ct : ct[0] ?? "application/json";
-  for (const name of ["payment-signature", "payment-response"]) {
-    const v = req.headers[name];
-    if (v && typeof v === "string") headers[name] = v;
-    else if (Array.isArray(v) && v[0]) headers[name] = v[0];
+  // Forward x402 payment headers (clients may send uppercase or lowercase variants).
+  for (const name of ["payment-signature", "payment-response", "payment-signature".toUpperCase(), "payment-response".toUpperCase()]) {
+    const key = name.toLowerCase();
+    const v = req.headers[key];
+    if (v && typeof v === "string") headers[key] = v;
+    else if (Array.isArray(v) && v[0]) headers[key] = v[0];
   }
 
   try {
