@@ -45,6 +45,8 @@ app.use(
       "payment-signature",
       "PAYMENT-RESPONSE",
       "payment-response",
+      "X-X402-Payment-Signature",
+      "x-x402-payment-signature",
       "X-Gateway-Admin-Secret",
     ],
   })
@@ -72,7 +74,7 @@ app.options("/api/*", (_req, res) => {
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, PAYMENT-SIGNATURE, PAYMENT-RESPONSE, X-Gateway-Admin-Secret"
+    "Content-Type, Authorization, PAYMENT-SIGNATURE, PAYMENT-RESPONSE, X-X402-Payment-Signature, X-Gateway-Admin-Secret"
   );
   res.setHeader("Access-Control-Max-Age", "86400");
   res.status(204).end();

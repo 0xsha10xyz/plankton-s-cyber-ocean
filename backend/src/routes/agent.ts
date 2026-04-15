@@ -382,7 +382,15 @@ agentRouter.post("/chat", async (req, res) => {
     history?: { role: string; content?: string }[];
     context?: { tokenMint?: string; wallet?: string; timeframe?: string };
     wallet?: string;
+    x402PaymentHeaderB64?: string;
   };
+
+  // Same value as PAYMENT-SIGNATURE header; some proxies drop long custom headers but keep JSON body.
+  const payHdr =
+    typeof body.x402PaymentHeaderB64 === "string" ? body.x402PaymentHeaderB64.trim() : "";
+  if (payHdr) {
+    (req.headers as Record<string, string | string[] | undefined>)["x-x402-payment-signature"] = payHdr;
+  }
 
   const message = typeof body.message === "string" ? body.message.trim() : "";
   if (!message || message.length > 8000) {

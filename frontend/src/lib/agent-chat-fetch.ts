@@ -134,7 +134,19 @@ export async function fetchAgentChat(
     const h = new Headers(init.headers as HeadersInit);
     const sig =
       h.get("PAYMENT-SIGNATURE") || h.get("payment-signature") || h.get("Payment-Signature");
-    if (sig) h.set("X-X402-Payment-Signature", sig);
+    if (sig) {
+      h.set("X-X402-Payment-Signature", sig);
+      // Proxies (Vercel/nginx) often strip long custom headers; JSON body is forwarded intact.
+      if (typeof init.body === "string" && init.body.length > 0) {
+        try {
+          const j = JSON.parse(init.body) as Record<string, unknown>;
+          j.x402PaymentHeaderB64 = sig;
+          return rawFetch(input, { ...init, headers: h, body: JSON.stringify(j) });
+        } catch {
+          /* not JSON */
+        }
+      }
+    }
     return rawFetch(input, { ...init, headers: h });
   };
 
