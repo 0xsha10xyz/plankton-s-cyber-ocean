@@ -1,6 +1,5 @@
 import { Router } from "express";
 import {
-  getAgentChatX402PublicConfig,
 } from "../x402-agent-chat.js";
 import { consumeUsageOrBlock, requireBlockPaymentAndCredit } from "../usage/x402-blocks.js";
 import { verifyUsageSignature } from "../usage/verify-wallet.js";
@@ -161,10 +160,34 @@ agentRouter.get("/logs", async (req, res) => {
 });
 
 agentRouter.get("/config", (_req, res) => {
+  // Advertise x402 config for the current "block unlock" mode:
+  // - 0.1 USDC unlocks 5 messages
+  // Frontend uses this only to decide whether to use x402 client and to show UI copy.
+  const x402Enabled = Boolean(process.env.X402_TREASURY_ADDRESS?.trim()) && process.env.DISABLE_AGENT_CHAT_X402?.trim() !== "1";
+  const network = (process.env.X402_NETWORK?.trim().toLowerCase() === "solana-devnet" || process.env.X402_NETWORK?.trim().toLowerCase() === "devnet")
+    ? "solana-devnet"
+    : "solana";
+  const amountAtomic = /^\d+$/.test(process.env.X402_BLOCK_PRICE_ATOMIC?.trim() || "")
+    ? String(process.env.X402_BLOCK_PRICE_ATOMIC).trim()
+    : "100000"; // 0.1 USDC
+  const usdcMint = (process.env.X402_USDC_MINT?.trim() || "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+  const decimals = 6;
+  const priceUsd = Number(amountAtomic) / 10 ** decimals;
+
   res.json({
     riskLevels: ["conservative", "mid", "aggressive"],
     defaultRisk: "mid",
-    x402AgentChat: getAgentChatX402PublicConfig(),
+    x402AgentChat: x402Enabled
+      ? {
+          enabled: true,
+          network,
+          amountAtomic,
+          usdcMint,
+          decimals,
+          priceUsd,
+          blockSize: 5,
+        }
+      : { enabled: false },
   });
 });
 
