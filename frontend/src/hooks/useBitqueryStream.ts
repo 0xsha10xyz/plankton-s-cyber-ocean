@@ -39,6 +39,23 @@ function isAuthOrQuotaError(err: unknown): boolean {
   );
 }
 
+function createRateLimitedLogger(opts: { minIntervalMs: number }) {
+  let lastAt = 0;
+  let lastMsg = "";
+  return (prefix: string, err: unknown, level: "warn" | "error" = "warn") => {
+    const now = Date.now();
+    const msg = errText(err);
+    // Always log if message changed significantly; otherwise rate-limit.
+    const changed = msg && msg !== lastMsg;
+    if (!changed && now - lastAt < opts.minIntervalMs) return;
+    lastAt = now;
+    lastMsg = msg;
+    const line = msg ? `${prefix} ${msg}` : prefix;
+    if (level === "error") console.error(line);
+    else console.warn(line);
+  };
+}
+
 function unwrapData(result: unknown): unknown {
   if (!result || typeof result !== "object") return null;
   const r = result as { data?: unknown; errors?: readonly { message?: string }[] };
@@ -59,8 +76,7 @@ export function useBitqueryStream(token: string, onEvent: (e: FeedEvent) => void
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let client: ReturnType<typeof createClient> | null = null;
     const unsubs: (() => void)[] = [];
-    let disabledUntil = 0;
-    let loggedFatal = false;
+    const logOncePerMinute = createRateLimitedLogger({ minIntervalMs: 60_000 });
 
     const clearSubs = (): void => {
       while (unsubs.length) {
@@ -77,20 +93,9 @@ export function useBitqueryStream(token: string, onEvent: (e: FeedEvent) => void
 
     const scheduleRetry = (reason?: unknown): void => {
       if (disposed) return;
-      const now = Date.now();
-      if (disabledUntil && now < disabledUntil) return;
-
-      // If Bitquery rejects with quota/auth issues, stop retrying for a while to avoid console spam + UI jank.
+      // Keep retrying forever, but avoid console spam on quota/auth errors.
       if (isAuthOrQuotaError(reason)) {
-        if (!loggedFatal) {
-          loggedFatal = true;
-          const msg = errText(reason) || "Bitquery stream disabled (quota/auth error).";
-          // Keep this as a single log line to avoid flooding DevTools.
-          console.warn("[bitquery] stream disabled:", msg);
-        }
-        // Back off for 30 minutes. User can refresh later after upgrading quota/keys.
-        disabledUntil = now + 30 * 60 * 1000;
-        return;
+        logOncePerMinute("[bitquery] stream error (will retry):", reason, "warn");
       }
 
       const delay = Math.min(1000 * 2 ** attempt, WSS_MAX_RETRY_MS);
@@ -100,7 +105,6 @@ export function useBitqueryStream(token: string, onEvent: (e: FeedEvent) => void
 
     const connect = (): void => {
       if (disposed) return;
-      if (disabledUntil && Date.now() < disabledUntil) return;
       if (retryTimer) {
         window.clearTimeout(retryTimer);
         retryTimer = undefined;
@@ -129,7 +133,8 @@ export function useBitqueryStream(token: string, onEvent: (e: FeedEvent) => void
               if (data) push(parseTransferResult(data));
             },
             error: (err) => {
-              if (!isInsufficientResources(err)) console.error("[bitquery transfer]", err);
+              if (isAuthOrQuotaError(err)) logOncePerMinute("[bitquery transfer]", err, "warn");
+              else if (!isInsufficientResources(err)) console.error("[bitquery transfer]", err);
               clearSubs();
               scheduleRetry(err);
             },
@@ -147,7 +152,8 @@ export function useBitqueryStream(token: string, onEvent: (e: FeedEvent) => void
               if (data) push(parseDexTradeBuy(data));
             },
             error: (err) => {
-              if (!isInsufficientResources(err)) console.error("[bitquery buy]", err);
+              if (isAuthOrQuotaError(err)) logOncePerMinute("[bitquery buy]", err, "warn");
+              else if (!isInsufficientResources(err)) console.error("[bitquery buy]", err);
               clearSubs();
               scheduleRetry(err);
             },
@@ -165,7 +171,8 @@ export function useBitqueryStream(token: string, onEvent: (e: FeedEvent) => void
               if (data) push(parseDexTradeSell(data));
             },
             error: (err) => {
-              if (!isInsufficientResources(err)) console.error("[bitquery sell]", err);
+              if (isAuthOrQuotaError(err)) logOncePerMinute("[bitquery sell]", err, "warn");
+              else if (!isInsufficientResources(err)) console.error("[bitquery sell]", err);
               clearSubs();
               scheduleRetry(err);
             },
