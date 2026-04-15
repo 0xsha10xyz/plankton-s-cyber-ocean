@@ -41,15 +41,11 @@ function isAuthOrQuotaError(err: unknown): boolean {
 
 function createRateLimitedLogger(opts: { minIntervalMs: number }) {
   let lastAt = 0;
-  let lastMsg = "";
   return (prefix: string, err: unknown, level: "warn" | "error" = "warn") => {
     const now = Date.now();
-    const msg = errText(err);
-    // Always log if message changed significantly; otherwise rate-limit.
-    const changed = msg && msg !== lastMsg;
-    if (!changed && now - lastAt < opts.minIntervalMs) return;
+    if (now - lastAt < opts.minIntervalMs) return;
     lastAt = now;
-    lastMsg = msg;
+    const msg = errText(err);
     const line = msg ? `${prefix} ${msg}` : prefix;
     if (level === "error") console.error(line);
     else console.warn(line);
@@ -121,7 +117,11 @@ export function useBitqueryStream(token: string, onEvent: (e: FeedEvent) => void
       });
 
       const push = (ev: FeedEvent | null): void => {
-        if (ev) onEventRef.current(ev);
+        if (ev) {
+          // Reset retry backoff only after we actually receive valid events.
+          attempt = 0;
+          onEventRef.current(ev);
+        }
       };
 
       unsubs.push(
@@ -180,8 +180,6 @@ export function useBitqueryStream(token: string, onEvent: (e: FeedEvent) => void
           }
         )
       );
-
-      attempt = 0;
     };
 
     connect();
