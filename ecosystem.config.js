@@ -1,9 +1,16 @@
+const path = require("path");
+
+/** PM2 must run the tsx CLI by path; `script: "tsx"` resolves to a non-existent file in project root. */
+const tsxCli = path.join(__dirname, "node_modules", "tsx", "dist", "cli.mjs");
+
 module.exports = {
   apps: [
     {
       name: "syraa-signal-agent",
-      script: "tsx",
+      cwd: __dirname,
+      script: tsxCli,
       args: "src/agent.ts",
+      interpreter: "node",
       watch: false,
       env_file: ".env",
       restart_delay: 5000,
@@ -14,4 +21,3 @@ module.exports = {
     }
   ]
 };
-
