@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 import { config, validateConfigOrThrow } from "./config.js";
 import { fetchSignal } from "./signal-client.js";
 import { startIntervalScheduler, type SchedulerHandle } from "./scheduler.js";
+import { warnIfMissingUsdcAta } from "./solana-preflight.js";
 
 type AgentRegistration = {
   agentId: string;
@@ -33,15 +34,18 @@ async function postPlanktonomous(payload: unknown): Promise<void> {
 }
 
 async function registerAgent(agentId: string): Promise<void> {
+  if (!config.planktonomous.enabled) return;
   const body: AgentRegistration = { agentId, capabilities: ["trading-signal"], endpoint: "self" };
   await postPlanktonomous({ type: "register", ...body });
 }
 
 async function heartbeat(agentId: string): Promise<void> {
+  if (!config.planktonomous.enabled) return;
   await postPlanktonomous({ type: "heartbeat", agentId, timestamp: new Date().toISOString() });
 }
 
 async function deregister(agentId: string): Promise<void> {
+  if (!config.planktonomous.enabled) return;
   await postPlanktonomous({ type: "deregister", agentId, timestamp: new Date().toISOString() });
 }
 
@@ -64,8 +68,14 @@ async function main(): Promise<void> {
   validateConfigOrThrow();
 
   const agentId = process.env["AGENT_ID"]?.trim() || randomUUID();
-  console.log("[agent] starting", { agentId, paymentNetwork: config.paymentNetwork, pollMinutes: config.pollIntervalMinutes });
+  console.log("[agent] starting", {
+    agentId,
+    paymentNetwork: config.paymentNetwork,
+    pollMinutes: config.pollIntervalMinutes,
+    planktonomous: config.planktonomous.enabled
+  });
 
+  await warnIfMissingUsdcAta();
   await registerAgent(agentId);
 
   let scheduler: SchedulerHandle | null = null;

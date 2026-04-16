@@ -30,7 +30,7 @@ export async function buildX402Schemes(): Promise<X402SchemeRegistration[]> {
     out.push({
       // Wildcard: match whatever Solana CAIP-2 network the server requests.
       network: "solana:*",
-      client: new ExactSvmScheme(signer)
+      client: new ExactSvmScheme(signer, { rpcUrl: config.solana.rpcUrl })
     });
   }
 

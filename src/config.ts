@@ -19,7 +19,7 @@ function readInt(name: string, fallback: number): number {
 }
 
 export const config = {
-  signalApiUrl: process.env["SIGNAL_API_URL"]?.trim() || "http://api.syraa.fun/signal",
+  signalApiUrl: process.env["SIGNAL_API_URL"]?.trim() || "https://api.syraa.fun/signal",
 
   paymentNetwork: ((process.env["PAYMENT_NETWORK"]?.trim() || "solana") as PaymentNetwork),
 
@@ -50,6 +50,8 @@ export const config = {
   maxPaymentAmount: readInt("MAX_PAYMENT_AMOUNT", 100_000),
 
   planktonomous: {
+    /** Set PLANKTONOMOUS_ENABLED=0 to skip HTTP registration (avoids 405 noise if API differs). */
+    enabled: process.env["PLANKTONOMOUS_ENABLED"]?.trim() !== "0",
     launchUrl: process.env["PLANKTONOMOUS_LAUNCH_URL"]?.trim() || "https://planktonomous.dev/launch-agent",
     apiKey: process.env["PLANKTONOMOUS_API_KEY"]?.trim() || ""
   },
