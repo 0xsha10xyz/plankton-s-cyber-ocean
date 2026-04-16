@@ -11,7 +11,7 @@ function keypairFromBase58PrivateKey(pk: string): Keypair {
 }
 
 /**
- * x402 exact-SVM builds a TransferChecked from the payer's USDC ATA. If the ATA does not exist, Syraa returns 402 with error like "Invalid transaction".
+ * x402 exact-SVM builds TransferChecked from the payer's USDC ATA. Missing ATA or low USDC → Syraa often returns 402 "Invalid transaction".
  */
 export async function warnIfMissingUsdcAta(): Promise<void> {
   if (config.paymentNetwork === "base") return;
@@ -20,11 +20,30 @@ export async function warnIfMissingUsdcAta(): Promise<void> {
     const kp = keypairFromBase58PrivateKey(config.solana.privateKey);
     const mint = config.solana.usdcMint;
     const connection = new Connection(config.solana.rpcUrl, "confirmed");
+
+    const lamports = await connection.getBalance(kp.publicKey);
+    console.log(
+      `[agent] Solana payer pubkey: ${kp.publicKey.toBase58()} (SOL balance: ${lamports} lamports ~ ${(lamports / 1e9).toFixed(6)} SOL)`
+    );
+
     const ata = getAssociatedTokenAddressSync(new PublicKey(mint), kp.publicKey, false, TOKEN_PROGRAM_ID);
     const info = await connection.getAccountInfo(ata);
     if (!info) {
       console.warn(
-        `[agent] No USDC SPL token account (ATA) for this wallet. Create one by receiving USDC (mainnet, mint ${mint}) to ${kp.publicKey.toBase58()}, then restart. Otherwise x402 payments fail with "Invalid transaction".`
+        `[agent] No USDC SPL token account (ATA) yet. Mint ${mint} — send USDC to ${kp.publicKey.toBase58()} on mainnet so the ATA is created, then restart.`
+      );
+      return;
+    }
+
+    const tb = await connection.getTokenAccountBalance(ata);
+    const raw = BigInt(tb.value.amount);
+    const decimals = tb.value.decimals;
+    console.log(`[agent] USDC ATA ${ata.toBase58()} | raw amount ${raw} (${decimals} decimals)`);
+
+    const typicalCharge = 100_000n;
+    if (raw < typicalCharge) {
+      console.warn(
+        `[agent] USDC balance looks below a typical Syraa charge (~${typicalCharge} raw = $0.10 with 6 decimals). Top up USDC on this ATA.`
       );
     }
   } catch (e) {
