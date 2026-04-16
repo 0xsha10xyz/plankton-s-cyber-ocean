@@ -29,7 +29,7 @@ const sidebarSections = [
   { id: "x402-payments", label: "x402 payments", icon: Landmark, path: "/docs/x402-payments" as const },
   {
     id: "syraa-signal-agent",
-    label: "Syraa signal agent (VPS)",
+    label: "Syraa signal agent",
     icon: Server,
     path: "/docs/agent-configuration" as const,
   },
