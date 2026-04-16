@@ -29,6 +29,24 @@ function buildQuery(params: SignalParams): string {
   return s ? `?${s}` : "";
 }
 
+/**
+ * Syraa’s 402 body uses `resource.url` with **http://**. The signed payment is bound to that URL;
+ * if we GET **https://** while the server expects **http://**, verification returns "Invalid transaction".
+ */
+function normalizeSyraaSignalBaseUrl(base: string): string {
+  const trimmed = base.trim().replace(/\/+$/, "");
+  try {
+    const u = new URL(trimmed);
+    if (u.hostname === "api.syraa.fun" && u.protocol === "https:") {
+      u.protocol = "http:";
+      return u.href.replace(/\/+$/, "");
+    }
+  } catch {
+    // leave as-is
+  }
+  return trimmed;
+}
+
 function isAllowedPayTo(payTo: string): boolean {
   return (ALLOWED_PAY_TO as readonly string[]).includes(payTo);
 }
@@ -118,7 +136,8 @@ function createSelector(resourceUrl: string): SelectPaymentRequirements {
 }
 
 export async function fetchSignal(params: SignalParams): Promise<SignalResponse> {
-  const url = `${config.signalApiUrl}${buildQuery(params)}`;
+  const base = normalizeSyraaSignalBaseUrl(config.signalApiUrl);
+  const url = `${base}${buildQuery(params)}`;
 
   const schemes = await buildX402Schemes();
   const fetchWithPayment = wrapFetchWithPaymentFromConfig(fetch, {
