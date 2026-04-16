@@ -1,0 +1,184 @@
+import { wrapFetchWithPaymentFromConfig, type SelectPaymentRequirements } from "@x402/fetch";
+import { config } from "./config.js";
+import { buildX402Schemes, envPayToFor } from "./wallet.js";
+
+export type SignalParams = {
+  token: string;
+  source: string;
+  instId: string;
+  bar: string;
+  limit: number;
+};
+
+export type SignalResponse = unknown;
+
+const ALLOWED_PAY_TO = [
+  "53JhuF8bgxvUQ59nDG6kWs4awUQYCS3wswQmUsV5uC7t", // Solana
+  "0xF9dcBFF7EdDd76c58412fd46f4160c96312ce734" // Base
+] as const;
+
+const lastPaidByKey = new Map<string, number>();
+
+function buildQuery(params: SignalParams): string {
+  const qs = new URLSearchParams({
+    token: params.token,
+    source: params.source,
+    instId: params.instId,
+    bar: params.bar,
+    limit: String(params.limit)
+  });
+  const s = qs.toString();
+  return s ? `?${s}` : "";
+}
+
+function isAllowedPayTo(payTo: string): boolean {
+  return (ALLOWED_PAY_TO as readonly string[]).includes(payTo);
+}
+
+function requireBudgetWithin(maxAmountRequired: string): void {
+  const amount = BigInt(maxAmountRequired);
+  const max = BigInt(config.maxPaymentAmount);
+  if (amount > max) {
+    throw new Error(`Payment amount ${amount.toString()} exceeds budget cap`);
+  }
+}
+
+function dedupKey(resourceUrl: string, accept: Record<string, unknown>, maxAmountRequired: string): string {
+  return [
+    resourceUrl,
+    String(accept["network"] ?? ""),
+    String(accept["asset"] ?? ""),
+    String(accept["payTo"] ?? ""),
+    maxAmountRequired
+  ].join("|");
+}
+
+function enforceDedup(resourceUrl: string, accept: Record<string, unknown>, maxAmountRequired: string): void {
+  const key = dedupKey(resourceUrl, accept, maxAmountRequired);
+  const now = Date.now();
+  const last = lastPaidByKey.get(key);
+  // A simple in-memory “recent payment” guard to avoid accidental double-payment loops.
+  if (last && now - last < 30_000) {
+    throw new Error(`Dedup guard: refusing to pay again for same requirements within 30s`);
+  }
+  lastPaidByKey.set(key, now);
+}
+
+function extractAmount(accept: unknown): string {
+  const anyMatch = accept as Record<string, unknown>;
+  return (
+    (typeof anyMatch["maxAmountRequired"] === "string" && (anyMatch["maxAmountRequired"] as string)) ||
+    (typeof anyMatch["amount"] === "string" && (anyMatch["amount"] as string)) ||
+    (typeof anyMatch["value"] === "string" && (anyMatch["value"] as string)) ||
+    ""
+  );
+}
+
+function createSelector(resourceUrl: string): SelectPaymentRequirements {
+  return (_version, accepts) => {
+    if (!accepts?.length) throw new Error("No payment options available");
+
+    if (config.paymentNetwork === "both") {
+      const candidates = accepts.filter((a) => {
+        const n = typeof a.network === "string" ? a.network : "";
+        const payTo = String(a.payTo ?? "");
+        const isSol = n.startsWith("solana:");
+        const isBase = n === "eip155:8453" || (n.startsWith("eip155:") && n.includes("8453"));
+        if (!isSol && !isBase) return false;
+        if (!isAllowedPayTo(payTo)) return false;
+        const expectedSol = config.solana.payTo;
+        const expectedBase = config.evm.payTo.toLowerCase();
+        if (isSol && payTo !== expectedSol) return false;
+        if (isBase && payTo.toLowerCase() !== expectedBase) return false;
+        return extractAmount(a).length > 0;
+      });
+
+      if (!candidates.length) {
+        throw new Error("No acceptable payment requirements for Solana or Base (check payTo whitelist)");
+      }
+
+      const scored = candidates
+        .map((a) => ({ a, amt: BigInt(extractAmount(a)) }))
+        .sort((x, y) => (x.amt < y.amt ? -1 : x.amt > y.amt ? 1 : 0));
+
+      const match = scored[0]?.a;
+      if (!match) throw new Error("No payment option selected");
+
+      const maxAmount = extractAmount(match);
+      requireBudgetWithin(maxAmount);
+      enforceDedup(resourceUrl, match as unknown as Record<string, unknown>, maxAmount);
+      return match;
+    }
+
+    const wantNetworkPrefix = config.paymentNetwork === "base" ? "eip155:" : "solana:";
+    const wantPayTo = envPayToFor(config.paymentNetwork);
+
+    const match =
+      accepts.find((a) => {
+        const networkOk = typeof a.network === "string" && a.network.startsWith(wantNetworkPrefix);
+        const payToOk = typeof a.payTo === "string" && a.payTo.toLowerCase() === wantPayTo.toLowerCase();
+        return networkOk && payToOk;
+      }) ?? accepts.find((a) => typeof a.network === "string" && a.network.startsWith(wantNetworkPrefix));
+
+    if (!match) {
+      throw new Error(`No acceptable payment requirements for network ${config.paymentNetwork}`);
+    }
+
+    const payTo = String(match.payTo ?? "");
+    if (!isAllowedPayTo(payTo)) {
+      throw new Error(`Untrusted payTo address: ${payTo}`);
+    }
+
+    const anyMatch = match as unknown as Record<string, unknown>;
+    const maxAmount = extractAmount(match);
+
+    if (!maxAmount) throw new Error("Payment requirements missing amount/maxAmountRequired");
+
+    requireBudgetWithin(maxAmount);
+    enforceDedup(resourceUrl, anyMatch, maxAmount);
+    return match;
+  };
+}
+
+export async function fetchSignal(params: SignalParams): Promise<SignalResponse> {
+  const url = `${config.signalApiUrl}${buildQuery(params)}`;
+
+  const schemes = await buildX402Schemes();
+  const fetchWithPayment = wrapFetchWithPaymentFromConfig(fetch, {
+    schemes,
+    paymentRequirementsSelector: createSelector(url)
+  });
+
+  const maxRetries = 3;
+  let lastErr: unknown = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetchWithPayment(url, {
+        method: "GET",
+        signal: controller.signal,
+        headers: {
+          "accept": "application/json"
+        }
+      });
+
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw new Error(`Signal API error ${res.status}: ${body.slice(0, 500)}`);
+      }
+
+      return (await res.json()) as SignalResponse;
+    } catch (err) {
+      lastErr = err;
+      if (attempt >= maxRetries) break;
+      await new Promise((r) => setTimeout(r, 750 * attempt));
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
+
