@@ -253,6 +253,13 @@ export default function DocsHome() {
                   facilitator verification: <DocLink file="docs/x402-payments.md" />
                 </span>
               </li>
+              <li className="flex gap-3">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                <span>
+                  <strong className="text-foreground/95">Syraa signal agent</strong> — self-hosted VPS poller, env &amp; PM2:{" "}
+                  <DocLink file="docs/agent-configuration.md" />
+                </span>
+              </li>
             </ul>
           </HoloCard>
           <HoloCard className="p-6 md:p-8">
@@ -473,7 +480,8 @@ export default function DocsHome() {
           <h3 className="text-base font-semibold text-foreground mb-2 tracking-tight">Paid agent chat (x402)</h3>
           <p className="text-sm docs-body-muted leading-[1.7]">
             HTTP 402 micropayments in USDC on Solana, same-origin proxying, and environment setup are documented in{" "}
-            <DocLink file="docs/x402-payments.md" />.
+            <DocLink file="docs/x402-payments.md" />. For the <strong className="text-foreground/95">Syraa signal agent</strong>{" "}
+            (standalone Node poller on a VPS), see <DocLink file="docs/agent-configuration.md" />.
           </p>
         </HoloCard>
       </section>
@@ -547,6 +555,8 @@ export default function DocsHome() {
           <DocLink file="docs/CONFIGURATION.md" />
           <span className="opacity-40">·</span>
           <DocLink file="docs/x402-payments.md" />
+          <span className="opacity-40">·</span>
+          <DocLink file="docs/agent-configuration.md">docs/agent-configuration.md</DocLink>
           <span className="opacity-40">·</span>
           <DocLink file="SECURITY.md" />
         </p>

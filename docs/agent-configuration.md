@@ -2,6 +2,8 @@
 
 This document describes environment variables and operational settings for the **self-hosted x402 signal agent** (`src/agent.ts`). The agent polls the Syraa Signal API, pays per request with **Solana USDC** via the **x402** protocol (`@x402/fetch` + `@x402/svm`), and optionally registers with Planktonomous.
 
+**Published on the Plankton docs site:** [https://planktonomous.dev/docs/agent-configuration](https://planktonomous.dev/docs/agent-configuration) (same Markdown as `docs/agent-configuration.md` in the repo).
+
 **Language:** Solana-only. Base / EVM payment paths are not supported in this agent.
 
 ---
