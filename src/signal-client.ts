@@ -17,8 +17,6 @@ const ALLOWED_PAY_TO = [
   "0xF9dcBFF7EdDd76c58412fd46f4160c96312ce734" // Base
 ] as const;
 
-const lastPaidByKey = new Map<string, number>();
-
 function buildQuery(params: SignalParams): string {
   const qs = new URLSearchParams({
     token: params.token,
@@ -43,26 +41,7 @@ function requireBudgetWithin(maxAmountRequired: string): void {
   }
 }
 
-function dedupKey(resourceUrl: string, accept: Record<string, unknown>, maxAmountRequired: string): string {
-  return [
-    resourceUrl,
-    String(accept["network"] ?? ""),
-    String(accept["asset"] ?? ""),
-    String(accept["payTo"] ?? ""),
-    maxAmountRequired
-  ].join("|");
-}
-
-function enforceDedup(resourceUrl: string, accept: Record<string, unknown>, maxAmountRequired: string): void {
-  const key = dedupKey(resourceUrl, accept, maxAmountRequired);
-  const now = Date.now();
-  const last = lastPaidByKey.get(key);
-  // A simple in-memory “recent payment” guard to avoid accidental double-payment loops.
-  if (last && now - last < 30_000) {
-    throw new Error(`Dedup guard: refusing to pay again for same requirements within 30s`);
-  }
-  lastPaidByKey.set(key, now);
-}
+/** x402 client may invoke the payment selector more than once per HTTP request; do not dedupe inside the selector. */
 
 function extractAmount(accept: unknown): string {
   const anyMatch = accept as Record<string, unknown>;
@@ -106,7 +85,6 @@ function createSelector(resourceUrl: string): SelectPaymentRequirements {
 
       const maxAmount = extractAmount(match);
       requireBudgetWithin(maxAmount);
-      enforceDedup(resourceUrl, match as unknown as Record<string, unknown>, maxAmount);
       return match;
     }
 
@@ -135,7 +113,6 @@ function createSelector(resourceUrl: string): SelectPaymentRequirements {
     if (!maxAmount) throw new Error("Payment requirements missing amount/maxAmountRequired");
 
     requireBudgetWithin(maxAmount);
-    enforceDedup(resourceUrl, anyMatch, maxAmount);
     return match;
   };
 }
