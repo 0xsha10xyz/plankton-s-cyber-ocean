@@ -162,7 +162,13 @@ export async function fetchSignal(params: SignalParams): Promise<SignalResponse>
 
       if (!res.ok) {
         const body = await res.text().catch(() => "");
-        throw new Error(`Signal API error ${res.status}: ${body.slice(0, 500)}`);
+        const max = 12_000;
+        const snippet = body.length > max ? `${body.slice(0, max)}…[truncated]` : body;
+        const solanaHint =
+          res.status === 402 && /"network"\s*:\s*"solana:/.test(body)
+            ? " [chain: Solana x402 — PAYMENT_NETWORK=base/EVM is not used for this response]"
+            : "";
+        throw new Error(`Signal API error ${res.status}${solanaHint}: ${snippet}`);
       }
 
       return (await res.json()) as SignalResponse;
