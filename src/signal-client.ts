@@ -30,15 +30,15 @@ function buildQuery(params: SignalParams): string {
 }
 
 /**
- * Syraa’s 402 body uses `resource.url` with **http://**. The signed payment is bound to that URL;
- * if we GET **https://** while the server expects **http://**, verification returns "Invalid transaction".
+ * `api.syraa.fun` responds **301 → https** for `http://` URLs (see curl). Use **https** as the canonical
+ * request URL so x402 payment binding matches the endpoint the server actually serves.
  */
 function normalizeSyraaSignalBaseUrl(base: string): string {
   const trimmed = base.trim().replace(/\/+$/, "");
   try {
     const u = new URL(trimmed);
-    if (u.hostname === "api.syraa.fun" && u.protocol === "https:") {
-      u.protocol = "http:";
+    if (u.hostname === "api.syraa.fun" && u.protocol === "http:") {
+      u.protocol = "https:";
       return u.href.replace(/\/+$/, "");
     }
   } catch {

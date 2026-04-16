@@ -19,7 +19,7 @@ function readInt(name: string, fallback: number): number {
 }
 
 export const config = {
-  signalApiUrl: process.env["SIGNAL_API_URL"]?.trim() || "http://api.syraa.fun/signal",
+  signalApiUrl: process.env["SIGNAL_API_URL"]?.trim() || "https://api.syraa.fun/signal",
 
   paymentNetwork: ((process.env["PAYMENT_NETWORK"]?.trim() || "solana") as PaymentNetwork),
 
