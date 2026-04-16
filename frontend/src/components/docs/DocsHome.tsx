@@ -246,6 +246,13 @@ export default function DocsHome() {
                   <DocLink file="docs/INTEGRATIONS.md" />
                 </span>
               </li>
+              <li className="flex gap-3">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                <span>
+                  <strong className="text-foreground/95">x402 (Solana / USDC)</strong> — paid Agent Chat, Vercel → VPS proxy,
+                  facilitator verification: <DocLink file="docs/x402-payments.md" />
+                </span>
+              </li>
             </ul>
           </HoloCard>
           <HoloCard className="p-6 md:p-8">
@@ -462,6 +469,13 @@ export default function DocsHome() {
             </HoloCard>
           ))}
         </div>
+        <HoloCard className="p-6 md:p-8 mt-4 md:mt-5">
+          <h3 className="text-base font-semibold text-foreground mb-2 tracking-tight">Paid agent chat (x402)</h3>
+          <p className="text-sm docs-body-muted leading-[1.7]">
+            HTTP 402 micropayments in USDC on Solana, same-origin proxying, and environment setup are documented in{" "}
+            <DocLink file="docs/x402-payments.md" />.
+          </p>
+        </HoloCard>
       </section>
 
       {/* Security */}
@@ -531,6 +545,8 @@ export default function DocsHome() {
           <DocLink file="docs/README.md" />
           <span className="opacity-40">·</span>
           <DocLink file="docs/CONFIGURATION.md" />
+          <span className="opacity-40">·</span>
+          <DocLink file="docs/x402-payments.md" />
           <span className="opacity-40">·</span>
           <DocLink file="SECURITY.md" />
         </p>

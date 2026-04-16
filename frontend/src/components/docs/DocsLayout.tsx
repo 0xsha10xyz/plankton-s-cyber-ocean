@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Book,
   Coins,
+  Landmark,
   Rocket,
   Shield,
   Zap,
@@ -24,7 +25,8 @@ const sidebarSections = [
   { id: "tokenomics", label: "Tokenomics", icon: Coins },
   { id: "autonomous", label: "Autonomous Agent", icon: Rocket },
   { id: "security", label: "Security", icon: Shield },
-];
+  { id: "x402-payments", label: "x402 payments", icon: Landmark, path: "/docs/x402-payments" as const },
+] as const;
 
 export default function DocsLayout() {
   const [activeSection, setActiveSection] = useState("overview");
@@ -32,9 +34,19 @@ export default function DocsLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  const scrollToSection = (id: string) => {
-    setActiveSection(id);
+  useEffect(() => {
+    const match = sidebarSections.find((s) => "path" in s && s.path && pathname === s.path);
+    if (match) setActiveSection(match.id);
+  }, [pathname]);
+
+  const scrollToSection = (section: (typeof sidebarSections)[number]) => {
+    setActiveSection(section.id);
     setSidebarOpen(false);
+    if ("path" in section && section.path) {
+      navigate(section.path);
+      return;
+    }
+    const { id } = section;
     if (pathname !== "/docs") {
       navigate(`/docs#${id}`);
       return;
@@ -81,7 +93,7 @@ export default function DocsLayout() {
                 <button
                   key={section.id}
                   type="button"
-                  onClick={() => scrollToSection(section.id)}
+                  onClick={() => scrollToSection(section)}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 text-left",
                     activeSection === section.id
