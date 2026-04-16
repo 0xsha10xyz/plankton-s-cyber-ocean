@@ -167,7 +167,7 @@ export async function fetchSignal(params: SignalParams): Promise<SignalResponse>
         const snippet = body.length > max ? `${body.slice(0, max)}…[truncated]` : body;
         const solanaHint =
           res.status === 402 && /"network"\s*:\s*"solana:/.test(body)
-            ? " [chain: Solana x402 — PAYMENT_NETWORK=base/EVM is not used for this response]"
+            ? " [Solana x402: repeated Invalid transaction is often facilitator/feePayer settlement on Syraa’s side; you can try PAYMENT_NETWORK=base + Base USDC, or ask Syraa support.]"
             : "";
         throw new Error(`Signal API error ${res.status}${solanaHint}: ${snippet}`);
       }
