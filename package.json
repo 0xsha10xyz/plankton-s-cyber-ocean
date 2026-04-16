@@ -14,7 +14,7 @@
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspace=frontend",
     "agent:dev": "tsx src/agent.ts",
-    "agent:build": "tsc -p tsconfig.json",
+    "agent:build": "tsc -p tsconfig.agent.json",
     "agent:start": "node dist/agent.js"
   },
   "workspaces": [
