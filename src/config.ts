@@ -1,7 +1,5 @@
 import "dotenv/config";
 
-export type PaymentNetwork = "solana" | "base" | "both";
-
 function requireEnv(name: string): string {
   const v = process.env[name];
   if (!v || !v.trim()) throw new Error(`Missing required env var: ${name}`);
@@ -18,10 +16,21 @@ function readInt(name: string, fallback: number): number {
   return n;
 }
 
+function readPaymentNetwork(): "solana" {
+  const raw = process.env["PAYMENT_NETWORK"]?.trim();
+  if (!raw) return "solana";
+  const lower = raw.toLowerCase();
+  if (lower === "solana") return "solana";
+  throw new Error(
+    `PAYMENT_NETWORK must be "solana" (got "${raw}"). Base/EVM was removed; use Solana USDC only.`
+  );
+}
+
 export const config = {
   signalApiUrl: process.env["SIGNAL_API_URL"]?.trim() || "http://api.syraa.fun/signal",
 
-  paymentNetwork: ((process.env["PAYMENT_NETWORK"]?.trim() || "solana") as PaymentNetwork),
+  /** Solana-only x402 agent (USDC + sponsored fees). */
+  paymentNetwork: readPaymentNetwork(),
 
   solana: {
     privateKey: process.env["SOLANA_PRIVATE_KEY"]?.trim() || "",
@@ -29,13 +38,6 @@ export const config = {
     usdcMint: process.env["SOLANA_USDC_MINT"]?.trim() || "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
     payTo: process.env["SOLANA_PAY_TO"]?.trim() || "53JhuF8bgxvUQ59nDG6kWs4awUQYCS3wswQmUsV5uC7t",
     feePayer: process.env["SOLANA_FEE_PAYER"]?.trim() || ""
-  },
-
-  evm: {
-    privateKey: process.env["EVM_PRIVATE_KEY"]?.trim() || "",
-    rpcUrl: process.env["EVM_RPC_URL"]?.trim() || "https://mainnet.base.org",
-    usdcAddress: process.env["EVM_USDC_ADDRESS"]?.trim() || "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
-    payTo: process.env["EVM_PAY_TO"]?.trim() || "0xF9dcBFF7EdDd76c58412fd46f4160c96312ce734"
   },
 
   signalDefaults: {
@@ -63,26 +65,13 @@ export const config = {
 } as const;
 
 export function validateConfigOrThrow(): void {
-  if (config.paymentNetwork !== "solana" && config.paymentNetwork !== "base" && config.paymentNetwork !== "both") {
-    throw new Error(`Invalid PAYMENT_NETWORK: ${config.paymentNetwork}`);
-  }
-
   requireEnv("SIGNAL_API_URL");
-  requireEnv("PAYMENT_NETWORK");
   requireEnv("MAX_PAYMENT_AMOUNT");
   requireEnv("POLL_INTERVAL_MINUTES");
 
-  if (config.paymentNetwork === "solana" || config.paymentNetwork === "both") {
-    requireEnv("SOLANA_PRIVATE_KEY");
-    requireEnv("SOLANA_RPC_URL");
-    requireEnv("SOLANA_USDC_MINT");
-    requireEnv("SOLANA_PAY_TO");
-  }
-  if (config.paymentNetwork === "base" || config.paymentNetwork === "both") {
-    requireEnv("EVM_PRIVATE_KEY");
-    requireEnv("EVM_RPC_URL");
-    requireEnv("EVM_USDC_ADDRESS");
-    requireEnv("EVM_PAY_TO");
-  }
+  requireEnv("SOLANA_PRIVATE_KEY");
+  requireEnv("SOLANA_RPC_URL");
+  requireEnv("SOLANA_USDC_MINT");
+  requireEnv("SOLANA_PAY_TO");
 }
 

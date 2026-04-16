@@ -14,8 +14,6 @@ export function keypairFromBase58PrivateKey(pk: string): Keypair {
  * x402 exact-SVM builds TransferChecked from the payer's USDC ATA. Missing ATA or low USDC → Syraa often returns 402 "Invalid transaction".
  */
 export async function warnIfMissingUsdcAta(): Promise<void> {
-  if (config.paymentNetwork === "base") return;
-
   try {
     const kp = keypairFromBase58PrivateKey(config.solana.privateKey);
     const mint = config.solana.usdcMint;

@@ -1,6 +1,6 @@
 import { wrapFetchWithPaymentFromConfig, type SelectPaymentRequirements } from "@x402/fetch";
 import { config } from "./config.js";
-import { buildX402Schemes, envPayToFor } from "./wallet.js";
+import { buildX402Schemes } from "./wallet.js";
 
 export type SignalParams = {
   token: string;
@@ -12,10 +12,8 @@ export type SignalParams = {
 
 export type SignalResponse = unknown;
 
-const ALLOWED_PAY_TO = [
-  "53JhuF8bgxvUQ59nDG6kWs4awUQYCS3wswQmUsV5uC7t", // Solana
-  "0xF9dcBFF7EdDd76c58412fd46f4160c96312ce734" // Base
-] as const;
+/** Syraa Solana merchant `payTo` (wallet); must match `accepts[].payTo` you trust. */
+const ALLOWED_SOL_PAY_TO = "53JhuF8bgxvUQ59nDG6kWs4awUQYCS3wswQmUsV5uC7t" as const;
 
 function buildQuery(params: SignalParams): string {
   const qs = new URLSearchParams({
@@ -48,8 +46,8 @@ function normalizeSyraaSignalBaseUrl(base: string): string {
   return trimmed;
 }
 
-function isAllowedPayTo(payTo: string): boolean {
-  return (ALLOWED_PAY_TO as readonly string[]).includes(payTo);
+function isAllowedSolPayTo(payTo: string): boolean {
+  return payTo === ALLOWED_SOL_PAY_TO || payTo === config.solana.payTo;
 }
 
 function requireBudgetWithin(maxAmountRequired: string): void {
@@ -72,64 +70,30 @@ function extractAmount(accept: unknown): string {
   );
 }
 
-function createSelector(resourceUrl: string): SelectPaymentRequirements {
+function createSelector(_resourceUrl: string): SelectPaymentRequirements {
   return (_version, accepts) => {
     if (!accepts?.length) throw new Error("No payment options available");
 
-    if (config.paymentNetwork === "both") {
-      const candidates = accepts.filter((a) => {
-        const n = typeof a.network === "string" ? a.network : "";
-        const payTo = String(a.payTo ?? "");
-        const isSol = n.startsWith("solana:");
-        const isBase = n === "eip155:8453" || (n.startsWith("eip155:") && n.includes("8453"));
-        if (!isSol && !isBase) return false;
-        if (!isAllowedPayTo(payTo)) return false;
-        const expectedSol = config.solana.payTo;
-        const expectedBase = config.evm.payTo.toLowerCase();
-        if (isSol && payTo !== expectedSol) return false;
-        if (isBase && payTo.toLowerCase() !== expectedBase) return false;
-        return extractAmount(a).length > 0;
-      });
-
-      if (!candidates.length) {
-        throw new Error("No acceptable payment requirements for Solana or Base (check payTo whitelist)");
-      }
-
-      const scored = candidates
-        .map((a) => ({ a, amt: BigInt(extractAmount(a)) }))
-        .sort((x, y) => (x.amt < y.amt ? -1 : x.amt > y.amt ? 1 : 0));
-
-      const match = scored[0]?.a;
-      if (!match) throw new Error("No payment option selected");
-
-      const maxAmount = extractAmount(match);
-      requireBudgetWithin(maxAmount);
-      return match;
-    }
-
-    const wantNetworkPrefix = config.paymentNetwork === "base" ? "eip155:" : "solana:";
-    const wantPayTo = envPayToFor(config.paymentNetwork);
-
+    const wantPayTo = config.solana.payTo;
     const match =
       accepts.find((a) => {
-        const networkOk = typeof a.network === "string" && a.network.startsWith(wantNetworkPrefix);
-        const payToOk = typeof a.payTo === "string" && a.payTo.toLowerCase() === wantPayTo.toLowerCase();
-        return networkOk && payToOk;
-      }) ?? accepts.find((a) => typeof a.network === "string" && a.network.startsWith(wantNetworkPrefix));
+        const networkOk = typeof a.network === "string" && a.network.startsWith("solana:");
+        const payToOk =
+          typeof a.payTo === "string" && a.payTo.toLowerCase() === wantPayTo.toLowerCase();
+        return networkOk && payToOk && extractAmount(a).length > 0;
+      }) ?? accepts.find((a) => typeof a.network === "string" && a.network.startsWith("solana:"));
 
     if (!match) {
-      throw new Error(`No acceptable payment requirements for network ${config.paymentNetwork}`);
+      throw new Error("No acceptable Solana payment in accepts[] (need solana:* + matching SOLANA_PAY_TO)");
     }
 
     const payTo = String(match.payTo ?? "");
-    if (!isAllowedPayTo(payTo)) {
-      throw new Error(`Untrusted payTo address: ${payTo}`);
+    if (!isAllowedSolPayTo(payTo)) {
+      throw new Error(`Untrusted Solana payTo address: ${payTo}`);
     }
 
-    const anyMatch = match as unknown as Record<string, unknown>;
     const maxAmount = extractAmount(match);
-
-    if (!maxAmount) throw new Error("Payment requirements missing amount/maxAmountRequired");
+    if (!maxAmount) throw new Error("Payment requirements missing amount");
 
     requireBudgetWithin(maxAmount);
     return match;
@@ -180,7 +144,7 @@ export async function fetchSignal(params: SignalParams): Promise<SignalResponse>
         }
         const solanaHint =
           res.status === 402 && /"network"\s*:\s*"solana:/.test(body)
-            ? " [Solana x402: verify expects versioned tx with compute-budget + TransferChecked + Memo (scheme_exact_svm). Try Base USDC if Syraa facilitator still rejects.]"
+            ? " [Solana x402: verify expects versioned tx with compute-budget + TransferChecked + Memo (scheme_exact_svm).]"
             : "";
         throw new Error(`Signal API error ${res.status}${solanaHint}: ${snippet}`);
       }
