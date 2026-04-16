@@ -1,6 +1,5 @@
 import { wrapFetchWithPaymentFromConfig, type SelectPaymentRequirements } from "@x402/fetch";
 import { config } from "./config.js";
-import { clearLastSolanaPaymentTxBase64, getLastSolanaPaymentTxBase64 } from "./solana-minimal-exact-scheme.js";
 import { buildX402Schemes, envPayToFor } from "./wallet.js";
 
 export type SignalParams = {
@@ -151,7 +150,6 @@ export async function fetchSignal(params: SignalParams): Promise<SignalResponse>
   let lastErr: unknown = null;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    clearLastSolanaPaymentTxBase64();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
     try {
@@ -168,10 +166,6 @@ export async function fetchSignal(params: SignalParams): Promise<SignalResponse>
         const max = 12_000;
         const snippet = body.length > max ? `${body.slice(0, max)}…[truncated]` : body;
         if (res.status === 402) {
-          const lastTx = getLastSolanaPaymentTxBase64();
-          if (lastTx) {
-            console.error("[signal-client] rejected Solana payment tx (base64):", lastTx);
-          }
           try {
             const parsed = JSON.parse(body) as unknown;
             const pretty = JSON.stringify(parsed, null, 2);
@@ -186,7 +180,7 @@ export async function fetchSignal(params: SignalParams): Promise<SignalResponse>
         }
         const solanaHint =
           res.status === 402 && /"network"\s*:\s*"solana:/.test(body)
-            ? " [Solana x402: repeated Invalid transaction is often facilitator/feePayer settlement on Syraa’s side; you can try PAYMENT_NETWORK=base + Base USDC, or ask Syraa support.]"
+            ? " [Solana x402: verify expects versioned tx with compute-budget + TransferChecked + Memo (scheme_exact_svm). Try Base USDC if Syraa facilitator still rejects.]"
             : "";
         throw new Error(`Signal API error ${res.status}${solanaHint}: ${snippet}`);
       }
