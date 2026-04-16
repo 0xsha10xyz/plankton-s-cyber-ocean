@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { Terminal } from "lucide-react";
+import { Maximize2, Minimize2, Terminal } from "lucide-react";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useSolPrice } from "@/hooks/useSolPrice";
 import { useDexScreenerPoll } from "@/hooks/useDexScreenerPoll";
@@ -8,6 +8,7 @@ import { useStakingMonitor } from "@/hooks/useStakingMonitor";
 import type { FeedEvent, FeedLine, FeedSignalKind } from "@/lib/commandCenter/types";
 import { FEED_MAX_LINES } from "@/lib/commandCenter/constants";
 import { feedEventToSegments } from "@/lib/commandCenter/feedSegments";
+import { cn } from "@/lib/utils";
 import { FilterBar } from "./FilterBar";
 import { TerminalFeed } from "./TerminalFeed";
 
@@ -25,7 +26,18 @@ const DEFAULT_ENABLED: FeedSignalKind[] = [
   "SYSTEM",
 ];
 
-export default function CommandCenter(): JSX.Element {
+export type CommandCenterProps = {
+  /** When set, show a control to expand this panel to the full viewport (Launch Agent workspace). */
+  workspaceExpandEnabled?: boolean;
+  workspaceExpanded?: boolean;
+  onWorkspaceExpandToggle?: () => void;
+};
+
+export default function CommandCenter({
+  workspaceExpandEnabled,
+  workspaceExpanded,
+  onWorkspaceExpandToggle,
+}: CommandCenterProps = {}): JSX.Element {
   const { bitqueryToken, shyftKey } = useAppConfig();
   const solPrice = useSolPrice();
   const [rawLines, setRawLines] = useState<FeedLine[]>([]);
@@ -69,8 +81,8 @@ export default function CommandCenter(): JSX.Element {
   }, []);
 
   return (
-    <div className="workspace-card">
-      <div className="workspace-toolbar">
+    <div className={cn("workspace-card", workspaceExpanded && "min-h-0 flex flex-col flex-1")}>
+      <div className="workspace-toolbar shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Terminal size={16} className="text-primary shrink-0" />
           <span className="text-sm font-mono font-semibold tracking-wide text-primary truncate">
@@ -78,16 +90,27 @@ export default function CommandCenter(): JSX.Element {
           </span>
         </div>
         <div className="ml-auto flex items-center gap-2 shrink-0">
+          {workspaceExpandEnabled && onWorkspaceExpandToggle ? (
+            <button
+              type="button"
+              onClick={onWorkspaceExpandToggle}
+              title={workspaceExpanded ? "Exit full view" : "Full view"}
+              className="p-1.5 rounded-lg border border-border/55 bg-secondary/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+              aria-label={workspaceExpanded ? "Exit full view" : "Full view"}
+            >
+              {workspaceExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
+          ) : null}
           <div className={`w-2 h-2 rounded-full ${live ? "bg-accent animate-pulse-glow" : "bg-muted-foreground/60"}`} />
           <span className={`text-xs font-mono ${live ? "text-accent" : "text-muted-foreground"}`}>
             {live ? "LIVE" : "CONNECTING"}
           </span>
         </div>
       </div>
-      <div className="px-4 pt-3">
+      <div className={cn("px-4 pt-3", workspaceExpanded && "shrink-0")}>
         <FilterBar enabled={enabled} onToggle={toggle} />
       </div>
-      <TerminalFeed lines={lines} />
+      <TerminalFeed lines={lines} fillHeight={Boolean(workspaceExpanded)} />
     </div>
   );
 }

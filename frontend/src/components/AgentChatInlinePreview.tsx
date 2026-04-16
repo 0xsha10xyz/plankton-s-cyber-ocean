@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bot, Send, User, ArrowRight } from "lucide-react";
+import { Bot, Maximize2, Minimize2, Send, User, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@/contexts/WalletModalContext";
@@ -231,7 +231,17 @@ function AgentMessageBubble({
   );
 }
 
-export function AgentChatInlinePreview() {
+export type AgentChatInlinePreviewProps = {
+  workspaceExpandEnabled?: boolean;
+  workspaceExpanded?: boolean;
+  onWorkspaceExpandToggle?: () => void;
+};
+
+export function AgentChatInlinePreview({
+  workspaceExpandEnabled,
+  workspaceExpanded,
+  onWorkspaceExpandToggle,
+}: AgentChatInlinePreviewProps = {}) {
   const wallet = useWallet();
   const { connected, publicKey, signTransaction } = wallet;
   const { connection } = useConnection();
@@ -1111,31 +1121,52 @@ export function AgentChatInlinePreview() {
   const sendDisabled = !connected || sending || !input.trim();
 
   return (
-    <section className="workspace-card w-full">
-      <div className="workspace-toolbar justify-between">
+    <section
+      className={cn(
+        "workspace-card w-full flex flex-col",
+        workspaceExpanded && "min-h-0 flex-1"
+      )}
+    >
+      <div className="workspace-toolbar justify-between shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <Bot size={18} className="text-primary shrink-0" />
           <div className="font-semibold tracking-tight truncate">Agent Chat</div>
         </div>
 
-        {connected ? (
-          <div className="text-xs text-muted-foreground flex items-center gap-2 shrink-0">
-            <User size={14} /> Connected
-          </div>
-        ) : (
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            className="rounded-xl bg-accent/15 border border-accent/40 text-accent hover:bg-accent/25 shadow-surface-sm shrink-0"
-            onClick={openWalletModal}
-          >
-            Connect Wallet
-          </Button>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {workspaceExpandEnabled && onWorkspaceExpandToggle ? (
+            <button
+              type="button"
+              onClick={onWorkspaceExpandToggle}
+              title={workspaceExpanded ? "Exit full view" : "Full view"}
+              className="p-1.5 rounded-lg border border-border/55 bg-secondary/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+              aria-label={workspaceExpanded ? "Exit full view" : "Full view"}
+            >
+              {workspaceExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
+          ) : null}
+          {connected ? (
+            <div className="text-xs text-muted-foreground flex items-center gap-2">
+              <User size={14} /> Connected
+            </div>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="rounded-xl bg-accent/15 border border-accent/40 text-accent hover:bg-accent/25 shadow-surface-sm"
+              onClick={openWalletModal}
+            >
+              Connect Wallet
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="flex flex-col" style={{ height: "420px" }}>
+      <div
+        className="flex flex-col min-h-0 flex-1"
+        style={workspaceExpanded ? undefined : { height: "420px" }}
+      >
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4 min-h-0">
           {messages.map((msg) => (
             <div

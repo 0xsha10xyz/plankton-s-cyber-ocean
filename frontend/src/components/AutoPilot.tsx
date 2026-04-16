@@ -1,13 +1,24 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Power, TrendingUp, TrendingDown, Gauge, Wallet } from "lucide-react";
+import { Maximize2, Minimize2, Power, TrendingUp, TrendingDown, Gauge, Wallet } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { getAgentApiBase } from "@/lib/api";
 
 type AgentStatus = { active: boolean; riskLevel: number; profit24h: number; totalPnL: number };
 
-const AutoPilot = () => {
+export type AutoPilotProps = {
+  workspaceExpandEnabled?: boolean;
+  workspaceExpanded?: boolean;
+  onWorkspaceExpandToggle?: () => void;
+};
+
+const AutoPilot = ({
+  workspaceExpandEnabled,
+  workspaceExpanded,
+  onWorkspaceExpandToggle,
+}: AutoPilotProps = {}) => {
   const { connected, publicKey } = useWallet();
   const { openWalletModal } = useWalletModal();
   const [active, setActive] = useState(false);
@@ -56,12 +67,29 @@ const AutoPilot = () => {
   const formatSol = (n: number) => (n >= 0 ? `+${n.toFixed(1)}` : n.toFixed(1)) + " SOL";
 
   return (
-    <div className="workspace-card p-0 overflow-hidden flex flex-col">
-      <div className="workspace-toolbar justify-between items-start sm:items-center gap-3">
+    <div
+      className={cn(
+        "workspace-card p-0 overflow-hidden flex flex-col",
+        workspaceExpanded && "min-h-0 flex-1"
+      )}
+    >
+      <div className="workspace-toolbar justify-between items-start sm:items-center gap-3 shrink-0">
         <div className="min-w-0 text-left">
           <h3 className="text-base md:text-lg font-bold text-foreground tracking-tight">Autonomous Agent</h3>
           <p className="text-xs text-muted-foreground mt-0.5">Auto Pilot · risk & execution</p>
         </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {workspaceExpandEnabled && onWorkspaceExpandToggle ? (
+            <button
+              type="button"
+              onClick={onWorkspaceExpandToggle}
+              title={workspaceExpanded ? "Exit full view" : "Full view"}
+              className="p-1.5 rounded-lg border border-border/55 bg-secondary/40 text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+              aria-label={workspaceExpanded ? "Exit full view" : "Full view"}
+            >
+              {workspaceExpanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
+          ) : null}
         {connected && (
           <motion.button
             whileTap={{ scale: 0.9 }}
@@ -81,9 +109,10 @@ const AutoPilot = () => {
             </motion.div>
           </motion.button>
         )}
+        </div>
       </div>
 
-      <div className="p-6 md:p-7 flex-1 flex flex-col">
+      <div className={cn("p-6 md:p-7 flex flex-col", workspaceExpanded ? "flex-1 min-h-0 overflow-y-auto" : "flex-1")}>
       {!connected ? (
         <motion.div
           initial={{ opacity: 0 }}

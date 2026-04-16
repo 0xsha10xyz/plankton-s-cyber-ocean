@@ -1,6 +1,8 @@
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { Link } from "react-router-dom";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Wallet } from "lucide-react";
+import { cn } from "@/lib/utils";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -9,6 +11,81 @@ import AutoPilot from "@/components/AutoPilot";
 import { AgentChatInlinePreview } from "@/components/AgentChatInlinePreview";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 
+type WorkspacePanel = "command" | "autopilot" | "chat" | null;
+
+/** z-40 keeps the site header (z-50) above the overlay; padding clears the fixed nav. */
+const WORKSPACE_FULL_VIEW_SHELL =
+  "fixed inset-0 z-40 flex flex-col p-3 sm:p-5 pt-20 sm:pt-24 bg-background/98 backdrop-blur-md overflow-hidden border border-border/30 shadow-2xl";
+
+function LaunchAgentWorkspaceGrid({
+  exp,
+  setWorkspaceExpanded,
+}: {
+  exp: WorkspacePanel;
+  setWorkspaceExpanded: Dispatch<SetStateAction<WorkspacePanel>>;
+}): JSX.Element {
+  const toggleCommand = () =>
+    setWorkspaceExpanded((p) => (p === "command" ? null : "command"));
+  const toggleAutopilot = () =>
+    setWorkspaceExpanded((p) => (p === "autopilot" ? null : "autopilot"));
+  const toggleChat = () => setWorkspaceExpanded((p) => (p === "chat" ? null : "chat"));
+
+  return (
+    <>
+      <div
+        className={cn(
+          "grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10",
+          exp === "chat" && "hidden"
+        )}
+      >
+        <div className={cn("min-w-0", exp === "autopilot" && "hidden")}>
+          <div
+            className={cn(
+              "min-h-0 flex flex-col",
+              exp === "command" && WORKSPACE_FULL_VIEW_SHELL
+            )}
+          >
+            <CommandCenter
+              workspaceExpandEnabled
+              workspaceExpanded={exp === "command"}
+              onWorkspaceExpandToggle={toggleCommand}
+            />
+          </div>
+        </div>
+        <div className={cn("min-w-0", exp === "command" && "hidden")}>
+          <div
+            className={cn(
+              "min-h-0 flex flex-col",
+              exp === "autopilot" && WORKSPACE_FULL_VIEW_SHELL
+            )}
+          >
+            <AutoPilot
+              workspaceExpandEnabled
+              workspaceExpanded={exp === "autopilot"}
+              onWorkspaceExpandToggle={toggleAutopilot}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={cn(
+          "min-h-0 flex flex-col",
+          !exp ? "mt-10" : null,
+          exp === "chat" ? WORKSPACE_FULL_VIEW_SHELL : null,
+          exp && exp !== "chat" && "hidden"
+        )}
+      >
+        <AgentChatInlinePreview
+          workspaceExpandEnabled
+          workspaceExpanded={exp === "chat"}
+          onWorkspaceExpandToggle={toggleChat}
+        />
+      </div>
+    </>
+  );
+}
+
 /**
  * Dedicated workspace: Command Center + AutoPilot + Agent Chat.
  * Wallet must be connected (direct URL visits are gated too).
@@ -16,6 +93,21 @@ import { useWalletModal } from "@/contexts/WalletModalContext";
 export default function LaunchAgentPage(): JSX.Element {
   const { connected } = useWallet();
   const { openWalletModal } = useWalletModal();
+  const [workspaceExpanded, setWorkspaceExpanded] = useState<WorkspacePanel>(null);
+
+  useEffect(() => {
+    if (!workspaceExpanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setWorkspaceExpanded(null);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [workspaceExpanded]);
 
   return (
     <div className="relative min-h-screen">
@@ -52,14 +144,7 @@ export default function LaunchAgentPage(): JSX.Element {
                 </p>
               </header>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
-                <CommandCenter />
-                <AutoPilot />
-              </div>
-
-              <div className="mt-10">
-                <AgentChatInlinePreview />
-              </div>
+              <LaunchAgentWorkspaceGrid exp={workspaceExpanded} setWorkspaceExpanded={setWorkspaceExpanded} />
             </>
           )}
         </div>

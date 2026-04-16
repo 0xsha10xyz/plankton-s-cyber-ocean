@@ -42,7 +42,14 @@ function FeedLineContent({ line }: { line: FeedLine }): JSX.Element {
   return <span className={cls}>{line.text}</span>;
 }
 
-export function TerminalFeed({ lines }: { lines: FeedLine[] }): JSX.Element {
+export function TerminalFeed({
+  lines,
+  fillHeight,
+}: {
+  lines: FeedLine[];
+  /** When true, grow to fill the parent (Launch Agent full-view mode). */
+  fillHeight?: boolean;
+}): JSX.Element {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,7 +59,10 @@ export function TerminalFeed({ lines }: { lines: FeedLine[] }): JSX.Element {
   return (
     <div
       ref={scrollRef}
-      className="p-4 h-64 overflow-y-auto overflow-x-hidden font-mono text-xs leading-relaxed space-y-2"
+      className={cn(
+        "p-4 overflow-y-auto overflow-x-hidden font-mono text-xs leading-relaxed space-y-2 min-h-0",
+        fillHeight ? "flex-1" : "h-64"
+      )}
     >
       {lines.length === 0 ? (
         <div className="text-muted-foreground">No signals yet — waiting for on-chain activity…</div>
