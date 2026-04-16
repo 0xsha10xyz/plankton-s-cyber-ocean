@@ -1,8 +1,7 @@
 import { privateKeyToAccount } from "viem/accounts";
 import { ExactEvmScheme } from "@x402/evm";
-import { ExactSvmScheme, toClientSvmSigner } from "@x402/svm";
-import { createKeyPairSignerFromBytes } from "@solana/kit";
-import { base58 } from "@scure/base";
+import { MinimalExactSvmScheme } from "./solana-minimal-exact-scheme.js";
+import { keypairFromBase58PrivateKey } from "./solana-preflight.js";
 import type { PaymentNetwork } from "./config.js";
 import { config } from "./config.js";
 import type { SchemeNetworkClient } from "@x402/core/types";
@@ -25,12 +24,11 @@ export async function buildX402Schemes(): Promise<X402SchemeRegistration[]> {
   }
 
   if (config.paymentNetwork === "solana" || config.paymentNetwork === "both") {
-    const keypair = await createKeyPairSignerFromBytes(base58.decode(config.solana.privateKey));
-    const signer = toClientSvmSigner(keypair);
+    const agentKeypair = keypairFromBase58PrivateKey(config.solana.privateKey);
     out.push({
       // Wildcard: match whatever Solana CAIP-2 network the server requests.
       network: "solana:*",
-      client: new ExactSvmScheme(signer, { rpcUrl: config.solana.rpcUrl })
+      client: new MinimalExactSvmScheme(agentKeypair, config.solana.rpcUrl)
     });
   }
 

@@ -3,7 +3,7 @@ import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from "@solana/spl-tok
 import { base58 } from "@scure/base";
 import { config } from "./config.js";
 
-function keypairFromBase58PrivateKey(pk: string): Keypair {
+export function keypairFromBase58PrivateKey(pk: string): Keypair {
   const raw = base58.decode(pk);
   if (raw.length >= 64) return Keypair.fromSecretKey(raw.slice(0, 64));
   if (raw.length === 32) return Keypair.fromSeed(raw);
