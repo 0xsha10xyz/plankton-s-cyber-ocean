@@ -65,6 +65,12 @@ function hasEvmKey(): boolean {
   return Boolean(process.env.SYRAA_EVM_PRIVATE_KEY?.trim());
 }
 
+/** When both Solana and EVM keys exist, try Base (eip155:8453) before Solana — workaround if SVM payment keeps "Invalid transaction". */
+function tryEvmFirst(): boolean {
+  const v = process.env.SYRAA_TRY_EVM_FIRST?.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
 /** True when at least one payment path (Solana or Base) is configured. */
 export function isSyraaSignalConfigured(): boolean {
   return hasSolanaKey() || hasEvmKey();
@@ -245,11 +251,29 @@ async function runSyraaPaidJsonRequest(args: PaidJsonArgs): Promise<unknown> {
     throw new Error("SYRAA_SOLANA_PRIVATE_KEY or SYRAA_EVM_PRIVATE_KEY must be set on the server");
   }
 
+  // Prefer Base first when both keys exist (some deployments get Solana "Invalid transaction" from facilitator while Base works).
+  if (tryEvmFirst() && hasEvm && hasSol) {
+    try {
+      const evmCfg = buildEvmX402Config(args.maxPaymentAtomic);
+      return await executePaidJsonWithConfig(evmCfg, args);
+    } catch (e) {
+      console.warn("[syraa] SYRAA_TRY_EVM_FIRST: Base path failed, falling back to Solana:", e);
+      const cfg = await buildSolanaX402Config(args.maxPaymentAtomic);
+      return await executePaidJsonWithConfig(cfg, args);
+    }
+  }
+
   if (hasSol) {
     try {
       const cfg = await buildSolanaX402Config(args.maxPaymentAtomic);
       return await executePaidJsonWithConfig(cfg, args);
     } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (!hasEvm && msg.includes("Invalid transaction")) {
+        console.error(
+          "[syraa] Solana payment rejected (Invalid transaction). Add SYRAA_EVM_PRIVATE_KEY + USDC on Base for automatic fallback, or set SYRAA_TRY_EVM_FIRST=1 when both keys exist."
+        );
+      }
       if (!hasEvm) throw e;
       console.warn("[syraa] Solana x402 path failed, retrying Base EVM:", e);
       const evmCfg = buildEvmX402Config(args.maxPaymentAtomic);
