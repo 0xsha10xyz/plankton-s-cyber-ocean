@@ -3,7 +3,8 @@ import { motion } from "framer-motion";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bot, Send, User } from "lucide-react";
+import { Send, User } from "lucide-react";
+import { PlanktonomousAssistantLogo } from "@/components/PlanktonomousAssistantLogo";
 import { cn } from "@/lib/utils";
 
 export type ChatMessage = {
@@ -270,8 +271,8 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
       >
         <SheetHeader className="px-6 py-4 border-b border-border/50">
           <SheetTitle className="flex items-center gap-2">
-            <Bot size={20} className="text-primary" />
-            AI Agent Chat
+            <PlanktonomousAssistantLogo size={20} />
+            Planktonomous Intelligent Assistant
           </SheetTitle>
         </SheetHeader>
 
@@ -288,7 +289,7 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
             >
               {msg.role === "agent" && (
                 <div className="shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Bot size={14} className="text-primary" />
+                  <PlanktonomousAssistantLogo size={14} />
                 </div>
               )}
               <AgentMessageBubble
@@ -310,7 +311,7 @@ export function AgentChat({ open, onOpenChange }: AgentChatProps) {
               className="flex gap-3 justify-start"
             >
               <div className="shrink-0 w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                <Bot size={14} className="text-primary" />
+                <PlanktonomousAssistantLogo size={14} />
               </div>
               <div className="rounded-xl px-4 py-2.5 bg-secondary/60 border border-border/50">
                 <span className="inline-flex gap-1">

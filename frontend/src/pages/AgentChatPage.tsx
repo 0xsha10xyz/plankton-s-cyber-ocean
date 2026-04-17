@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ParticleBackground from "@/components/ParticleBackground";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Bot, Send, User, ArrowLeft, Wallet } from "lucide-react";
+import { Send, User, ArrowLeft, Wallet } from "lucide-react";
+import { PlanktonomousAssistantLogo } from "@/components/PlanktonomousAssistantLogo";
 import { cn } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@/contexts/WalletModalContext";
@@ -1175,8 +1176,10 @@ export default function AgentChatPage() {
           <ArrowLeft size={18} />
         </Button>
         <div className="flex items-center gap-2 min-w-0">
-          <Bot size={18} className="text-primary shrink-0" />
-          <div className="font-semibold tracking-tight truncate">Agent Chat</div>
+          <span className="shrink-0 inline-flex" aria-hidden>
+            <PlanktonomousAssistantLogo size={18} />
+          </span>
+          <div className="font-semibold tracking-tight truncate">Planktonomous Intelligent Assistant</div>
         </div>
         <div className="ml-auto flex items-center gap-2 shrink-0">
           {connected ? (
@@ -1208,7 +1211,7 @@ export default function AgentChatPage() {
           >
             {msg.role === "agent" && (
               <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shadow-surface-sm">
-                <Bot size={15} className="text-primary" />
+                <PlanktonomousAssistantLogo size={15} />
               </div>
             )}
             <AgentBubble msg={msg} onAction={onAction} />
@@ -1223,7 +1226,7 @@ export default function AgentChatPage() {
         {sending && (
           <div className="flex gap-3 justify-start">
             <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center">
-              <Bot size={15} className="text-primary" />
+              <PlanktonomousAssistantLogo size={15} />
             </div>
             <div className="chat-bubble-agent px-4 py-2.5">
               <span className="text-xs text-muted-foreground">Typing…</span>
