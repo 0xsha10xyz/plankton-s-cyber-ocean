@@ -23,6 +23,8 @@ import { parseSendBalanceTransferInput } from "@/lib/parseSendBalanceTransfer";
 import { getFallbackRpcs, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 import { Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import { toast } from "sonner";
+import { parseSignalQuery } from "@/lib/parseSignalQuery";
+import { postTradingSignal } from "@/hooks/useSignal";
 
 type ChatMessage = {
   id: string;
@@ -35,6 +37,15 @@ type AgentJsonResponse = {
   insight: string;
   additional_insight: string;
   actions: string[];
+};
+
+type TradingSignalMessage = {
+  kind: "trading_signal";
+  ok: boolean;
+  payload?: unknown;
+  error?: string;
+  code?: string;
+  retry?: boolean;
 };
 
 type ChatContext = {
@@ -164,8 +175,17 @@ function chatMessagesToHistory(msgs: ChatMessage[]): { role: "user" | "assistant
       out.push({ role: "user", content: m.content.slice(0, 4000) });
     } else {
       try {
-        const p = JSON.parse(m.content) as AgentJsonResponse;
-        const summary = [p.insight, p.additional_insight].filter(Boolean).join("\n").slice(0, 2000);
+        const p = JSON.parse(m.content) as Record<string, unknown>;
+        if (p.kind === "trading_signal") {
+          const ts = p as unknown as TradingSignalMessage;
+          const summary = ts.ok
+            ? `${ts.provider} signal: ${JSON.stringify(ts.payload ?? {}).slice(0, 1800)}`
+            : `signal error: ${String(ts.error ?? "").slice(0, 1800)}`;
+          out.push({ role: "assistant", content: summary });
+          continue;
+        }
+        const a = p as unknown as AgentJsonResponse;
+        const summary = [a.insight, a.additional_insight].filter(Boolean).join("\n").slice(0, 2000);
         if (summary) out.push({ role: "assistant", content: summary });
       } catch {
         out.push({ role: "assistant", content: m.content.slice(0, 2000) });
@@ -179,16 +199,23 @@ function AgentMessageBubble({
   msg,
   connected,
   onAction,
+  onRetrySignal,
 }: {
   msg: ChatMessage;
   connected: boolean;
   onAction: (action: string) => void;
+  onRetrySignal?: () => void;
 }) {
   let parsed: AgentJsonResponse | null = null;
+  let signalMsg: TradingSignalMessage | null = null;
   if (msg.role === "agent") {
     try {
-      const maybe = JSON.parse(msg.content) as AgentJsonResponse;
-      if (maybe?.insight && Array.isArray(maybe.actions)) parsed = maybe;
+      const maybe = JSON.parse(msg.content) as Record<string, unknown>;
+      if (maybe?.kind === "trading_signal") {
+        signalMsg = maybe as unknown as TradingSignalMessage;
+      } else if (maybe?.insight && Array.isArray(maybe.actions)) {
+        parsed = maybe as AgentJsonResponse;
+      }
     } catch {
       parsed = null;
     }
@@ -201,7 +228,38 @@ function AgentMessageBubble({
         msg.role === "user" ? "chat-bubble-user" : "chat-bubble-agent"
       )}
     >
-      {msg.role === "agent" && parsed ? (
+      {msg.role === "agent" && signalMsg ? (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-primary/85">
+            <span>Signal</span>
+            {signalMsg.ok ? (
+              <span className="text-emerald-400/90 font-medium normal-case">Ready</span>
+            ) : (
+              <span className="text-amber-300/90 font-medium normal-case">Failed</span>
+            )}
+          </div>
+          {signalMsg.ok && signalMsg.payload !== undefined ? (
+            <pre className="text-[11px] leading-relaxed whitespace-pre-wrap font-mono rounded-lg border border-border/45 bg-background/70 p-2.5 overflow-x-auto max-h-64 overflow-y-auto">
+              {JSON.stringify(signalMsg.payload, null, 2)}
+            </pre>
+          ) : null}
+          {!signalMsg.ok && signalMsg.error ? (
+            <p className="text-xs text-destructive/90 whitespace-pre-wrap">{signalMsg.error}</p>
+          ) : null}
+          {!signalMsg.ok && signalMsg.retry && onRetrySignal ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="h-8 px-3 text-xs"
+              disabled={!connected}
+              onClick={() => onRetrySignal()}
+            >
+              Retry
+            </Button>
+          ) : null}
+        </div>
+      ) : msg.role === "agent" && parsed ? (
         <div className="space-y-2">
           <p className="whitespace-pre-wrap">{parsed.insight}</p>
               {parsed.additional_insight ? (
@@ -264,6 +322,8 @@ export function AgentChatInlinePreview({
   const messagesRef = useRef<ChatMessage[]>(messages);
   const usageSigRef = useRef<{ wallet: string; ts: number; sig: string } | null>(null);
   const lastUserTextRef = useRef<string>("");
+  const signalQueryLineRef = useRef<string>("");
+  const [signalMode, setSignalMode] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -282,7 +342,7 @@ export function AgentChatInlinePreview({
   }, [messages]);
 
   const defaultQuickActions = useMemo(
-    () => ["Check Balance", "Send Balance", "Buy", "Sell"],
+    () => ["Check Balance", "Send Balance", "Buy", "Sell", "Signal"],
     []
   );
 
@@ -309,7 +369,12 @@ export function AgentChatInlinePreview({
     const raw = text.trim();
     const isRetryAction = raw.toLowerCase() === "retry" || raw.toLowerCase() === "retry after payment";
     const trimmed = isRetryAction ? lastUserTextRef.current.trim() : raw;
-    if (!trimmed || sending) return;
+    if (sending) return;
+
+    const canSignalBase = !awaitingWalletAddress && !pendingSendBalance;
+    if (!trimmed) {
+      if (!signalMode || !canSignalBase) return;
+    }
 
     if (!connected) {
       openWalletModal();
@@ -741,6 +806,103 @@ export function AgentChatInlinePreview({
       return;
     }
 
+    const isQuickCommand =
+      lower === "check balance" ||
+      lower === "send balance" ||
+      lower === "buy" ||
+      lower === "sell";
+
+    const keywordSignal =
+      (/\b(trading\s*)?signal\b/i.test(raw) || /\bsyraa\b/i.test(raw.toLowerCase())) && raw.length > 0;
+    const doSignal = canSignalBase && !isQuickCommand && (signalMode || keywordSignal);
+
+    if (doSignal) {
+      const lineForQuery = raw;
+      signalQueryLineRef.current = lineForQuery || "signal";
+      const userContent = lineForQuery || "(signal · default parameters)";
+
+      if (!wallet.signMessage) {
+        toast.error("Wallet must support message signing to request signals.");
+        return;
+      }
+
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: "user",
+        content: userContent,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      setInput("");
+      setSending(true);
+
+      void (async () => {
+        try {
+          const params = parseSignalQuery(lineForQuery);
+          const apiBase = getApiBase();
+          const res = await postTradingSignal(apiBase, wallet, { params });
+          const data = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+          let content: string;
+          if (res.ok && data && data.ok === true) {
+            content = JSON.stringify({
+              kind: "trading_signal" as const,
+              ok: true,
+              payload: data.signal,
+            });
+          } else {
+            const err = (data ?? {}) as Record<string, unknown>;
+            const msg =
+              typeof err.error === "string"
+                ? err.error
+                : !res.ok
+                  ? `Request failed (HTTP ${res.status})`
+                  : "Unknown error";
+            content = JSON.stringify({
+              kind: "trading_signal" as const,
+              ok: false,
+              error: msg,
+              code: typeof err.code === "string" ? err.code : undefined,
+              retry: true,
+            });
+            const mlow = msg.toLowerCase();
+            if (mlow.includes("usdc") || mlow.includes("insufficient") || err.code === "SYRAA_FUNDS_OR_PAYMENT") {
+              toast.error("Top up USDC on this wallet (and a little SOL for fees), then retry.");
+            } else if (res.status === 401) {
+              toast.error("Wallet signature invalid or expired. Try again.");
+            }
+          }
+          const agentMsg: ChatMessage = {
+            id: `agent-${Date.now()}`,
+            role: "agent",
+            content,
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, agentMsg]);
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `agent-${Date.now()}`,
+              role: "agent",
+              content: JSON.stringify({
+                kind: "trading_signal" as const,
+                ok: false,
+                error: msg,
+                retry: true,
+              }),
+              timestamp: new Date(),
+            },
+          ]);
+          toast.error(msg);
+        } finally {
+          setSending(false);
+        }
+      })();
+
+      return;
+    }
+
     const nextContext = applyContextFromUserMessage(trimmed, context);
     setContext(nextContext);
 
@@ -933,11 +1095,15 @@ export function AgentChatInlinePreview({
   };
 
   const onAction = (action: string) => {
-    if (connected) {
-      handleSendWithText(action);
-    } else {
+    if (!connected) {
       openWalletModal();
+      return;
     }
+    if (action === "Signal") {
+      setSignalMode(true);
+      return;
+    }
+    handleSendWithText(action);
   };
 
   function uiAmountToRawBigInt(amountStr: string, decimals: number): bigint {
@@ -1119,7 +1285,7 @@ export function AgentChatInlinePreview({
     }
   }
 
-  const sendDisabled = !connected || sending || !input.trim();
+  const sendDisabled = !connected || sending || (!input.trim() && !signalMode);
 
   return (
     <section
@@ -1189,7 +1355,14 @@ export function AgentChatInlinePreview({
                 </div>
               )}
 
-              <AgentMessageBubble msg={msg} connected={connected} onAction={onAction} />
+              <AgentMessageBubble
+                msg={msg}
+                connected={connected}
+                onAction={onAction}
+                onRetrySignal={() => {
+                  void handleSendWithText(signalQueryLineRef.current);
+                }}
+              />
             </div>
           ))}
 
@@ -1220,6 +1393,19 @@ export function AgentChatInlinePreview({
             ))}
           </div>
 
+          {signalMode ? (
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Signal mode</span>
+              <button
+                type="button"
+                className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+                onClick={() => setSignalMode(false)}
+              >
+                Exit
+              </button>
+            </div>
+          ) : null}
+
           <div className="flex gap-2 items-center">
             <Textarea
               value={input}
@@ -1230,9 +1416,11 @@ export function AgentChatInlinePreview({
                   ? "Paste wallet address..."
                   : pendingSendBalance
                     ? "coin name, token name, contract address... + amount to send + recipient address"
-                    : placeholderMode === "see"
-                      ? "glad to see you"
-                      : "glad to help you..."
+                    : signalMode
+                      ? "Optional: token, bar (1h), exchange… or send empty for defaults"
+                      : placeholderMode === "see"
+                        ? "glad to see you"
+                        : "glad to help you..."
               }
               className="min-h-[44px] max-h-32 resize-none rounded-xl border-border/50 bg-secondary/35"
               rows={1}

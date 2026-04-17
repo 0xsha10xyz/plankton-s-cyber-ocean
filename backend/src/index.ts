@@ -17,6 +17,7 @@ import { subscriptionRouter } from "./routes/subscription.js";
 import { agentRouter } from "./routes/agent.js";
 import { rpcRouter } from "./routes/rpc.js";
 import { usageRouter } from "./routes/usage.js";
+import { signalRouter } from "./routes/signal.js";
 import { gatewayRouter } from "./gateway/router.js";
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -90,6 +91,7 @@ app.use("/api/subscription", subscriptionRouter);
 app.use("/api/agent", agentRouter);
 app.use("/api/rpc", rpcRouter);
 app.use("/api/usage", usageRouter);
+app.use("/api/signal", signalRouter);
 
 if (process.env.API_GATEWAY_ENABLED !== "0") {
   app.use("/api/v1", gatewayRouter);
