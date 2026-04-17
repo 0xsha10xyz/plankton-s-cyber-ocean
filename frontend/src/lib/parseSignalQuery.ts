@@ -42,6 +42,12 @@ export function parseSignalQuery(raw: string): SignalQuery {
   const stripped = lower
     .replace(/\b(trading\s*)?signal\b/gi, " ")
     .replace(/\bsyraa\b/gi, " ")
+    .replace(/\bbuy\s*signal\b/gi, " ")
+    .replace(/\bsell\s*signal\b/gi, " ")
+    .replace(/\b(entry|exit)\b/gi, " ")
+    .replace(/\b(tp|sl)\b/gi, " ")
+    .replace(/\b(take\s*profit|stop\s*loss)\b/gi, " ")
+    .replace(/\b(chart|candle|candles|ohlc)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -86,4 +92,26 @@ export function parseSignalQuery(raw: string): SignalQuery {
   }
 
   return { token, source, instId, bar, limit };
+}
+
+/** True when the user likely wants a Syraa trading signal (server has no LLM fallback). */
+export function isSignalKeywordIntent(raw: string): boolean {
+  const t = raw.trim();
+  if (!t) return false;
+  const lower = t.toLowerCase();
+  if (/\b(trading\s*)?signal\b/i.test(t)) return true;
+  if (/\bsyraa\b/.test(lower)) return true;
+  if (/\b(buy\s*signal|sell\s*signal)\b/.test(lower)) return true;
+  if (/\b(entry|exit)\b/.test(lower)) return true;
+  if (/\b(long|short)\b/.test(lower)) return true;
+  if (/\b(take\s*profit|stop\s*loss)\b/.test(lower)) return true;
+  if (/(?:^|[\s,;:])(tp|sl)(?:[\s,;:?]|$)/i.test(t)) return true;
+  if (/\b(chart|candle|candles|ohlc)\b/.test(lower)) return true;
+  if (
+    /\b(1m|15m|1h|4h|1d)\b/.test(lower) &&
+    /\b(bitcoin|btc|ethereum|eth|solana|sol|xrp|doge|ada|bnb|ton|avax|dot|link|matic|pol|usdt|usdc)\b/.test(lower)
+  ) {
+    return true;
+  }
+  return false;
 }

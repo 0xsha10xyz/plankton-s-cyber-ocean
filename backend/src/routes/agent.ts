@@ -3,6 +3,7 @@ import {
 } from "../x402-agent-chat.js";
 import { consumeUsageOrBlock, requireBlockPaymentAndCredit, sendJsonWithPaymentRequiredHeader } from "../usage/x402-blocks.js";
 import { verifyUsageSignature } from "../usage/verify-wallet.js";
+import { fetchSyraBrain, isSyraBrainConfigured, type SyraBrainResult } from "../lib/syraaClient.js";
 
 export const agentRouter = Router();
 
@@ -352,6 +353,18 @@ function isTruthyEnv(name: string): boolean {
   return v === "1" || v === "true" || v === "yes";
 }
 
+function mapSyraBrainToAgentJson(brain: SyraBrainResult): AgentChatJson {
+  const raw = brain.raw as Record<string, unknown> | null;
+  const tools = raw && Array.isArray(raw["toolUsages"]) ? raw["toolUsages"] : [];
+  const toolLine =
+    tools.length > 0 ? `Tools used: ${JSON.stringify(tools).slice(0, 1200)}` : "";
+  return {
+    insight: brain.answer.slice(0, 4000),
+    additional_insight: toolLine.slice(0, 4000),
+    actions: ["Ask a follow-up", "Signal", "Check Balance"],
+  };
+}
+
 /** POST /api/agent/chat — Anthropic → Groq → OpenAI (first success wins), unless AGENT_ANTHROPIC_ONLY is set. */
 agentRouter.post("/chat", async (req, res) => {
   const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
@@ -465,6 +478,17 @@ agentRouter.post("/chat", async (req, res) => {
       const a = await chatAnthropic(anthropicKey, history, userBlock, ac.signal);
       if (a.ok) raw = a.raw;
       else lastErr = { status: a.status, msg: a.msg, code: a.code };
+    }
+
+    if (!raw && anthropicKey && lastErr && isSyraBrainConfigured()) {
+      try {
+        const brain = await fetchSyraBrain(clampChatLength(message + contextBlock, 8000), ac.signal);
+        const mapped = mapSyraBrainToAgentJson(brain);
+        raw = JSON.stringify(mapped);
+        lastErr = null;
+      } catch (e) {
+        console.error("[agent/chat] Syra brain fallback failed:", e);
+      }
     }
 
     if (!raw && !anthropicOnly && groqKey) {

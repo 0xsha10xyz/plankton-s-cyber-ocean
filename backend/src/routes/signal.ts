@@ -2,7 +2,6 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import { verifyUsageSignature } from "../usage/verify-wallet.js";
 import { fetchSyraaSignal, isSyraaSignalConfigured, type SyraaSignalParams } from "../lib/syraaClient.js";
-import { buildPlanktonSignal } from "../lib/planktonSignal.js";
 
 export const signalRouter = Router();
 
@@ -20,6 +19,8 @@ const SOURCES = new Set([
 ]);
 
 const BARS = new Set(["1m", "15m", "1h", "4h", "1d"]);
+
+const SIGNAL_FETCH_MS = 10_000;
 
 function clampLimit(n: number): number {
   if (!Number.isFinite(n) || n < 1) return 200;
@@ -40,7 +41,8 @@ function sanitizeParams(body: Record<string, unknown>): SyraaSignalParams {
 
 /**
  * POST /api/signal
- * Body: wallet, usageTs, usageSignature, agentSource ("plankton" | "syraa"), token?, source?, instId?, bar?, limit?
+ * Body: wallet, usageTs, usageSignature, token?, source?, instId?, bar?, limit?
+ * Trading signal is Syraa-only (x402 paid server-side). No LLM fallback.
  */
 signalRouter.post("/", async (req: Request, res: Response) => {
   const body = req.body as Record<string, unknown>;
@@ -49,7 +51,7 @@ signalRouter.post("/", async (req: Request, res: Response) => {
   const usageSig = typeof body.usageSignature === "string" ? body.usageSignature.trim() : "";
 
   if (!wallet || !Number.isFinite(usageTs) || !usageSig) {
-    res.status(401).json({ error: "Wallet signature required", code: "WALLET_SIGNATURE_REQUIRED" });
+    res.status(401).json({ ok: false, error: "Wallet signature required", code: "WALLET_SIGNATURE_REQUIRED" });
     return;
   }
 
@@ -61,55 +63,64 @@ signalRouter.post("/", async (req: Request, res: Response) => {
     method: "POST",
   });
   if (!sigOk) {
-    res.status(401).json({ error: "Invalid wallet signature", code: "WALLET_SIGNATURE_INVALID" });
+    res.status(401).json({ ok: false, error: "Invalid wallet signature", code: "WALLET_SIGNATURE_INVALID" });
     return;
   }
 
   const params = sanitizeParams(body);
 
-  const agentRaw = typeof body.agentSource === "string" ? body.agentSource.trim().toLowerCase() : "auto";
-  const agentSource = agentRaw === "syraa" ? "syraa" : agentRaw === "plankton" ? "plankton" : "auto";
-
   res.setHeader("Cache-Control", "private, no-store");
 
-  if (agentSource === "plankton" || (agentSource === "auto" && !isSyraaSignalConfigured())) {
-    const signal = buildPlanktonSignal(params);
-    res.json({ ok: true, provider: "plankton", signal, mode: agentSource });
+  if (!isSyraaSignalConfigured()) {
+    res.status(503).json({
+      ok: false,
+      error: "Syraa signal is not configured on the server (set SYRAA_SOLANA_PRIVATE_KEY and/or SYRAA_EVM_PRIVATE_KEY).",
+      code: "SYRAA_NOT_CONFIGURED",
+      retry: false,
+      params,
+    });
     return;
   }
 
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), SIGNAL_FETCH_MS);
+
   try {
-    const signal = await fetchSyraaSignal(params);
-    // Keep provider for debugging, but the UI does not need to expose it.
-    res.json({ ok: true, provider: "syraa", signal, mode: agentSource });
+    const signal = await fetchSyraaSignal(params, ac.signal);
+    res.json({ ok: true, provider: "syraa", signal, params });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[signal] Syraa fetch failed:", e);
 
-    // Auto mode should never surface a Syraa failure card to the user — fall back to Plankton.
-    if (agentSource === "auto") {
-      const signal = buildPlanktonSignal(params);
-      res.json({
-        ok: true,
-        provider: "plankton",
-        signal,
-        mode: "auto",
-        fallbackFrom: "syraa",
-        syraaError: msg.slice(0, 800),
+    if (ac.signal.aborted || msg === "Aborted") {
+      res.status(504).json({
+        ok: false,
+        error: "Signal request timed out. Try again.",
+        code: "SIGNAL_TIMEOUT",
+        retry: true,
+        params,
       });
       return;
     }
 
-    // Explicit Syraa request (not used by UI): return error.
     const low = msg.toLowerCase();
-    const insufficient = low.includes("insufficient") || low.includes("0x1") || low.includes("custom program error");
+    const insufficient =
+      low.includes("insufficient") ||
+      low.includes("0x1") ||
+      low.includes("custom program error") ||
+      low.includes("transfer amount exceeds balance");
+    const paymentFail =
+      low.includes("402") || low.includes("payment") || low.includes("untrusted") || low.includes("exceeds configured max");
+
     res.status(502).json({
       ok: false,
-      provider: "syraa",
       error: msg.slice(0, 2000),
-      code: insufficient ? "SYRAA_FUNDS_OR_PAYMENT" : "SYRAA_UPSTREAM_ERROR",
+      code: insufficient ? "SYRAA_FUNDS_OR_PAYMENT" : paymentFail ? "SYRAA_PAYMENT_FAILED" : "SIGNAL_UPSTREAM_ERROR",
+      syraaError: msg.slice(0, 800),
       retry: true,
       params,
     });
+  } finally {
+    clearTimeout(t);
   }
 });
