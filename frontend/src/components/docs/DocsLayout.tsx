@@ -5,6 +5,7 @@ import {
   Book,
   Coins,
   Landmark,
+  Plug,
   Rocket,
   Server,
   Shield,
@@ -32,6 +33,12 @@ const sidebarSections = [
     label: "Syraa signal agent",
     icon: Server,
     path: "/docs/agent-configuration" as const,
+  },
+  {
+    id: "syraa-signal-integration",
+    label: "Syraa + Planktonomous",
+    icon: Plug,
+    path: "/docs/syraa-signal-integration" as const,
   },
 ] as const;
 

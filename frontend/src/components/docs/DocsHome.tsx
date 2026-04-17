@@ -480,8 +480,10 @@ export default function DocsHome() {
           <h3 className="text-base font-semibold text-foreground mb-2 tracking-tight">Paid agent chat (x402)</h3>
           <p className="text-sm docs-body-muted leading-[1.7]">
             HTTP 402 micropayments in USDC on Solana, same-origin proxying, and environment setup are documented in{" "}
-            <DocLink file="docs/x402-payments.md" />. For the <strong className="text-foreground/95">Syraa signal agent</strong>{" "}
-            (standalone Node poller on a VPS), see <DocLink file="docs/agent-configuration.md" />.
+            <DocLink file="docs/x402-payments.md" />. For <strong className="text-foreground/95">Planktonomous</strong> and{" "}
+            <DocsCmd>POST /api/signal</DocsCmd> on your VPS, see <DocLink file="docs/syraa-signal-integration.md" />. For the{" "}
+            <strong className="text-foreground/95">Syraa signal agent</strong> (standalone Node poller), see{" "}
+            <DocLink file="docs/agent-configuration.md" />.
           </p>
         </HoloCard>
       </section>
@@ -557,6 +559,8 @@ export default function DocsHome() {
           <DocLink file="docs/x402-payments.md" />
           <span className="opacity-40">·</span>
           <DocLink file="docs/agent-configuration.md">docs/agent-configuration.md</DocLink>
+          <span className="opacity-40">·</span>
+          <DocLink file="docs/syraa-signal-integration.md">docs/syraa-signal-integration.md</DocLink>
           <span className="opacity-40">·</span>
           <DocLink file="SECURITY.md" />
         </p>
