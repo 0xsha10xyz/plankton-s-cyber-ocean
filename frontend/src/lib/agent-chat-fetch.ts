@@ -2,7 +2,7 @@ import { createX402Client } from "x402-solana/client";
 import { Connection, PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
-import { getPrimaryRpcEndpoint, getX402RpcEndpoint } from "@/lib/solana-rpc";
+import { getX402RpcEndpoint, withX402RpcFallback } from "@/lib/solana-rpc";
 import { normalizeAgentX402UsdcMint } from "@/lib/x402UsdcMint";
 
 export type AgentChatX402Info = {
@@ -57,10 +57,12 @@ function fmt(n: number, digits = 6): string {
 async function tryGetBalances(opts: {
   wallet: WalletContextState;
   usdcMint: string;
+  /** Prefer the same RPC URL the x402 client used (balance hints after 402). */
+  rpcUrl?: string;
 }): Promise<{ sol: number; usdc: number } | null> {
   try {
     if (!opts.wallet.publicKey) return null;
-    const rpcUrl = getX402RpcEndpoint();
+    const rpcUrl = opts.rpcUrl ?? getX402RpcEndpoint();
     const conn = new Connection(rpcUrl, { commitment: "confirmed" });
     const solLamports = await conn.getBalance(opts.wallet.publicKey, "confirmed");
     const sol = solLamports / 1e9;
@@ -161,39 +163,38 @@ export async function fetchAgentChat(
     return res;
   }
 
-  const client = createX402Client({
-    wallet: {
-      address: w.publicKey.toString(),
-      signTransaction: async (tx: VersionedTransaction) => w.signTransaction!(tx),
-    },
-    network: x.network,
-    // Prefer agent-host `/api/rpc` when SPA and agent origins differ (hybrid deploy).
-    rpcUrl: getX402RpcEndpoint(),
-    amount: maxPaymentAtomic(BigInt(x.amountAtomic)),
-    verbose: Boolean(import.meta.env?.DEV),
-    customFetch,
-  });
-
   try {
-    const res = await client.fetch(chatUrl, init);
-    // If we still got 402, help the user understand the common root cause (insufficient USDC/SOL).
-    if (res.status === 402) {
-      const b = await tryGetBalances({ wallet: w, usdcMint: x.usdcMint });
-      const neededUsdc = Number(BigInt(x.amountAtomic)) / 10 ** (x.decimals ?? 6);
-      if (b) {
-        if (b.usdc + 1e-9 < neededUsdc) {
-          toast.error(`Insufficient USDC for x402 payment: have ${fmt(b.usdc)} USDC, need ${fmt(neededUsdc)} USDC.`);
-        } else if (b.sol < 0.0005) {
-          toast.error(`Low SOL balance for fees: have ${fmt(b.sol, 4)} SOL. Add a little SOL then retry payment.`);
+    return await withX402RpcFallback(async (rpcUrl) => {
+      const client = createX402Client({
+        wallet: {
+          address: w.publicKey.toString(),
+          signTransaction: async (tx: VersionedTransaction) => w.signTransaction!(tx),
+        },
+        network: x.network,
+        rpcUrl,
+        amount: maxPaymentAtomic(BigInt(x.amountAtomic)),
+        verbose: Boolean(import.meta.env?.DEV),
+        customFetch,
+      });
+
+      const res = await client.fetch(chatUrl, init);
+      if (res.status === 402) {
+        const b = await tryGetBalances({ wallet: w, usdcMint: x.usdcMint, rpcUrl });
+        const neededUsdc = Number(BigInt(x.amountAtomic)) / 10 ** (x.decimals ?? 6);
+        if (b) {
+          if (b.usdc + 1e-9 < neededUsdc) {
+            toast.error(`Insufficient USDC for x402 payment: have ${fmt(b.usdc)} USDC, need ${fmt(neededUsdc)} USDC.`);
+          } else if (b.sol < 0.0005) {
+            toast.error(`Low SOL balance for fees: have ${fmt(b.sol, 4)} SOL. Add a little SOL then retry payment.`);
+          }
         }
       }
-    }
-    return res;
+      return res;
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    // Surface client-side payment flow failures (RPC, facilitator, insufficient funds, wallet rejection, etc.).
     console.error("[x402] client.fetch failed:", e);
-    toast.error(`x402 payment flow failed: ${msg || "Unknown error"}`);
+    toast.error(`Chat/payment flow failed: ${msg || "Unknown error"}`);
     throw e;
   }
 }

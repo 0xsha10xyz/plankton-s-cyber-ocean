@@ -31,26 +31,91 @@ export function getPrimaryRpcEndpoint(): string {
   return "https://rpc.ankr.com/solana";
 }
 
+const ANKR_PUBLIC_MAINNET = "https://rpc.ankr.com/solana";
+
 /**
- * JSON-RPC URL for **x402-solana** (`createX402Client`). When the SPA and `VITE_AGENT_API_URL` live on
- * different origins (hybrid: Vercel site + `api.*` VPS), use the **agent host’s** `/api/rpc` so reads
- * hit the same Express proxy that already allows CORS for your frontend — avoids 405 from a mis-routed apex `/api/rpc`.
+ * JSON-RPC for **x402-solana** `createX402Client` (mint reads + payment tx simulation).
+ * Defaults to **same-origin** `/api/rpc` (Vercel) so the browser does not depend on `api.*` nginx/CORS.
+ * Override when needed:
+ * - `VITE_X402_RPC_URL` — explicit JSON-RPC URL
+ * - `VITE_X402_USE_AGENT_RPC=1` — use `VITE_AGENT_API_URL` origin + `/api/rpc` (VPS)
  */
 export function getX402RpcEndpoint(): string {
   if (typeof window === "undefined" || typeof import.meta === "undefined") {
     return getPrimaryRpcEndpoint();
   }
-  const agentRaw = import.meta.env?.VITE_AGENT_API_URL?.trim();
-  if (!agentRaw) return getPrimaryRpcEndpoint();
-  try {
-    const agentOrigin = new URL(agentRaw).origin;
-    if (agentOrigin !== window.location.origin) {
-      return `${agentOrigin}/api/rpc`;
+
+  const explicit = import.meta.env?.VITE_X402_RPC_URL?.trim();
+  if (explicit) return explicit;
+
+  const solOnly = import.meta.env?.VITE_SOLANA_RPC_URL?.trim();
+  if (solOnly) return solOnly;
+
+  if (import.meta.env?.VITE_X402_USE_AGENT_RPC === "1") {
+    const agentRaw = import.meta.env?.VITE_AGENT_API_URL?.trim();
+    if (agentRaw) {
+      try {
+        return `${new URL(agentRaw).origin}/api/rpc`;
+      } catch {
+        /* invalid */
+      }
     }
-  } catch {
-    /* invalid URL */
   }
+
   return getPrimaryRpcEndpoint();
+}
+
+/** Ordered fallbacks when the first RPC URL throws `TypeError: Failed to fetch` (CORS, DNS, blocked POST). */
+export function getX402RpcFallbackChain(): string[] {
+  const primary = getX402RpcEndpoint();
+  const out: string[] = [];
+  const push = (u: string) => {
+    if (u && !out.includes(u)) out.push(u);
+  };
+  push(primary);
+  if (typeof window !== "undefined") {
+    push(`${window.location.origin}/api/rpc`);
+  }
+  const agent = import.meta.env?.VITE_AGENT_API_URL?.trim();
+  if (agent) {
+    try {
+      push(`${new URL(agent).origin}/api/rpc`);
+    } catch {
+      /* */
+    }
+  }
+  push(ANKR_PUBLIC_MAINNET);
+  return out;
+}
+
+/** True for network/RPC failures we can retry with another JSON-RPC URL (not wallet rejection). */
+export function isRetryableX402RpcError(e: unknown): boolean {
+  const m = e instanceof Error ? e.message : String(e);
+  if (/user rejected|user cancel|cancelled|canceled|rejected the request|4100/i.test(m)) return false;
+  if (e instanceof TypeError) return true;
+  return /failed to fetch|networkerror|load failed|fetch failed|network request failed/i.test(m);
+}
+
+/** Run `createX402Client` work with each URL from `getX402RpcFallbackChain()` until one succeeds or errors are not retryable. */
+export async function withX402RpcFallback<T>(run: (rpcUrl: string) => Promise<T>): Promise<T> {
+  const chain = getX402RpcFallbackChain();
+  let last: unknown;
+  for (let i = 0; i < chain.length; i++) {
+    const rpcUrl = chain[i]!;
+    try {
+      return await run(rpcUrl);
+    } catch (e) {
+      last = e;
+      if (i < chain.length - 1 && isRetryableX402RpcError(e)) {
+        if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
+          console.warn(`[x402] RPC failed, trying next (${i + 1}/${chain.length})`, rpcUrl.slice(0, 64), e);
+        }
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw last;
 }
 
 function usesSameOriginRpcProxy(): boolean {

@@ -1,7 +1,7 @@
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import { createX402Client } from "x402-solana/client";
 import type { VersionedTransaction } from "@solana/web3.js";
-import { getX402RpcEndpoint } from "@/lib/solana-rpc";
+import { withX402RpcFallback } from "@/lib/solana-rpc";
 
 export type UsageCheckResponse =
   | {
@@ -74,21 +74,22 @@ export async function checkUsageWithX402(opts: {
     body: JSON.stringify({ wallet: signed.wallet, ts: signed.ts, signature: signed.signature }),
   };
 
-  const client = createX402Client({
-    wallet: {
-      address: signed.wallet,
-      signTransaction: async (tx: VersionedTransaction) => {
-        if (!opts.wallet.signTransaction) throw new Error("Wallet cannot sign transactions");
-        return opts.wallet.signTransaction(tx);
+  const res = await withX402RpcFallback(async (rpcUrl) => {
+    const client = createX402Client({
+      wallet: {
+        address: signed.wallet,
+        signTransaction: async (tx: VersionedTransaction) => {
+          if (!opts.wallet.signTransaction) throw new Error("Wallet cannot sign transactions");
+          return opts.wallet.signTransaction(tx);
+        },
       },
-    },
-    network: opts.network,
-    rpcUrl: getX402RpcEndpoint(),
-    amount: maxPaymentAtomic(BigInt(opts.expectedMaxAtomic)),
-    verbose: false,
+      network: opts.network,
+      rpcUrl,
+      amount: maxPaymentAtomic(BigInt(opts.expectedMaxAtomic)),
+      verbose: false,
+    });
+    return client.fetch(url, init);
   });
-
-  const res = await client.fetch(url, init);
   const data: unknown = await res.json().catch(() => null);
   if (res.ok && data && typeof data === "object" && "allowed" in data) {
     const allowedVal = (data as { allowed?: unknown }).allowed;

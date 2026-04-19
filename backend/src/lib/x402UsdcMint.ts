@@ -12,6 +12,9 @@ export const SOLANA_DEVNET_USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJD
  */
 const KNOWN_MAINNET_USDC_MINT_TYPO = "EPjFWdd5AufqSSqmM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
+/** Copy-paste from explorers: `ap` vs `aP` in the middle segment (still 44 chars, wrong base58 symbol). */
+const KNOWN_MAINNET_USDC_MINT_AP_TYPO = "EPjFWdd5AufqSSqeM2qN1xzybaPC8G4wEGGkZwyTDt1v";
+
 const USDC_MAINNET_PK = new PublicKey(SOLANA_MAINNET_USDC_MINT);
 
 /** Same mint as mainnet USDC but wrong letter casing (base58 is case-sensitive; explorers often confuse). */
@@ -44,6 +47,11 @@ export function resolveX402UsdcMint(
     console.warn(
       "[x402] X402_USDC_MINT looks like a typo of mainnet USDC (SSqm→SSqe); using canonical USDC mint."
     );
+    return SOLANA_MAINNET_USDC_MINT;
+  }
+
+  if (network === "solana" && trimmed === KNOWN_MAINNET_USDC_MINT_AP_TYPO) {
+    console.warn("[x402] X402_USDC_MINT had ap/aP segment typo; using canonical mainnet USDC mint.");
     return SOLANA_MAINNET_USDC_MINT;
   }
 

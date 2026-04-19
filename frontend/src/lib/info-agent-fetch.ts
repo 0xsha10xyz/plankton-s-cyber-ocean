@@ -3,7 +3,7 @@ import { createX402Client } from "x402-solana/client";
 import type { VersionedTransaction } from "@solana/web3.js";
 import { usageSignMessage } from "./x402-usage";
 import { getApiBase } from "./api";
-import { getX402RpcEndpoint } from "./solana-rpc";
+import { withX402RpcFallback } from "./solana-rpc";
 
 export async function fetchInfoAgent(opts: {
   prompt: string;
@@ -37,18 +37,19 @@ export async function fetchInfoAgent(opts: {
     body: JSON.stringify({ wallet: walletAddress, ts, signature, prompt: opts.prompt }),
   };
 
-  const client = createX402Client({
-    wallet: {
-      address: walletAddress,
-      signTransaction: async (tx: VersionedTransaction) => opts.wallet.signTransaction!(tx),
-    },
-    network: opts.x402Network,
-    rpcUrl: getX402RpcEndpoint(),
-    amount: BigInt(opts.maxAtomic) * 25n,
-    verbose: false,
+  const res = await withX402RpcFallback(async (rpcUrl) => {
+    const client = createX402Client({
+      wallet: {
+        address: walletAddress,
+        signTransaction: async (tx: VersionedTransaction) => opts.wallet.signTransaction!(tx),
+      },
+      network: opts.x402Network,
+      rpcUrl,
+      amount: BigInt(opts.maxAtomic) * 25n,
+      verbose: false,
+    });
+    return client.fetch(url, init);
   });
-
-  const res = await client.fetch(url, init);
   const body: unknown = await res.json().catch(() => ({}));
   if (!res.ok) return { ok: false, status: res.status, body };
   const answer =

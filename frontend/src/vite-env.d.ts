@@ -13,6 +13,10 @@ interface ImportMetaEnv {
    */
   readonly VITE_AGENT_API_URL?: string;
   readonly VITE_SOLANA_RPC_URL?: string;
+  /** Optional: JSON-RPC URL for x402-solana only (overrides same-origin `/api/rpc`). */
+  readonly VITE_X402_RPC_URL?: string;
+  /** Set to `1` to use `VITE_AGENT_API_URL` + `/api/rpc` for x402 (hybrid: site on Vercel, API on VPS). */
+  readonly VITE_X402_USE_AGENT_RPC?: string;
   /** Optional WebSocket RPC for subscriptions when HTTP uses same-origin `/api/rpc` (Vercel cannot host WSS on /api/rpc). */
   readonly VITE_SOLANA_WS_URL?: string;
   readonly VITE_DEV_API_PROXY?: string;
