@@ -6,16 +6,15 @@ function getEnvRpcUrl(): string | null {
 }
 
 /**
- * Primary RPC URL for `ConnectionProvider` / `useConnection`.
- * - **`VITE_SOLANA_RPC_URL` first (all environments)** when set — use when same-origin `/api/rpc` is
- *   misrouted (e.g. HTTP 405) or you need a provider that allows your production origin (Helius allowlist).
- * - Otherwise same-origin `/api/rpc` in dev + production browser (avoids public-RPC CORS/403).
- * - Fallback: Ankr public RPC (non-browser / SSR).
+ * Primary RPC URL for `ConnectionProvider` / `useConnection` and x402-solana.
+ * - **Browser (dev + production):** same-origin `POST /api/rpc` first — keys stay on the server (Vercel
+ *   `SOLANA_RPC_URL` / `HELIUS_API_KEY`), avoids browser-direct Helius keys that return 403 “not allowed
+ *   to access blockchain”.
+ * - **Override:** `VITE_SOLANA_RPC_URL` only when you need a provider that explicitly allows your web
+ *   origin (must not be a server-only / restricted API key).
+ * - Fallback: Ankr public RPC.
  */
 export function getPrimaryRpcEndpoint(): string {
-  const fromEnv = getEnvRpcUrl();
-  if (fromEnv) return fromEnv;
-
   if (typeof window !== "undefined" && typeof import.meta !== "undefined") {
     const origin = window.location.origin;
     const isLocal = /localhost|127\.0\.0\.1/.test(origin);
@@ -25,6 +24,9 @@ export function getPrimaryRpcEndpoint(): string {
       return `${origin}/api/rpc`;
     }
   }
+
+  const fromEnv = getEnvRpcUrl();
+  if (fromEnv) return fromEnv;
 
   return "https://rpc.ankr.com/solana";
 }
