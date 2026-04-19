@@ -7,25 +7,24 @@ function getEnvRpcUrl(): string | null {
 
 /**
  * Primary RPC URL for `ConnectionProvider` / `useConnection`.
- * - `VITE_SOLANA_RPC_URL` wins when set (Helius, etc.).
- * - Otherwise use same-origin `/api/rpc` for Vite dev (proxied) and production deploys so the browser
- *   never posts directly to public RPCs (common 403 / CORS from deployed origins).
+ * - **`VITE_SOLANA_RPC_URL` first (all environments)** when set — use when same-origin `/api/rpc` is
+ *   misrouted (e.g. HTTP 405) or you need a provider that allows your production origin (Helius allowlist).
+ * - Otherwise same-origin `/api/rpc` in dev + production browser (avoids public-RPC CORS/403).
+ * - Fallback: Ankr public RPC (non-browser / SSR).
  */
 export function getPrimaryRpcEndpoint(): string {
+  const fromEnv = getEnvRpcUrl();
+  if (fromEnv) return fromEnv;
+
   if (typeof window !== "undefined" && typeof import.meta !== "undefined") {
     const origin = window.location.origin;
     const isLocal = /localhost|127\.0\.0\.1/.test(origin);
     const dev = import.meta.env.DEV;
     const prod = import.meta.env.PROD;
-    // In browser environments, force same-origin RPC proxy so we never depend on third-party CORS policy.
-    // This avoids recurring 403 failures in wallet flows when public RPC providers block browser POSTs.
     if ((dev && isLocal) || (prod && !isLocal)) {
       return `${origin}/api/rpc`;
     }
   }
-
-  const fromEnv = getEnvRpcUrl();
-  if (fromEnv) return fromEnv;
 
   return "https://rpc.ankr.com/solana";
 }
