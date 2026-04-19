@@ -65,7 +65,7 @@ export function getX402RpcEndpoint(): string {
   return getPrimaryRpcEndpoint();
 }
 
-/** Ordered fallbacks when the first RPC URL throws `TypeError: Failed to fetch` (CORS, DNS, blocked POST). */
+/** Ordered fallbacks when the first JSON-RPC URL fails (network error, CORS, or upstream 403 from a restricted API key). */
 export function getX402RpcFallbackChain(): string[] {
   const primary = getX402RpcEndpoint();
   const out: string[] = [];
@@ -88,11 +88,17 @@ export function getX402RpcFallbackChain(): string[] {
   return out;
 }
 
-/** True for network/RPC failures we can retry with another JSON-RPC URL (not wallet rejection). */
+/** True for failures where another JSON-RPC URL might work (not wallet rejection). Includes Helius 403 "API key is not allowed to access blockchain". */
 export function isRetryableX402RpcError(e: unknown): boolean {
   const m = e instanceof Error ? e.message : String(e);
   if (/user rejected|user cancel|cancelled|canceled|rejected the request|4100/i.test(m)) return false;
   if (e instanceof TypeError) return true;
+  // Upstream JSON-RPC returned an error body (x402-solana surfaces it as Error with message text).
+  if (
+    /\b403\b|\b401\b|\b429\b|-32052|not allowed to access blockchain|api key is not allowed|invalid api key|unauthorized/i.test(m)
+  ) {
+    return true;
+  }
   return /failed to fetch|networkerror|load failed|fetch failed|network request failed/i.test(m);
 }
 
@@ -107,9 +113,7 @@ export async function withX402RpcFallback<T>(run: (rpcUrl: string) => Promise<T>
     } catch (e) {
       last = e;
       if (i < chain.length - 1 && isRetryableX402RpcError(e)) {
-        if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
-          console.warn(`[x402] RPC failed, trying next (${i + 1}/${chain.length})`, rpcUrl.slice(0, 64), e);
-        }
+        console.warn(`[x402] RPC failed, trying next (${i + 1}/${chain.length})`, rpcUrl.slice(0, 72), e);
         continue;
       }
       throw e;
