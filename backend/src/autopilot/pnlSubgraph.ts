@@ -62,8 +62,12 @@ export async function fetchPnlPositionsPage(first: number, skip: number): Promis
   return Array.isArray(rows) ? rows : [];
 }
 
+/** Hosted Goldsky subgraphs often hit Postgres `statement timeout` past ~4k–5k offset on `skip` pagination. */
+const MAX_SKIP = 4000;
+
 /**
  * Pulls a bounded sample of position P&L rows for wallet scoring (cron / on-demand).
+ * Stops early on empty page, past {@link MAX_SKIP}, or if a page errors (returns rows fetched so far).
  */
 export async function fetchPnlSample(opts: { pageSize?: number; maxPages?: number } = {}): Promise<{
   rows: PnlPositionRow[];
@@ -72,18 +76,30 @@ export async function fetchPnlSample(opts: { pageSize?: number; maxPages?: numbe
   const pageSizeRaw = opts.pageSize;
   const pageSize = Number.isFinite(pageSizeRaw)
     ? Math.min(1000, Math.max(50, Math.trunc(Number(pageSizeRaw))))
-    : 1000;
+    : 500;
   const maxPagesRaw = opts.maxPages;
   const maxPages = Number.isFinite(maxPagesRaw)
     ? Math.min(50, Math.max(1, Math.trunc(Number(maxPagesRaw))))
-    : 15;
+    : 8;
 
   const rows: PnlPositionRow[] = [];
+  let pagesOk = 0;
   for (let p = 0; p < maxPages; p++) {
-    const chunk = await fetchPnlPositionsPage(pageSize, p * pageSize);
+    const skip = p * pageSize;
+    if (skip >= MAX_SKIP) break;
+
+    let chunk: PnlPositionRow[];
+    try {
+      chunk = await fetchPnlPositionsPage(pageSize, skip);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(`[autopilot/pnl] skip=${skip} page failed (${msg.slice(0, 200)}); using ${rows.length} rows so far`);
+      break;
+    }
+    pagesOk += 1;
     if (chunk.length === 0) break;
     rows.push(...chunk);
     if (chunk.length < pageSize) break;
   }
-  return { rows, pagesFetched: Math.ceil(rows.length / pageSize) || 0 };
+  return { rows, pagesFetched: pagesOk };
 }
