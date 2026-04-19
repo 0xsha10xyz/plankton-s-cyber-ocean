@@ -33,6 +33,9 @@ export function getPrimaryRpcEndpoint(): string {
 
 const ANKR_PUBLIC_MAINNET = "https://rpc.ankr.com/solana";
 
+/** Public mainnet RPC (may be CORS-restricted in some browsers; still worth trying before Ankr-only 403s). */
+const SOLANA_PUBLIC_MAINNET_HTTP = "https://api.mainnet-beta.solana.com";
+
 /**
  * JSON-RPC for **x402-solana** `createX402Client` (mint reads + payment tx simulation).
  * Defaults to **same-origin** `/api/rpc` (Vercel) so the browser does not depend on `api.*` nginx/CORS.
@@ -65,7 +68,10 @@ export function getX402RpcEndpoint(): string {
   return getPrimaryRpcEndpoint();
 }
 
-/** Ordered fallbacks when the first JSON-RPC URL fails (network error, CORS, or upstream 403 from a restricted API key). */
+/**
+ * Ordered fallbacks when the first JSON-RPC URL fails (403/405, CORS, DNS).
+ * Agent `/api/rpc` is tried before a duplicate same-origin hop so hybrid (Vercel + VPS) can recover when the site’s `/api/rpc` misbehaves.
+ */
 export function getX402RpcFallbackChain(): string[] {
   const primary = getX402RpcEndpoint();
   const out: string[] = [];
@@ -73,9 +79,6 @@ export function getX402RpcFallbackChain(): string[] {
     if (u && !out.includes(u)) out.push(u);
   };
   push(primary);
-  if (typeof window !== "undefined") {
-    push(`${window.location.origin}/api/rpc`);
-  }
   const agent = import.meta.env?.VITE_AGENT_API_URL?.trim();
   if (agent) {
     try {
@@ -84,6 +87,10 @@ export function getX402RpcFallbackChain(): string[] {
       /* */
     }
   }
+  if (typeof window !== "undefined") {
+    push(`${window.location.origin}/api/rpc`);
+  }
+  push(SOLANA_PUBLIC_MAINNET_HTTP);
   push(ANKR_PUBLIC_MAINNET);
   return out;
 }
@@ -93,9 +100,11 @@ export function isRetryableX402RpcError(e: unknown): boolean {
   const m = e instanceof Error ? e.message : String(e);
   if (/user rejected|user cancel|cancelled|canceled|rejected the request|4100/i.test(m)) return false;
   if (e instanceof TypeError) return true;
-  // Upstream JSON-RPC returned an error body (x402-solana surfaces it as Error with message text).
+  // Upstream JSON-RPC / HTTP proxy errors (x402-solana surfaces them in Error.message).
   if (
-    /\b403\b|\b401\b|\b429\b|-32052|not allowed to access blockchain|api key is not allowed|invalid api key|unauthorized/i.test(m)
+    /\b401\b|\b403\b|\b405\b|\b408\b|\b429\b|\b502\b|\b503\b|\b504\b|-32052|not allowed to access blockchain|api key is not allowed|invalid api key|unauthorized|method not allowed/i.test(
+      m
+    )
   ) {
     return true;
   }
