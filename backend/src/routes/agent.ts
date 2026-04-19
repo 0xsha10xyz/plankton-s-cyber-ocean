@@ -1,6 +1,5 @@
 import { Router } from "express";
-import {
-} from "../x402-agent-chat.js";
+import { resolveX402UsdcMint } from "../lib/x402UsdcMint.js";
 import { consumeUsageOrBlock, requireBlockPaymentAndCredit, sendJsonWithPaymentRequiredHeader } from "../usage/x402-blocks.js";
 import { verifyUsageSignature } from "../usage/verify-wallet.js";
 
@@ -175,7 +174,7 @@ agentRouter.get("/config", (_req, res) => {
   const amountAtomic = /^\d+$/.test(process.env.X402_BLOCK_PRICE_ATOMIC?.trim() || "")
     ? String(process.env.X402_BLOCK_PRICE_ATOMIC).trim()
     : "100000"; // 0.1 USDC
-  const usdcMint = (process.env.X402_USDC_MINT?.trim() || "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+  const usdcMint = resolveX402UsdcMint(process.env.X402_USDC_MINT, network);
   const decimals = 6;
   const priceUsd = Number(amountAtomic) / 10 ** decimals;
 

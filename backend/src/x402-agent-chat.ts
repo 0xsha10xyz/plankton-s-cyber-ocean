@@ -1,22 +1,11 @@
 import type { Request, Response } from "express";
 import { X402PaymentHandler, type PaymentRequirements, type TokenAsset } from "x402-solana/server";
-
-/** SPL USDC on Solana mainnet (6 decimals). */
-export const USDC_MAINNET_ASSET: TokenAsset = {
-  address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-  decimals: 6,
-};
-
-/** SPL USDC on devnet (6 decimals). */
-export const USDC_DEVNET_ASSET: TokenAsset = {
-  address: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
-  decimals: 6,
-};
+import { resolveX402UsdcMint } from "./lib/x402UsdcMint.js";
 
 const DEFAULT_FACILITATOR = "https://facilitator.payai.network";
 
-/** $0.01 USDC in atomic units (6 decimals). */
-const DEFAULT_CHAT_AMOUNT_ATOMIC = "10000";
+/** Default per-request amount (6 decimals) — keep in sync with `usage/x402-blocks` block price. */
+const DEFAULT_CHAT_AMOUNT_ATOMIC = "100000";
 
 function parseNetwork(): "solana" | "solana-devnet" {
   const n = process.env.X402_NETWORK?.trim().toLowerCase();
@@ -25,16 +14,16 @@ function parseNetwork(): "solana" | "solana-devnet" {
 }
 
 function chatAmountAtomic(): string {
-  const raw = process.env.X402_CHAT_AMOUNT_ATOMIC?.trim();
-  if (!raw || !/^\d+$/.test(raw)) return DEFAULT_CHAT_AMOUNT_ATOMIC;
-  return raw;
+  const block = process.env.X402_BLOCK_PRICE_ATOMIC?.trim();
+  if (block && /^\d+$/.test(block)) return block;
+  const legacy = process.env.X402_CHAT_AMOUNT_ATOMIC?.trim();
+  if (legacy && /^\d+$/.test(legacy)) return legacy;
+  return DEFAULT_CHAT_AMOUNT_ATOMIC;
 }
 
 function usdcAssetForNetwork(network: "solana" | "solana-devnet"): TokenAsset {
-  if (network === "solana-devnet") return USDC_DEVNET_ASSET;
-  const mint = process.env.X402_USDC_MINT?.trim();
-  if (mint) return { address: mint, decimals: 6 };
-  return USDC_MAINNET_ASSET;
+  const address = resolveX402UsdcMint(process.env.X402_USDC_MINT, network);
+  return { address, decimals: 6 };
 }
 
 let handler: X402PaymentHandler | null = null;

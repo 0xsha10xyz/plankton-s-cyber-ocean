@@ -3,6 +3,7 @@ import { Connection, PublicKey, type VersionedTransaction } from "@solana/web3.j
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
 import { getPrimaryRpcEndpoint } from "@/lib/solana-rpc";
+import { normalizeAgentX402UsdcMint } from "@/lib/x402UsdcMint";
 
 export type AgentChatX402Info = {
   enabled: boolean;
@@ -21,11 +22,12 @@ export function parseAgentConfigX402(data: unknown): AgentChatX402Info | null {
   if (!o.enabled) return null;
   const network = o.network === "solana-devnet" ? "solana-devnet" : "solana";
   const amountAtomic = String(o.amountAtomic ?? "10000");
+  const rawMint = String(o.usdcMint ?? "");
   return {
     enabled: true,
     network,
     amountAtomic,
-    usdcMint: String(o.usdcMint ?? ""),
+    usdcMint: normalizeAgentX402UsdcMint(rawMint, network),
     decimals: typeof o.decimals === "number" ? o.decimals : 6,
     priceUsd: typeof o.priceUsd === "number" ? o.priceUsd : undefined,
   };

@@ -27,12 +27,38 @@ function readIncomingBody(req: IncomingMessage): Promise<string> {
 }
 
 function isRetriableUpstreamStatus(status: number): boolean {
-  return status === 401 || status === 403 || status === 408 || status === 425 || status === 429 || status >= 500;
+  // Some providers return 402/405 for quota, billing, or wrong HTTP verb — not valid JSON-RPC; retry next upstream.
+  return (
+    status === 401 ||
+    status === 402 ||
+    status === 403 ||
+    status === 404 ||
+    status === 405 ||
+    status === 408 ||
+    status === 425 ||
+    status === 429 ||
+    status >= 500
+  );
+}
+
+function sendOptions(res: ServerResponse): void {
+  res.statusCode = 204;
+  res.setHeader("Allow", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
+  res.setHeader("Access-Control-Max-Age", "86400");
+  res.end();
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   try {
-    if ((req.method || "GET").toUpperCase() !== "POST") {
+    const method = (req.method || "GET").toUpperCase();
+    if (method === "OPTIONS") {
+      sendOptions(res);
+      return;
+    }
+    if (method !== "POST") {
       sendJson(res, 405, { error: "Method not allowed" });
       return;
     }

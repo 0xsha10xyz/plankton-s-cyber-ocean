@@ -1,19 +1,8 @@
 import type { Request, Response } from "express";
 import { X402PaymentHandler, type PaymentRequirements, type TokenAsset } from "x402-solana/server";
+import { resolveX402UsdcMint } from "../lib/x402UsdcMint.js";
 import type { UsageComponent, UsageDecision, UsageRecord } from "./types.js";
 import { getUsageStore, newUsageRecord } from "./store.js";
-
-/** SPL USDC on Solana mainnet (6 decimals). */
-const USDC_MAINNET: TokenAsset = {
-  address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-  decimals: 6,
-};
-
-/** SPL USDC on Solana devnet (6 decimals). */
-const USDC_DEVNET: TokenAsset = {
-  address: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
-  decimals: 6,
-};
 
 const DEFAULT_FACILITATOR = "https://facilitator.payai.network";
 const DEFAULT_BLOCK_PRICE_ATOMIC = "100000"; // 0.1 USDC (6 decimals)
@@ -68,10 +57,8 @@ function parseNetwork(): "solana" | "solana-devnet" {
 }
 
 function usdcAssetForNetwork(network: "solana" | "solana-devnet"): TokenAsset {
-  if (network === "solana-devnet") return USDC_DEVNET;
-  const mint = process.env.X402_USDC_MINT?.trim();
-  if (mint) return { address: mint, decimals: 6 };
-  return USDC_MAINNET;
+  const address = resolveX402UsdcMint(process.env.X402_USDC_MINT, network);
+  return { address, decimals: 6 };
 }
 
 function blockPriceAtomic(): string {

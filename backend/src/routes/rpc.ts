@@ -10,8 +10,26 @@ function upstreamUrls(): string[] {
 export const rpcRouter = Router();
 
 function isRetriableUpstreamStatus(status: number): boolean {
-  return status === 401 || status === 403 || status === 408 || status === 425 || status === 429 || status >= 500;
+  return (
+    status === 401 ||
+    status === 402 ||
+    status === 403 ||
+    status === 404 ||
+    status === 405 ||
+    status === 408 ||
+    status === 425 ||
+    status === 429 ||
+    status >= 500
+  );
 }
+
+/**
+ * CORS preflight — browsers may send OPTIONS before POST to `/api/rpc` (x402 / wallet flows).
+ */
+rpcRouter.options("/", (_req: Request, res: Response) => {
+  res.setHeader("Allow", "POST, OPTIONS");
+  res.status(204).end();
+});
 
 /**
  * POST /api/rpc — JSON-RPC proxy to Solana mainnet.
