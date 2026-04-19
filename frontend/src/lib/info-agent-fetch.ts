@@ -3,7 +3,7 @@ import { createX402Client } from "x402-solana/client";
 import type { VersionedTransaction } from "@solana/web3.js";
 import { usageSignMessage } from "./x402-usage";
 import { getApiBase } from "./api";
-import { getPrimaryRpcEndpoint } from "./solana-rpc";
+import { getX402RpcEndpoint } from "./solana-rpc";
 
 export async function fetchInfoAgent(opts: {
   prompt: string;
@@ -43,7 +43,7 @@ export async function fetchInfoAgent(opts: {
       signTransaction: async (tx: VersionedTransaction) => opts.wallet.signTransaction!(tx),
     },
     network: opts.x402Network,
-    rpcUrl: getPrimaryRpcEndpoint(),
+    rpcUrl: getX402RpcEndpoint(),
     amount: BigInt(opts.maxAtomic) * 25n,
     verbose: false,
   });

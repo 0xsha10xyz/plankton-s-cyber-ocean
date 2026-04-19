@@ -8,8 +8,16 @@ export const config = {
   maxDuration: 10,
 };
 
+/** Public JSON-RPC proxy — allow browser calls from SPA + hybrid `api.*` subdomains. */
+function applyRpcCors(res: ServerResponse): void {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS, GET, HEAD");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
+}
+
 function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
   res.statusCode = statusCode;
+  applyRpcCors(res);
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Cache-Control", "private, max-age=10");
   res.end(JSON.stringify(body));
@@ -56,6 +64,14 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const method = (req.method || "GET").toUpperCase();
     if (method === "OPTIONS") {
       sendOptions(res);
+      return;
+    }
+    // Health / CDN probes sometimes use GET or HEAD — avoid noisy 405s in front of JSON-RPC POST.
+    if (method === "GET" || method === "HEAD") {
+      applyRpcCors(res);
+      res.statusCode = 204;
+      res.setHeader("Allow", "POST, OPTIONS");
+      res.end();
       return;
     }
     if (method !== "POST") {
@@ -122,6 +138,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         if (isRetriableUpstreamStatus(r.status)) {
           continue;
         }
+        applyRpcCors(res);
         res.statusCode = r.status;
         const ct = r.headers.get("content-type");
         if (ct) res.setHeader("Content-Type", ct);

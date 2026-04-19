@@ -1,7 +1,7 @@
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import { createX402Client } from "x402-solana/client";
 import type { VersionedTransaction } from "@solana/web3.js";
-import { getPrimaryRpcEndpoint } from "@/lib/solana-rpc";
+import { getX402RpcEndpoint } from "@/lib/solana-rpc";
 
 export type UsageCheckResponse =
   | {
@@ -83,7 +83,7 @@ export async function checkUsageWithX402(opts: {
       },
     },
     network: opts.network,
-    rpcUrl: getPrimaryRpcEndpoint(),
+    rpcUrl: getX402RpcEndpoint(),
     amount: maxPaymentAtomic(BigInt(opts.expectedMaxAtomic)),
     verbose: false,
   });

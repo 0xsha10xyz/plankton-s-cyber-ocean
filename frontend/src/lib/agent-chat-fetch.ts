@@ -2,7 +2,7 @@ import { createX402Client } from "x402-solana/client";
 import { Connection, PublicKey, type VersionedTransaction } from "@solana/web3.js";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
-import { getPrimaryRpcEndpoint } from "@/lib/solana-rpc";
+import { getPrimaryRpcEndpoint, getX402RpcEndpoint } from "@/lib/solana-rpc";
 import { normalizeAgentX402UsdcMint } from "@/lib/x402UsdcMint";
 
 export type AgentChatX402Info = {
@@ -60,7 +60,7 @@ async function tryGetBalances(opts: {
 }): Promise<{ sol: number; usdc: number } | null> {
   try {
     if (!opts.wallet.publicKey) return null;
-    const rpcUrl = getPrimaryRpcEndpoint();
+    const rpcUrl = getX402RpcEndpoint();
     const conn = new Connection(rpcUrl, { commitment: "confirmed" });
     const solLamports = await conn.getBalance(opts.wallet.publicKey, "confirmed");
     const sol = solLamports / 1e9;
@@ -167,8 +167,8 @@ export async function fetchAgentChat(
       signTransaction: async (tx: VersionedTransaction) => w.signTransaction!(tx),
     },
     network: x.network,
-    // Critical: avoid browser POSTs to public Solana RPC (often 403/CORS). Use same-origin `/api/rpc`.
-    rpcUrl: getPrimaryRpcEndpoint(),
+    // Prefer agent-host `/api/rpc` when SPA and agent origins differ (hybrid deploy).
+    rpcUrl: getX402RpcEndpoint(),
     amount: maxPaymentAtomic(BigInt(x.amountAtomic)),
     verbose: Boolean(import.meta.env?.DEV),
     customFetch,

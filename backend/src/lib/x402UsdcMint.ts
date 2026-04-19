@@ -12,8 +12,24 @@ export const SOLANA_DEVNET_USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJD
  */
 const KNOWN_MAINNET_USDC_MINT_TYPO = "EPjFWdd5AufqSSqmM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
+const USDC_MAINNET_PK = new PublicKey(SOLANA_MAINNET_USDC_MINT);
+
+/** Same mint as mainnet USDC but wrong letter casing (base58 is case-sensitive; explorers often confuse). */
+function isCaseOnlyVariantOfMainnetUsdc(s: string): boolean {
+  const c = SOLANA_MAINNET_USDC_MINT;
+  if (s.length !== c.length) return false;
+  for (let i = 0; i < c.length; i++) {
+    const a = s[i];
+    const b = c[i];
+    if (a === b) continue;
+    if (a?.toLowerCase() === b?.toLowerCase()) continue;
+    return false;
+  }
+  return true;
+}
+
 /**
- * Resolve `X402_USDC_MINT` for x402 + agent config. Validates base58; fixes one known typo; falls back to canonical mints.
+ * Resolve `X402_USDC_MINT` for x402 + agent config. Validates base58; fixes known typos; falls back to canonical mints.
  */
 export function resolveX402UsdcMint(
   raw: string | undefined,
@@ -31,9 +47,14 @@ export function resolveX402UsdcMint(
     return SOLANA_MAINNET_USDC_MINT;
   }
 
+  if (network === "solana" && isCaseOnlyVariantOfMainnetUsdc(trimmed)) {
+    return SOLANA_MAINNET_USDC_MINT;
+  }
+
   try {
-    new PublicKey(trimmed);
-    return trimmed;
+    const pk = new PublicKey(trimmed);
+    if (network === "solana" && pk.equals(USDC_MAINNET_PK)) return SOLANA_MAINNET_USDC_MINT;
+    return pk.toBase58();
   } catch {
     console.warn(
       `[x402] X402_USDC_MINT is not a valid Solana address; using default USDC for ${network}.`

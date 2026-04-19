@@ -31,6 +31,28 @@ export function getPrimaryRpcEndpoint(): string {
   return "https://rpc.ankr.com/solana";
 }
 
+/**
+ * JSON-RPC URL for **x402-solana** (`createX402Client`). When the SPA and `VITE_AGENT_API_URL` live on
+ * different origins (hybrid: Vercel site + `api.*` VPS), use the **agent host’s** `/api/rpc` so reads
+ * hit the same Express proxy that already allows CORS for your frontend — avoids 405 from a mis-routed apex `/api/rpc`.
+ */
+export function getX402RpcEndpoint(): string {
+  if (typeof window === "undefined" || typeof import.meta === "undefined") {
+    return getPrimaryRpcEndpoint();
+  }
+  const agentRaw = import.meta.env?.VITE_AGENT_API_URL?.trim();
+  if (!agentRaw) return getPrimaryRpcEndpoint();
+  try {
+    const agentOrigin = new URL(agentRaw).origin;
+    if (agentOrigin !== window.location.origin) {
+      return `${agentOrigin}/api/rpc`;
+    }
+  } catch {
+    /* invalid URL */
+  }
+  return getPrimaryRpcEndpoint();
+}
+
 function usesSameOriginRpcProxy(): boolean {
   return getPrimaryRpcEndpoint().includes("/api/rpc");
 }
