@@ -6,8 +6,6 @@ const KNOWN_MAINNET_USDC_MINT_TYPO = "EPjFWdd5AufqSSqmM2qN1xzybapC8G4wEGGkZwyTDt
 
 const KNOWN_MAINNET_USDC_MINT_AP_TYPO = "EPjFWdd5AufqSSqeM2qN1xzybaPC8G4wEGGkZwyTDt1v";
 
-const USDC_MAINNET_PK = new PublicKey(SOLANA_MAINNET_USDC_MINT);
-
 function isCaseOnlyVariantOfMainnetUsdc(s: string): boolean {
   const c = SOLANA_MAINNET_USDC_MINT;
   if (s.length !== c.length) return false;
@@ -30,7 +28,7 @@ export function normalizeAgentX402UsdcMint(raw: string, network: "solana" | "sol
   if (network === "solana" && isCaseOnlyVariantOfMainnetUsdc(t)) return SOLANA_MAINNET_USDC_MINT;
   try {
     const pk = new PublicKey(t);
-    if (network === "solana" && pk.equals(USDC_MAINNET_PK)) return SOLANA_MAINNET_USDC_MINT;
+    if (network === "solana") return SOLANA_MAINNET_USDC_MINT;
     return pk.toBase58();
   } catch {
     return SOLANA_MAINNET_USDC_MINT;

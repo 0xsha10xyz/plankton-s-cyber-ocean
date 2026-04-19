@@ -61,7 +61,13 @@ export function resolveX402UsdcMint(
 
   try {
     const pk = new PublicKey(trimmed);
-    if (network === "solana" && pk.equals(USDC_MAINNET_PK)) return SOLANA_MAINNET_USDC_MINT;
+    if (network === "solana") {
+      if (pk.equals(USDC_MAINNET_PK)) return SOLANA_MAINNET_USDC_MINT;
+      console.warn(
+        "[x402] X402_USDC_MINT is not Circle mainnet USDC; agent x402 uses canonical USDC mint only."
+      );
+      return SOLANA_MAINNET_USDC_MINT;
+    }
     return pk.toBase58();
   } catch {
     console.warn(

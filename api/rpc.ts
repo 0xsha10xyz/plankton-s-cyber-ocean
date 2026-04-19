@@ -8,11 +8,15 @@ export const config = {
   maxDuration: 10,
 };
 
+/** Headers browsers may send on JSON-RPC (see backend CORS + `@solana/web3.js` `solana-client`). */
+const RPC_CORS_ALLOW_HEADERS =
+  "Content-Type, Accept, Authorization, solana-client";
+
 /** Public JSON-RPC proxy — allow browser calls from SPA + hybrid `api.*` subdomains. */
 function applyRpcCors(res: ServerResponse): void {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS, GET, HEAD");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
+  res.setHeader("Access-Control-Allow-Headers", RPC_CORS_ALLOW_HEADERS);
 }
 
 function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
@@ -53,8 +57,8 @@ function sendOptions(res: ServerResponse): void {
   res.statusCode = 204;
   res.setHeader("Allow", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS, GET, HEAD");
+  res.setHeader("Access-Control-Allow-Headers", RPC_CORS_ALLOW_HEADERS);
   res.setHeader("Access-Control-Max-Age", "86400");
   res.end();
 }

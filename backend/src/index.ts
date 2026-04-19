@@ -46,6 +46,7 @@ app.use(
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
+      "Accept",
       "Authorization",
       "PAYMENT-SIGNATURE",
       "payment-signature",
@@ -54,6 +55,8 @@ app.use(
       "X-X402-Payment-Signature",
       "x-x402-payment-signature",
       "X-Gateway-Admin-Secret",
+      /** `@solana/web3.js` JSON-RPC transport sends this; preflight fails if omitted (x402 / Connection). */
+      "solana-client",
     ],
   })
 );
@@ -72,15 +75,17 @@ app.use((err: unknown, _req: express.Request, res: express.Response, next: expre
   next(err);
 });
 
-// CORS preflight for all /api (fix 405 on live when browser sends OPTIONS)
-app.options("/api/*", (_req, res) => {
+// CORS preflight for `/api/*` (Express `*` is not a glob — match every /api path)
+app.options(/^\/api\//, (_req, res) => {
   const origin = _req.headers.origin;
-  const allow = origin && (corsOrigins.includes(origin) || (isVercel && /^https:\/\//.test(origin))) ? origin : corsOrigins[0] || "*";
+  const allow =
+    origin && (corsOrigins.includes(origin) || (isVercel && /^https:\/\//.test(origin))) ? origin : corsOrigins[0] || "*";
   res.setHeader("Access-Control-Allow-Origin", allow);
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, PAYMENT-SIGNATURE, PAYMENT-RESPONSE, X-X402-Payment-Signature, X-Gateway-Admin-Secret"
+    "Content-Type, Accept, Authorization, PAYMENT-SIGNATURE, PAYMENT-RESPONSE, X-X402-Payment-Signature, X-Gateway-Admin-Secret, solana-client"
   );
   res.setHeader("Access-Control-Max-Age", "86400");
   res.status(204).end();
