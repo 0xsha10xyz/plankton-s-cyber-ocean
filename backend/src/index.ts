@@ -34,6 +34,28 @@ const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:8080,http://127.
 const corsOrigins = corsOrigin.split(",").map((o) => o.trim()).filter(Boolean);
 const isVercel = process.env.VERCEL === "1";
 
+/** Must match manual `OPTIONS` handler below — x402-solana v2 retry uses `x-payment` (see usage/x402-blocks.ts). */
+const CORS_ALLOW_HEADERS = [
+  "Content-Type",
+  "Accept",
+  "Authorization",
+  "PAYMENT-SIGNATURE",
+  "payment-signature",
+  "PAYMENT-RESPONSE",
+  "payment-response",
+  "PAYMENT-REQUIRED",
+  "payment-required",
+  "X-X402-Payment-Signature",
+  "x-x402-payment-signature",
+  "X-Payment",
+  "x-payment",
+  "X-Payment-Response",
+  "x-payment-response",
+  "X-Gateway-Admin-Secret",
+  /** `@solana/web3.js` JSON-RPC */
+  "solana-client",
+] as const;
+
 app.use(
   cors({
     origin: (origin, cb) => {
@@ -44,20 +66,8 @@ app.use(
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Accept",
-      "Authorization",
-      "PAYMENT-SIGNATURE",
-      "payment-signature",
-      "PAYMENT-RESPONSE",
-      "payment-response",
-      "X-X402-Payment-Signature",
-      "x-x402-payment-signature",
-      "X-Gateway-Admin-Secret",
-      /** `@solana/web3.js` JSON-RPC transport sends this; preflight fails if omitted (x402 / Connection). */
-      "solana-client",
-    ],
+    allowedHeaders: [...CORS_ALLOW_HEADERS],
+    exposedHeaders: ["PAYMENT-REQUIRED", "payment-required"],
   })
 );
 app.use(express.json({ limit: "512kb" }));
@@ -83,10 +93,7 @@ app.options(/^\/api\//, (_req, res) => {
   res.setHeader("Access-Control-Allow-Origin", allow);
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Accept, Authorization, PAYMENT-SIGNATURE, PAYMENT-RESPONSE, X-X402-Payment-Signature, X-Gateway-Admin-Secret, solana-client"
-  );
+  res.setHeader("Access-Control-Allow-Headers", CORS_ALLOW_HEADERS.join(", "));
   res.setHeader("Access-Control-Max-Age", "86400");
   res.status(204).end();
 });
