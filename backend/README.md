@@ -25,7 +25,6 @@ cp .env.example .env   # optional: edit .env for PORT, CORS_ORIGIN
 - **Research:** `GET /api/research/feeds`, `GET /api/research/lookup?symbol=`, `GET /api/research/screener` (query: `limit`, `sort`, `minVolume`, `minMarketCap`, `minChange24h`, `maxChange24h`)
 - **Subscription:** `GET /api/subscription/tiers`, `GET /api/subscription/tiers/:id`, `GET /api/subscription/me?wallet=` (current tier by wallet)
 - **Agent:** `GET /api/agent/status`, `GET /api/agent/config`, **`POST /api/agent/chat`** (LLM chat for the Plankton Agent UI)
-- **Syraa trading signals:** **`POST /api/signal`** — wallet-signed usage message; the backend calls Syraa with **x402** paid from **`SYRAA_*`** keys using **Faremeter** (`@faremeter/fetch`, `backend/src/lib/syraaClient.ts`). See **`../docs/syraa-signal-integration.md`**. (The optional repo-root poller `src/signal-client.ts` uses `@x402/fetch` instead — **`../docs/agent-configuration.md`**.)
 - **Planktonomous — Phase 1 (data pipeline, no trading):**
   - **`GET /api/markets`** — Polymarket Gamma active markets (volume24h sort), optional CLOB top-of-book for the first `orderbookTop` markets (`orderbookTop` query, default 20). Query: `limit`, `refresh=1` to bypass cache.
   - **`GET /api/wallets`** — Wallet scores from a bounded **PNL subgraph** sample (Goldsky-hosted Polymarket indexer). Query: `limit`, `minScore`, `refresh=1`.

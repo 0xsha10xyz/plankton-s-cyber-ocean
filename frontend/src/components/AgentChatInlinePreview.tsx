@@ -23,9 +23,6 @@ import { parseSendBalanceTransferInput } from "@/lib/parseSendBalanceTransfer";
 import { getFallbackRpcs, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 import { Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import { toast } from "sonner";
-import { isSignalKeywordIntent, parseSignalQuery, type SignalQuery } from "@/lib/parseSignalQuery";
-import { useTradingSignal } from "@/hooks/useSignal";
-import { summarizeSyraaSignalForCard, type SyraaSignalDirection } from "@/lib/syraaSignalPresentation";
 
 type ChatMessage = {
   id: string;
@@ -38,18 +35,6 @@ type AgentJsonResponse = {
   insight: string;
   additional_insight: string;
   actions: string[];
-};
-
-type TradingSignalMessage = {
-  kind: "trading_signal";
-  ok: boolean;
-  payload?: unknown;
-  /** Echoed query params for card labeling when API omits fields. */
-  query?: SignalQuery;
-  error?: string;
-  code?: string;
-  retry?: boolean;
-  provider?: string;
 };
 
 type ChatContext = {
@@ -65,13 +50,6 @@ function detectBase58(text: string): string[] {
 
 function shortenAddress(address: string, chars = 4): string {
   return `${address.slice(0, chars)}...${address.slice(-chars)}`;
-}
-
-function signalDirectionBadgeClass(d: SyraaSignalDirection): string {
-  if (d === "LONG") return "bg-emerald-500/15 text-emerald-300 border-emerald-500/35";
-  if (d === "SHORT") return "bg-rose-500/15 text-rose-300 border-rose-500/35";
-  if (d === "NEUTRAL") return "bg-zinc-500/15 text-zinc-300 border-zinc-500/35";
-  return "bg-zinc-700/30 text-zinc-400 border-border/50";
 }
 
 function detectTimeframe(text: string): ChatContext["timeframe"] {
@@ -186,21 +164,8 @@ function chatMessagesToHistory(msgs: ChatMessage[]): { role: "user" | "assistant
       out.push({ role: "user", content: m.content.slice(0, 4000) });
     } else {
       try {
-        const p = JSON.parse(m.content) as Record<string, unknown>;
-        if (p.kind === "trading_signal") {
-          const ts = p as unknown as TradingSignalMessage;
-          const summary = ts.ok
-            ? (() => {
-                const q = ts.query ?? { token: "bitcoin", source: "binance", instId: "BTCUSDT", bar: "1h", limit: 200 };
-                const card = summarizeSyraaSignalForCard(ts.payload, { token: q.token, bar: q.bar });
-                return `Syraa signal · ${card.tokenLabel}${card.timeframe ? ` ${card.timeframe}` : ""} · ${card.direction}`;
-              })()
-            : `signal error: ${String(ts.error ?? "").slice(0, 1800)}`;
-          out.push({ role: "assistant", content: summary });
-          continue;
-        }
-        const a = p as unknown as AgentJsonResponse;
-        const summary = [a.insight, a.additional_insight].filter(Boolean).join("\n").slice(0, 2000);
+        const p = JSON.parse(m.content) as AgentJsonResponse;
+        const summary = [p.insight, p.additional_insight].filter(Boolean).join("\n").slice(0, 2000);
         if (summary) out.push({ role: "assistant", content: summary });
       } catch {
         out.push({ role: "assistant", content: m.content.slice(0, 2000) });
@@ -214,23 +179,16 @@ function AgentMessageBubble({
   msg,
   connected,
   onAction,
-  onRetrySignal,
 }: {
   msg: ChatMessage;
   connected: boolean;
   onAction: (action: string) => void;
-  onRetrySignal?: () => void;
 }) {
   let parsed: AgentJsonResponse | null = null;
-  let signalMsg: TradingSignalMessage | null = null;
   if (msg.role === "agent") {
     try {
-      const maybe = JSON.parse(msg.content) as Record<string, unknown>;
-      if (maybe?.kind === "trading_signal") {
-        signalMsg = maybe as unknown as TradingSignalMessage;
-      } else if (maybe?.insight && Array.isArray(maybe.actions)) {
-        parsed = maybe as AgentJsonResponse;
-      }
+      const maybe = JSON.parse(msg.content) as AgentJsonResponse;
+      if (maybe?.insight && Array.isArray(maybe.actions)) parsed = maybe;
     } catch {
       parsed = null;
     }
@@ -243,97 +201,7 @@ function AgentMessageBubble({
         msg.role === "user" ? "chat-bubble-user" : "chat-bubble-agent"
       )}
     >
-      {msg.role === "agent" && signalMsg ? (
-        <div className="space-y-2">
-          {signalMsg.ok && signalMsg.payload !== undefined ? (
-            (() => {
-              const q = signalMsg.query ?? {
-                token: "bitcoin",
-                source: "binance",
-                instId: "BTCUSDT",
-                bar: "1h",
-                limit: 200,
-              };
-              const card = summarizeSyraaSignalForCard(signalMsg.payload, { token: q.token, bar: q.bar });
-              const sub = [card.tokenLabel, card.timeframe].filter(Boolean).join(" / ");
-              return (
-                <div className="rounded-xl border border-border/50 bg-zinc-950/75 shadow-inner px-3.5 py-3 space-y-2.5 max-w-[min(100%,22rem)]">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <div className="text-[11px] font-semibold tracking-wide text-foreground/95">{sub || "Signal"}</div>
-                      <p className="text-[10px] text-muted-foreground/90 mt-0.5">via Syraa</p>
-                    </div>
-                    <span
-                      className={cn(
-                        "text-[10px] font-semibold px-2 py-0.5 rounded-md border uppercase tracking-wide",
-                        signalDirectionBadgeClass(card.direction)
-                      )}
-                    >
-                      {card.direction}
-                    </span>
-                  </div>
-                  <dl className="grid grid-cols-1 gap-1.5 text-[11px]">
-                    {card.entry ? (
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-muted-foreground shrink-0">Entry</dt>
-                        <dd className="text-right font-mono text-foreground/95">{card.entry}</dd>
-                      </div>
-                    ) : null}
-                    {card.takeProfit ? (
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-muted-foreground shrink-0">Take profit</dt>
-                        <dd className="text-right font-mono text-emerald-300/95">{card.takeProfit}</dd>
-                      </div>
-                    ) : null}
-                    {card.stopLoss ? (
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-muted-foreground shrink-0">Stop loss</dt>
-                        <dd className="text-right font-mono text-rose-300/95">{card.stopLoss}</dd>
-                      </div>
-                    ) : null}
-                    {card.confidence ? (
-                      <div className="flex justify-between gap-3">
-                        <dt className="text-muted-foreground shrink-0">Confidence</dt>
-                        <dd className="text-right text-foreground/90">{card.confidence}</dd>
-                      </div>
-                    ) : null}
-                  </dl>
-                  <details className="text-[10px] text-muted-foreground/90">
-                    <summary className="cursor-pointer select-none hover:text-foreground/80">Raw JSON</summary>
-                    <pre className="mt-2 text-[10px] leading-relaxed whitespace-pre-wrap font-mono rounded-lg border border-border/35 bg-background/60 p-2 overflow-x-auto max-h-40 overflow-y-auto">
-                      {JSON.stringify(signalMsg.payload, null, 2)}
-                    </pre>
-                  </details>
-                </div>
-              );
-            })()
-          ) : signalMsg.ok ? (
-            <p className="text-xs text-muted-foreground">Signal response was empty or malformed.</p>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-wider text-primary/85">
-                <span>Signal</span>
-                <span className="text-amber-300/90 font-medium normal-case">Failed</span>
-              </div>
-              {signalMsg.error ? (
-                <p className="text-xs text-destructive/90 whitespace-pre-wrap">{signalMsg.error}</p>
-              ) : null}
-              {signalMsg.retry && onRetrySignal ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  className="h-8 px-3 text-xs"
-                  disabled={!connected}
-                  onClick={() => onRetrySignal()}
-                >
-                  Retry
-                </Button>
-              ) : null}
-            </div>
-          )}
-        </div>
-      ) : msg.role === "agent" && parsed ? (
+      {msg.role === "agent" && parsed ? (
         <div className="space-y-2">
           <p className="whitespace-pre-wrap">{parsed.insight}</p>
               {parsed.additional_insight ? (
@@ -396,10 +264,6 @@ export function AgentChatInlinePreview({
   const messagesRef = useRef<ChatMessage[]>(messages);
   const usageSigRef = useRef<{ wallet: string; ts: number; sig: string } | null>(null);
   const lastUserTextRef = useRef<string>("");
-  const signalQueryLineRef = useRef<string>("");
-  const [signalMode, setSignalMode] = useState(false);
-  const apiBaseMemo = useMemo(() => getApiBase(), []);
-  const signalApi = useTradingSignal(apiBaseMemo);
 
   useEffect(() => {
     let cancelled = false;
@@ -418,7 +282,7 @@ export function AgentChatInlinePreview({
   }, [messages]);
 
   const defaultQuickActions = useMemo(
-    () => ["Check Balance", "Send Balance", "Buy", "Sell", "Signal"],
+    () => ["Check Balance", "Send Balance", "Buy", "Sell"],
     []
   );
 
@@ -445,12 +309,7 @@ export function AgentChatInlinePreview({
     const raw = text.trim();
     const isRetryAction = raw.toLowerCase() === "retry" || raw.toLowerCase() === "retry after payment";
     const trimmed = isRetryAction ? lastUserTextRef.current.trim() : raw;
-    if (sending) return;
-
-    const canSignalBase = !awaitingWalletAddress && !pendingSendBalance;
-    if (!trimmed) {
-      if (!signalMode || !canSignalBase) return;
-    }
+    if (!trimmed || sending) return;
 
     if (!connected) {
       openWalletModal();
@@ -882,98 +741,6 @@ export function AgentChatInlinePreview({
       return;
     }
 
-    const isQuickCommand =
-      lower === "check balance" ||
-      lower === "send balance" ||
-      lower === "buy" ||
-      lower === "sell";
-
-    const keywordSignal = isSignalKeywordIntent(raw);
-    const doSignal = canSignalBase && !isQuickCommand && (signalMode || keywordSignal);
-
-    if (doSignal) {
-      const lineForQuery = raw;
-      signalQueryLineRef.current = lineForQuery || "signal";
-      const userContent = lineForQuery || "(signal · default parameters)";
-
-      if (!wallet.signMessage) {
-        toast.error("Wallet must support message signing to request signals.");
-        return;
-      }
-
-      const userMsg: ChatMessage = {
-        id: `user-${Date.now()}`,
-        role: "user",
-        content: userContent,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, userMsg]);
-      setInput("");
-
-      void (async () => {
-        try {
-          const params = parseSignalQuery(lineForQuery);
-          const result = await signalApi.requestSignal(wallet, { params });
-          let content: string;
-          if (result.ok) {
-            const echo = result.params ?? params;
-            content = JSON.stringify({
-              kind: "trading_signal" as const,
-              ok: true,
-              payload: result.signal,
-              provider: result.provider ?? "syraa",
-              query: echo,
-            });
-          } else {
-            const msg = result.error ?? "Unknown error";
-            content = JSON.stringify({
-              kind: "trading_signal" as const,
-              ok: false,
-              error: msg,
-              code: result.code,
-              retry: result.retry === true,
-            });
-            const mlow = msg.toLowerCase();
-            if (mlow.includes("usdc") || mlow.includes("insufficient") || result.code === "SYRAA_FUNDS_OR_PAYMENT") {
-              toast.error("Top up USDC on the server signal wallet (VPS), then retry.");
-            } else if (mlow.includes("signature") || mlow.includes("401")) {
-              toast.error("Wallet signature invalid or expired. Try again.");
-            } else if (result.code === "SIGNAL_TIMEOUT") {
-              toast.error("Signal unavailable (timeout). Try again.");
-            } else if (result.code === "SYRAA_NOT_CONFIGURED") {
-              toast.error("Signal service is not configured on the server.");
-            }
-          }
-          const agentMsg: ChatMessage = {
-            id: `agent-${Date.now()}`,
-            role: "agent",
-            content,
-            timestamp: new Date(),
-          };
-          setMessages((prev) => [...prev, agentMsg]);
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `agent-${Date.now()}`,
-              role: "agent",
-              content: JSON.stringify({
-                kind: "trading_signal" as const,
-                ok: false,
-                error: msg,
-                retry: true,
-              }),
-              timestamp: new Date(),
-            },
-          ]);
-          toast.error(msg);
-        }
-      })();
-
-      return;
-    }
-
     const nextContext = applyContextFromUserMessage(trimmed, context);
     setContext(nextContext);
 
@@ -1166,15 +933,11 @@ export function AgentChatInlinePreview({
   };
 
   const onAction = (action: string) => {
-    if (!connected) {
+    if (connected) {
+      handleSendWithText(action);
+    } else {
       openWalletModal();
-      return;
     }
-    if (action === "Signal") {
-      setSignalMode(true);
-      return;
-    }
-    handleSendWithText(action);
   };
 
   function uiAmountToRawBigInt(amountStr: string, decimals: number): bigint {
@@ -1356,8 +1119,7 @@ export function AgentChatInlinePreview({
     }
   }
 
-  const sendDisabled =
-    !connected || sending || signalApi.loading || (!input.trim() && !signalMode);
+  const sendDisabled = !connected || sending || !input.trim();
 
   return (
     <section
@@ -1427,14 +1189,7 @@ export function AgentChatInlinePreview({
                 </div>
               )}
 
-              <AgentMessageBubble
-                msg={msg}
-                connected={connected}
-                onAction={onAction}
-                onRetrySignal={() => {
-                  void handleSendWithText(signalQueryLineRef.current);
-                }}
-              />
+              <AgentMessageBubble msg={msg} connected={connected} onAction={onAction} />
             </div>
           ))}
 
@@ -1465,19 +1220,6 @@ export function AgentChatInlinePreview({
             ))}
           </div>
 
-          {signalMode ? (
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Signal mode</span>
-              <button
-                type="button"
-                className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2"
-                onClick={() => setSignalMode(false)}
-              >
-                Exit
-              </button>
-            </div>
-          ) : null}
-
           <div className="flex gap-2 items-center">
             <Textarea
               value={input}
@@ -1488,11 +1230,9 @@ export function AgentChatInlinePreview({
                   ? "Paste wallet address..."
                   : pendingSendBalance
                     ? "coin name, token name, contract address... + amount to send + recipient address"
-                    : signalMode
-                      ? "Optional: token, bar (1h), exchange… or send empty for defaults"
-                      : placeholderMode === "see"
-                        ? "glad to see you"
-                        : "glad to help you..."
+                    : placeholderMode === "see"
+                      ? "glad to see you"
+                      : "glad to help you..."
               }
               className="min-h-[44px] max-h-32 resize-none rounded-xl border-border/50 bg-secondary/35"
               rows={1}

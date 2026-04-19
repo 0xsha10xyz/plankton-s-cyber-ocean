@@ -5,7 +5,6 @@ import {
   Book,
   Coins,
   Landmark,
-  Plug,
   Rocket,
   Server,
   Shield,
@@ -30,15 +29,9 @@ const sidebarSections = [
   { id: "x402-payments", label: "x402 payments", icon: Landmark, path: "/docs/x402-payments" as const },
   {
     id: "syraa-signal-agent",
-    label: "Syraa signal agent",
+    label: "Syraa signal agent (optional poller)",
     icon: Server,
     path: "/docs/agent-configuration" as const,
-  },
-  {
-    id: "syraa-signal-integration",
-    label: "Syraa + Planktonomous",
-    icon: Plug,
-    path: "/docs/syraa-signal-integration" as const,
   },
 ] as const;
 

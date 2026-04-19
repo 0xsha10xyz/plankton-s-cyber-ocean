@@ -45,7 +45,6 @@ Backend runs at **http://localhost:3000**. Use `frontend/.env` with `VITE_API_UR
 - **Research:** `GET /api/research/feeds`, `GET /api/research/lookup?symbol=`, `GET /api/research/screener` (query: `limit`, `sort`, `minVolume`, `minMarketCap`, `minChange24h`, `maxChange24h`)
 - **Subscription:** `GET /api/subscription/tiers`, `GET /api/subscription/tiers/:id`, `GET /api/subscription/me?wallet=` (tier by wallet)
 - **Agent:** `GET /api/agent/status`, `GET /api/agent/config`, **`POST /api/agent/chat`** (LLM; often run on a VPS with `ANTHROPIC_API_KEY`)
-- **Syraa trading signals (VPS):** **`POST /api/signal`** — wallet-signed usage; Syraa is paid **server-side** with x402 via **Faremeter** ([`@faremeter/fetch`](https://www.npmjs.com/package/@faremeter/fetch)). See **[docs/syraa-signal-integration.md](docs/syraa-signal-integration.md)** (standalone PM2 poller in `src/` still uses `@x402/fetch` — **[docs/agent-configuration.md](docs/agent-configuration.md)**).
 - **Planktonomous (Phase 1 data):** `GET /api/markets` (Gamma + optional CLOB order book), `GET /api/wallets` (PNL subgraph sample + scores). See **`backend/README.md`**.
 
 See `backend/README.md` for setup and env vars. **External services** (Claude, Groq, Jupiter, Birdeye, Redis, x402, etc.) are summarized in **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**.
