@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import type { RequestWithGatewayKey } from "./requestTypes.js";
 import { sha256Hex } from "./hash.js";
 import { isValidKeyFormat } from "./keygen.js";
 import { findByHash, patchKey } from "./store.js";
@@ -61,7 +62,7 @@ export function requireGatewayAuth(requiredScopes: string[]) {
       return;
     }
 
-    req.gatewayKey = record;
+    (req as RequestWithGatewayKey).gatewayKey = record;
     void patchKey(record.id, { last_used_at: new Date().toISOString() }).catch(() => {});
     next();
   };

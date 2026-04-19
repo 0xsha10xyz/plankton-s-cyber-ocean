@@ -5,6 +5,7 @@ import { getRequestId, sendGatewayError } from "./errorResponse.js";
 import { defaultExpiresAtIso, generateApiKey } from "./keygen.js";
 import { sha256Hex } from "./hash.js";
 import { appendKey, loadKeys, patchKey } from "./store.js";
+import type { RequestWithGatewayKey } from "./requestTypes.js";
 import type { GatewayEnvironment, GatewayKeyRecord, GatewayTier } from "./types.js";
 
 export const gatewayRouter = Router();
@@ -18,7 +19,7 @@ gatewayRouter.use((req, res, next) => {
 
 /** Authenticated status — proves key + scope + rate limit path. */
 gatewayRouter.get("/status", requireGatewayAuth(["read"]), (req, res) => {
-  const k = req.gatewayKey!;
+  const k = (req as RequestWithGatewayKey).gatewayKey!;
   res.json({
     ok: true,
     gateway: "plankton",
