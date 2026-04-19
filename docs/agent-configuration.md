@@ -2,7 +2,9 @@
 
 This document describes environment variables and operational settings for the **self-hosted x402 signal agent** (`src/agent.ts`). The agent polls the Syraa Signal API, pays per request with **Solana USDC** via the **x402** protocol (`@x402/fetch` + `@x402/svm`), and optionally registers with Planktonomous.
 
-For the **Planktonomous Intelligent Assistant** and **`POST /api/signal`** on a VPS (launch-agent widget, no standalone poller), see **[Syraa signal integration (Planktonomous & VPS)](./syraa-signal-integration.md)**.
+The **Express backend** path for the same Syraa Signal API (`POST /api/signal`, `backend/src/lib/syraaClient.ts`) uses **[Faremeter](https://www.npmjs.com/package/@faremeter/fetch)** (`@faremeter/fetch`) for agent-to-agent payments instead — see **[Syraa signal integration (Planktonomous & VPS)](./syraa-signal-integration.md)**.
+
+For the **Planktonomous Intelligent Assistant** and **`POST /api/signal`** on a VPS (launch-agent widget, no standalone poller), that page is the primary reference.
 
 **Published on the Plankton docs site:** [https://planktonomous.dev/docs/agent-configuration](https://planktonomous.dev/docs/agent-configuration) (same Markdown as `docs/agent-configuration.md` in the repo).
 
@@ -127,6 +129,6 @@ Logs may be mirrored under `./logs/` per the PM2 app config. Ensure the process 
 | `.env.example` | Template for local `.env` |
 | `src/config.ts` | Loads and validates configuration |
 | `src/wallet.ts` | Registers `ExactSvmScheme` for Solana |
-| `src/signal-client.ts` | Fetch + x402 payment selector |
+| `src/signal-client.ts` | HTTP client: `@x402/fetch` + payment requirement selector (not Faremeter; VPS `backend/src/lib/syraaClient.ts` uses `@faremeter/fetch`) |
 | `tsconfig.agent.json` | TypeScript config for the agent |
 | `ecosystem.config.js` | PM2 process definition |

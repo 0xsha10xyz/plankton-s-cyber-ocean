@@ -1,17 +1,24 @@
 /**
- * Server-side Syraa APIs with x402: Solana (ExactSvmScheme) primary, Base EVM (ExactEvmScheme) optional fallback.
- * Secrets stay in backend .env — never exposed to the browser.
+ * Syraa API (signal + brain) with HTTP 402 / x402 v2.
+ *
+ * HTTP transport: PAYMENT-SIGNATURE (base64 JSON PaymentPayload). Solana `exact` SVM:
+ * ComputeBudget → TransferChecked → Memo per Coinbase scheme_exact_svm.md.
+ * Secrets only in backend `.env`.
  */
-import { wrapFetchWithPaymentFromConfig, type SelectPaymentRequirements } from "@x402/fetch";
-import { ExactSvmScheme, toClientSvmSigner } from "@x402/svm";
-import { ExactEvmScheme, toClientEvmSigner } from "@x402/evm";
-import { createKeyPairSignerFromBytes } from "@solana/kit";
+import {
+  ComputeBudgetProgram,
+  Connection,
+  Keypair,
+  PublicKey,
+  TransactionInstruction,
+  TransactionMessage,
+  VersionedTransaction,
+} from "@solana/web3.js";
+import { createTransferCheckedInstruction, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { base58 } from "@scure/base";
-import type { SchemeNetworkClient } from "@x402/core/types";
-import type { x402ClientConfig } from "@x402/core/client";
-import { createPublicClient, http } from "viem";
+import { createWalletClient, http, type WalletClient } from "viem";
 import { base } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
+import { privateKeyToAccount, type PrivateKeyAccount } from "viem/accounts";
 
 export type SyraaSignalParams = {
   token: string;
@@ -47,16 +54,6 @@ function buildQuery(params: SyraaSignalParams): string {
   return s ? `?${s}` : "";
 }
 
-function extractAmount(accept: unknown): string {
-  const anyMatch = accept as Record<string, unknown>;
-  return (
-    (typeof anyMatch["maxAmountRequired"] === "string" && (anyMatch["maxAmountRequired"] as string)) ||
-    (typeof anyMatch["amount"] === "string" && (anyMatch["amount"] as string)) ||
-    (typeof anyMatch["value"] === "string" && (anyMatch["value"] as string)) ||
-    ""
-  );
-}
-
 function hasSolanaKey(): boolean {
   return Boolean(process.env.SYRAA_SOLANA_PRIVATE_KEY?.trim());
 }
@@ -65,13 +62,11 @@ function hasEvmKey(): boolean {
   return Boolean(process.env.SYRAA_EVM_PRIVATE_KEY?.trim());
 }
 
-/** When both Solana and EVM keys exist, try Base (eip155:8453) before Solana — workaround if SVM payment keeps "Invalid transaction". */
 function tryEvmFirst(): boolean {
   const v = process.env.SYRAA_TRY_EVM_FIRST?.trim().toLowerCase();
   return v === "1" || v === "true" || v === "yes";
 }
 
-/** True when at least one payment path (Solana or Base) is configured. */
 export function isSyraaSignalConfigured(): boolean {
   return hasSolanaKey() || hasEvmKey();
 }
@@ -88,226 +83,384 @@ function evmPayToTrusted(): string {
   return process.env.SYRAA_SIGNAL_PAY_TO_BASE?.trim() || "0xF9dcBFF7EdDd76c58412fd46f4160c96312ce734";
 }
 
-function payToMatchesSolana(trusted: string, payTo: string): boolean {
+function defaultSolanaFeePayer(): string {
+  return process.env.SYRAA_SOLANA_FEE_PAYER?.trim() || "AepWpq3GQwL8CeKMtZyKtKPa7W91Coygh3ropAJapVdU";
+}
+
+function maxPaymentAtomic(): bigint {
+  const raw =
+    process.env.SYRAA_SIGNAL_MAX_PAYMENT_ATOMIC?.trim() ||
+    process.env.SYRAA_MAX_PAYMENT_AMOUNT?.trim() ||
+    process.env.SYRAA_SIGNAL_COST_ATOMIC?.trim() ||
+    "100000";
+  if (!/^\d+$/.test(raw)) return 100000n;
+  try {
+    return BigInt(raw);
+  } catch {
+    return 100000n;
+  }
+}
+
+function getSolanaRpcUrl(): string {
+  return (
+    process.env.SYRAA_SOLANA_RPC_URL?.trim() ||
+    process.env.SYRAA_RPC_URL?.trim() ||
+    process.env.SOLANA_RPC_URL?.trim() ||
+    "https://api.mainnet-beta.solana.com"
+  );
+}
+
+function getBaseRpcUrl(): string {
+  return process.env.SYRAA_EVM_RPC_URL?.trim() || process.env.SYRAA_BASE_RPC_URL?.trim() || "https://mainnet.base.org";
+}
+
+const MEMO_PROGRAM_ID = new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
+
+type PaymentRequirements = {
+  scheme: string;
+  network: string;
+  amount: string;
+  asset: string;
+  payTo: string;
+  maxTimeoutSeconds: number;
+  extra?: Record<string, unknown>;
+};
+
+type PaymentRequiredBody = {
+  x402Version?: number;
+  error?: string;
+  resource?: { url: string; description?: string; mimeType?: string };
+  accepts?: PaymentRequirements[];
+};
+
+function payToOkSolana(trusted: string, payTo: string): boolean {
   return payTo === trusted;
 }
 
-function payToMatchesEvm(trusted: string, payTo: string): boolean {
+function payToOkEvm(trusted: string, payTo: string): boolean {
   return payTo.toLowerCase() === trusted.toLowerCase();
 }
 
-function makeSelectorSolana(trustedPayTo: string, maxPaymentAtomic: string): SelectPaymentRequirements {
-  return (_version, accepts) => {
-    if (!accepts?.length) throw new Error("No payment options available");
-
-    const match =
-      accepts.find((a) => {
-        const networkOk = typeof a.network === "string" && a.network.startsWith("solana:");
-        const payToOk = typeof a.payTo === "string" && payToMatchesSolana(trustedPayTo, a.payTo);
-        return networkOk && payToOk && extractAmount(a).length > 0;
-      }) ?? accepts.find((a) => typeof a.network === "string" && a.network.startsWith("solana:"));
-
-    if (!match) throw new Error("No acceptable Solana payment in accepts[]");
-
-    const payTo = String(match.payTo ?? "");
-    if (!payToMatchesSolana(trustedPayTo, payTo)) {
-      throw new Error(`Untrusted Syraa Solana payTo: ${payTo}`);
-    }
-
-    const maxAmount = extractAmount(match);
-    if (!maxAmount) throw new Error("Payment requirements missing amount");
-
-    const amount = BigInt(maxAmount);
-    const max = BigInt(maxPaymentAtomic);
-    if (amount > max) {
-      throw new Error(`Syraa payment ${amount.toString()} exceeds configured max (${max.toString()} atomic)`);
-    }
-    return match;
-  };
+function randomMemoHex(): string {
+  const b = new Uint8Array(32);
+  crypto.getRandomValues(b);
+  return Buffer.from(b).toString("hex");
 }
 
-function makeSelectorEvm(trustedPayTo: string, maxPaymentAtomic: string): SelectPaymentRequirements {
-  return (_version, accepts) => {
-    if (!accepts?.length) throw new Error("No payment options available");
-
-    const match =
-      accepts.find((a) => {
-        const networkOk = typeof a.network === "string" && a.network.startsWith("eip155:");
-        const payToOk = typeof a.payTo === "string" && payToMatchesEvm(trustedPayTo, a.payTo);
-        return networkOk && payToOk && extractAmount(a).length > 0;
-      }) ?? accepts.find((a) => typeof a.network === "string" && a.network.startsWith("eip155:"));
-
-    if (!match) throw new Error("No acceptable EVM payment in accepts[]");
-
-    const payTo = String(match.payTo ?? "");
-    if (!payToMatchesEvm(trustedPayTo, payTo)) {
-      throw new Error(`Untrusted Syraa EVM payTo: ${payTo}`);
-    }
-
-    const maxAmount = extractAmount(match);
-    if (!maxAmount) throw new Error("Payment requirements missing amount");
-
-    const amount = BigInt(maxAmount);
-    const max = BigInt(maxPaymentAtomic);
-    if (amount > max) {
-      throw new Error(`Syraa payment ${amount.toString()} exceeds configured max (${max.toString()} atomic)`);
-    }
-    return match;
-  };
+function getSolanaKeypair(): Keypair {
+  const pk = process.env.SYRAA_SOLANA_PRIVATE_KEY?.trim();
+  if (!pk) throw new Error("SYRAA_SOLANA_PRIVATE_KEY is not set");
+  return Keypair.fromSecretKey(base58.decode(pk));
 }
 
-async function buildSolanaX402Config(maxPaymentAtomic: string): Promise<x402ClientConfig> {
-  const pk = process.env.SYRAA_SOLANA_PRIVATE_KEY!.trim();
-  const rpcUrl =
-    process.env.SYRAA_RPC_URL?.trim() || process.env.SOLANA_RPC_URL?.trim() || "https://api.mainnet-beta.solana.com";
+let _evmAccount: PrivateKeyAccount | null = null;
+let _evmWallet: WalletClient | null = null;
+
+function getEvmAccount(): PrivateKeyAccount {
+  if (!_evmAccount) {
+    const raw = process.env.SYRAA_EVM_PRIVATE_KEY?.trim();
+    if (!raw) throw new Error("SYRAA_EVM_PRIVATE_KEY is not set");
+    const hex = (raw.startsWith("0x") ? raw : `0x${raw}`) as `0x${string}`;
+    _evmAccount = privateKeyToAccount(hex);
+  }
+  return _evmAccount;
+}
+
+function getEvmWalletClient(): WalletClient {
+  if (!_evmWallet) {
+    _evmWallet = createWalletClient({
+      account: getEvmAccount(),
+      chain: base,
+      transport: http(getBaseRpcUrl()),
+    });
+  }
+  return _evmWallet;
+}
+
+function mergeResource(reqUrl: string, pr: PaymentRequiredBody): { url: string; description: string; mimeType: string } {
+  const r = pr.resource;
+  if (r?.url) {
+    return {
+      url: r.url,
+      description: typeof r.description === "string" ? r.description : "Syraa API",
+      mimeType: typeof r.mimeType === "string" ? r.mimeType : "application/json",
+    };
+  }
+  return { url: reqUrl, description: "Syraa API", mimeType: "application/json" };
+}
+
+async function parsePaymentRequired(res: Response): Promise<PaymentRequiredBody> {
+  const header =
+    res.headers.get("payment-required") ?? res.headers.get("PAYMENT-REQUIRED") ?? res.headers.get("Payment-Required");
+  if (header?.trim()) {
+    return JSON.parse(Buffer.from(header.trim(), "base64").toString("utf8")) as PaymentRequiredBody;
+  }
+  const text = await res.text();
+  try {
+    return JSON.parse(text) as PaymentRequiredBody;
+  } catch {
+    throw new Error(`Syraa 402 body is not JSON: ${text.slice(0, 500)}`);
+  }
+}
+
+async function buildSolanaPaymentPayload(
+  accept: PaymentRequirements,
+  resource: { url: string; description: string; mimeType: string }
+): Promise<{ x402Version: number; resource: typeof resource; accepted: PaymentRequirements; payload: { transaction: string } }> {
   const trustedPayTo = solanaPayToTrusted();
-  const keypair = await createKeyPairSignerFromBytes(base58.decode(pk));
-  const signer = toClientSvmSigner(keypair);
+  if (!payToOkSolana(trustedPayTo, accept.payTo)) {
+    throw new Error(`Untrusted Syraa Solana payTo: ${accept.payTo}`);
+  }
+  const amount = BigInt(accept.amount);
+  const cap = maxPaymentAtomic();
+  if (amount > cap) {
+    throw new Error(`Syraa payment ${amount.toString()} exceeds configured max (${cap.toString()} atomic)`);
+  }
+
+  const mint = new PublicKey(accept.asset);
+  const payToOwner = new PublicKey(accept.payTo);
+  const feePayerStr =
+    (typeof accept.extra?.feePayer === "string" && accept.extra.feePayer.trim()) || defaultSolanaFeePayer();
+  const feePayer = new PublicKey(feePayerStr);
+
+  const kp = getSolanaKeypair();
+  const connection = new Connection(getSolanaRpcUrl(), "confirmed");
+
+  const sourceAta = getAssociatedTokenAddressSync(mint, kp.publicKey, false, TOKEN_PROGRAM_ID);
+  const destAta = getAssociatedTokenAddressSync(mint, payToOwner, false, TOKEN_PROGRAM_ID);
+
+  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+
+  const memoStr =
+    typeof accept.extra?.memo === "string" && accept.extra.memo.length > 0
+      ? accept.extra.memo.slice(0, 256)
+      : randomMemoHex();
+  const memoIx = new TransactionInstruction({
+    keys: [],
+    programId: MEMO_PROGRAM_ID,
+    data: Buffer.from(memoStr, "utf8"),
+  });
+
+  const transferIx = createTransferCheckedInstruction(
+    sourceAta,
+    mint,
+    destAta,
+    kp.publicKey,
+    amount,
+    6,
+    [],
+    TOKEN_PROGRAM_ID
+  );
+
+  const ixs = [
+    ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1n }),
+    transferIx,
+    memoIx,
+  ];
+
+  const messageV0 = new TransactionMessage({
+    payerKey: feePayer,
+    recentBlockhash: blockhash,
+    instructions: ixs,
+  }).compileToV0Message();
+
+  const vtx = new VersionedTransaction(messageV0);
+  vtx.sign([kp]);
+
+  const txB64 = Buffer.from(vtx.serialize()).toString("base64");
+
   return {
-    schemes: [
-      {
-        network: "solana:*",
-        client: new ExactSvmScheme(signer, { rpcUrl }) as unknown as SchemeNetworkClient,
-      },
-    ],
-    paymentRequirementsSelector: makeSelectorSolana(trustedPayTo, maxPaymentAtomic),
+    x402Version: 2,
+    resource,
+    accepted: accept,
+    payload: { transaction: txB64 },
   };
 }
 
-function buildEvmX402Config(maxPaymentAtomic: string): x402ClientConfig {
-  const raw = process.env.SYRAA_EVM_PRIVATE_KEY!.trim();
-  const hex = (raw.startsWith("0x") ? raw : `0x${raw}`) as `0x${string}`;
-  const account = privateKeyToAccount(hex);
-  const rpcUrl = process.env.SYRAA_BASE_RPC_URL?.trim() || "https://mainnet.base.org";
-  const publicClient = createPublicClient({ chain: base, transport: http(rpcUrl) });
-  const signer = toClientEvmSigner(account, publicClient);
+async function buildEvmPaymentPayload(
+  accept: PaymentRequirements,
+  resource: { url: string; description: string; mimeType: string }
+): Promise<{
+  x402Version: number;
+  resource: typeof resource;
+  accepted: PaymentRequirements;
+  payload: { signature: `0x${string}`; authorization: Record<string, string> };
+}> {
   const trustedPayTo = evmPayToTrusted();
-  return {
-    schemes: [
-      {
-        network: "eip155:8453",
-        client: new ExactEvmScheme(signer, { 8453: { rpcUrl } }) as unknown as SchemeNetworkClient,
-      },
+  if (!payToOkEvm(trustedPayTo, accept.payTo)) {
+    throw new Error(`Untrusted Syraa EVM payTo: ${accept.payTo}`);
+  }
+  const amount = BigInt(accept.amount);
+  const cap = maxPaymentAtomic();
+  if (amount > cap) {
+    throw new Error(`Syraa payment ${amount.toString()} exceeds configured max (${cap.toString()} atomic)`);
+  }
+
+  const account = getEvmAccount();
+  const client = getEvmWalletClient();
+  const usdc = accept.asset as `0x${string}`;
+  const payTo = accept.payTo as `0x${string}`;
+
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  const validAfter = 0n;
+  const validBefore = now + 120n;
+  const nonceBytes = new Uint8Array(32);
+  crypto.getRandomValues(nonceBytes);
+  const nonce = `0x${Buffer.from(nonceBytes).toString("hex")}` as `0x${string}`;
+
+  const domain = {
+    name: typeof accept.extra?.name === "string" ? accept.extra.name : "USD Coin",
+    version: typeof accept.extra?.version === "string" ? accept.extra.version : "2",
+    chainId: 8453,
+    verifyingContract: usdc,
+  } as const;
+
+  const types = {
+    TransferWithAuthorization: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "validAfter", type: "uint256" },
+      { name: "validBefore", type: "uint256" },
+      { name: "nonce", type: "bytes32" },
     ],
-    paymentRequirementsSelector: makeSelectorEvm(trustedPayTo, maxPaymentAtomic),
+  } as const;
+
+  const message = {
+    from: account.address,
+    to: payTo,
+    value: amount,
+    validAfter,
+    validBefore,
+    nonce,
+  };
+
+  const signature = await client.signTypedData({
+    account,
+    domain,
+    types,
+    primaryType: "TransferWithAuthorization",
+    message,
+  });
+
+  const authorization = {
+    from: account.address,
+    to: accept.payTo,
+    value: amount.toString(),
+    validAfter: validAfter.toString(),
+    validBefore: validBefore.toString(),
+    nonce,
+  };
+
+  return {
+    x402Version: 2,
+    resource,
+    accepted: accept,
+    payload: { signature, authorization },
   };
 }
 
-type PaidJsonArgs = {
-  requestUrl: string;
-  fetchInit: Omit<RequestInit, "signal">;
-  maxPaymentAtomic: string;
-  externalSignal?: AbortSignal;
-};
-
-async function executePaidJsonWithConfig(
-  cfg: x402ClientConfig,
-  args: PaidJsonArgs
-): Promise<unknown> {
-  const fetchWithPayment = wrapFetchWithPaymentFromConfig(fetch, cfg);
-
-  let lastErr: unknown = null;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45_000);
-    const ext = args.externalSignal;
-    if (ext) {
-      if (ext.aborted) {
-        clearTimeout(timeout);
-        throw new Error("Aborted");
-      }
-      ext.addEventListener("abort", () => controller.abort(), { once: true });
-    }
-    try {
-      const res = await fetchWithPayment(args.requestUrl, {
-        ...args.fetchInit,
-        signal: controller.signal,
-      });
-
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        const cap = 4000;
-        const snippet = body.length > cap ? `${body.slice(0, cap)}…` : body;
-        throw new Error(`Syraa API HTTP ${res.status}: ${snippet}`);
-      }
-
-      return (await res.json()) as unknown;
-    } catch (err) {
-      lastErr = err;
-      if (attempt >= 2) break;
-      await new Promise((r) => setTimeout(r, 600));
-    } finally {
-      clearTimeout(timeout);
-    }
-  }
-
-  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+function paymentSignatureHeader(payload: object): string {
+  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
 }
 
-async function runSyraaPaidJsonRequest(args: PaidJsonArgs): Promise<unknown> {
-  const hasSol = hasSolanaKey();
-  const hasEvm = hasEvmKey();
-  if (!hasSol && !hasEvm) {
-    throw new Error("SYRAA_SOLANA_PRIVATE_KEY or SYRAA_EVM_PRIVATE_KEY must be set on the server");
+async function fetchWithOptionalPayment(
+  url: string,
+  init: RequestInit,
+  externalSignal: AbortSignal | undefined,
+  opts: { label: string }
+): Promise<Response> {
+  const first = await fetch(url, { ...init, signal: externalSignal });
+  if (first.status !== 402) return first;
+
+  const pr = await parsePaymentRequired(first);
+  const accepts = pr.accepts ?? [];
+  if (!accepts.length) {
+    throw new Error("Syraa 402: no accepts[] in payment challenge");
   }
 
-  // Prefer Base first when both keys exist (some deployments get Solana "Invalid transaction" from facilitator while Base works).
-  if (tryEvmFirst() && hasEvm && hasSol) {
-    try {
-      const evmCfg = buildEvmX402Config(args.maxPaymentAtomic);
-      return await executePaidJsonWithConfig(evmCfg, args);
-    } catch (e) {
-      console.warn("[syraa] SYRAA_TRY_EVM_FIRST: Base path failed, falling back to Solana:", e);
-      const cfg = await buildSolanaX402Config(args.maxPaymentAtomic);
-      return await executePaidJsonWithConfig(cfg, args);
-    }
+  const resource = mergeResource(url, pr);
+  const sol = accepts.find((a) => a.scheme === "exact" && a.network.startsWith("solana:"));
+  const evm = accepts.find((a) => a.scheme === "exact" && a.network.startsWith("eip155:"));
+
+  const trySol = hasSolanaKey() && sol;
+  const tryEvm = hasEvmKey() && evm;
+
+  const order: Array<{ kind: "solana" | "evm"; accept: PaymentRequirements }> = [];
+  if (tryEvmFirst()) {
+    if (tryEvm && evm) order.push({ kind: "evm", accept: evm });
+    if (trySol && sol) order.push({ kind: "solana", accept: sol });
+  } else {
+    if (trySol && sol) order.push({ kind: "solana", accept: sol });
+    if (tryEvm && evm) order.push({ kind: "evm", accept: evm });
   }
 
-  if (hasSol) {
+  if (!order.length) {
+    throw new Error("No usable payment method: set SYRAA_SOLANA_PRIVATE_KEY and/or SYRAA_EVM_PRIVATE_KEY");
+  }
+
+  const errors: string[] = [];
+  for (const { kind, accept } of order) {
     try {
-      const cfg = await buildSolanaX402Config(args.maxPaymentAtomic);
-      return await executePaidJsonWithConfig(cfg, args);
+      const payload =
+        kind === "solana"
+          ? await buildSolanaPaymentPayload(accept, resource)
+          : await buildEvmPaymentPayload(accept, resource);
+      const payHeader = paymentSignatureHeader(payload);
+      const headers = new Headers(init.headers ?? {});
+      headers.set("PAYMENT-SIGNATURE", payHeader);
+      headers.set("Accept", "application/json");
+      console.log(`[syraa] ${opts.label}: retry with x402 ${kind} payment`);
+      const second = await fetch(url, {
+        ...init,
+        headers,
+        signal: externalSignal,
+      });
+      if (second.ok) return second;
+      const errText = await second.text().catch(() => "");
+      errors.push(`${kind}: HTTP ${second.status} ${errText.slice(0, 400)}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      if (!hasEvm && msg.includes("Invalid transaction")) {
-        console.error(
-          "[syraa] Solana payment rejected (Invalid transaction). Add SYRAA_EVM_PRIVATE_KEY + USDC on Base for automatic fallback, or set SYRAA_TRY_EVM_FIRST=1 when both keys exist."
-        );
-      }
-      if (!hasEvm) throw e;
-      console.warn("[syraa] Solana x402 path failed, retrying Base EVM:", e);
-      const evmCfg = buildEvmX402Config(args.maxPaymentAtomic);
-      return await executePaidJsonWithConfig(evmCfg, args);
+      errors.push(`${kind}: ${msg}`);
     }
   }
 
-  const evmCfg = buildEvmX402Config(args.maxPaymentAtomic);
-  return await executePaidJsonWithConfig(evmCfg, args);
+  throw new Error(`Syraa x402 payment failed:\n${errors.join("\n")}`);
 }
 
-/**
- * Fetch trading signal JSON from Syraa after paying their x402 requirement from the VPS wallet.
- */
+async function paidJson(
+  url: string,
+  init: Omit<RequestInit, "signal">,
+  externalSignal?: AbortSignal
+): Promise<unknown> {
+  const res = await fetchWithOptionalPayment(
+    url,
+    { ...init },
+    externalSignal,
+    { label: new URL(url).pathname }
+  );
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Syraa API HTTP ${res.status}: ${body.slice(0, 4000)}`);
+  }
+  return (await res.json()) as unknown;
+}
+
 export async function fetchSyraaSignal(params: SyraaSignalParams, externalSignal?: AbortSignal): Promise<unknown> {
   const signalApiUrl = process.env.SYRAA_SIGNAL_API_URL?.trim() || "http://api.syraa.fun/signal";
-  const maxPaymentRaw = process.env.SYRAA_SIGNAL_MAX_PAYMENT_ATOMIC?.trim();
-  const maxPaymentAtomic =
-    maxPaymentRaw && /^\d+$/.test(maxPaymentRaw)
-      ? maxPaymentRaw
-      : process.env.SYRAA_SIGNAL_COST_ATOMIC?.trim() || "100000";
-
   const base = normalizeSyraaApiBaseUrl(signalApiUrl);
   const url = `${base}${buildQuery(params)}`;
 
-  return runSyraaPaidJsonRequest({
-    requestUrl: url,
-    fetchInit: {
+  return paidJson(
+    url,
+    {
       method: "GET",
       headers: { accept: "application/json" },
     },
-    maxPaymentAtomic,
-    externalSignal,
-  });
+    externalSignal
+  );
 }
 
 export type SyraBrainResult = {
@@ -315,26 +468,18 @@ export type SyraBrainResult = {
   answer: string;
 };
 
-/**
- * Syraa “brain” Q&A (paid x402).
- * @see https://docs.syraa.fun/docs/api/brain
- */
 export async function fetchSyraBrain(question: string, signal?: AbortSignal): Promise<SyraBrainResult> {
   const brainUrl = process.env.SYRAA_BRAIN_API_URL?.trim() || "http://api.syraa.fun/brain";
-  const maxRaw = process.env.SYRAA_BRAIN_MAX_PAYMENT_ATOMIC?.trim();
-  const maxPaymentAtomic = maxRaw && /^\d+$/.test(maxRaw) ? maxRaw : "50000";
-
   const url = normalizeSyraaApiBaseUrl(brainUrl);
-  const raw = await runSyraaPaidJsonRequest({
-    requestUrl: url,
-    fetchInit: {
+  const raw = await paidJson(
+    url,
+    {
       method: "POST",
       headers: { "Content-Type": "application/json", accept: "application/json" },
       body: JSON.stringify({ question: question.slice(0, 8000) }),
     },
-    maxPaymentAtomic,
-    externalSignal: signal,
-  });
+    signal
+  );
 
   const o = raw as Record<string, unknown>;
   const answer =

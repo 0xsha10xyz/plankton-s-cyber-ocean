@@ -27,7 +27,7 @@ export type SignalApiJson =
 const CLIENT_SIGNAL_TIMEOUT_MS = 15_000;
 
 /**
- * POST /api/signal on the VPS (wallet-signed usage message; Syraa x402 paid server-side only).
+ * POST /api/signal on the VPS (wallet-signed usage message; Syraa x402 paid server-side via Faremeter @faremeter/fetch only — no browser payment).
  */
 export async function postTradingSignal(
   apiBase: string,

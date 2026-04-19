@@ -18,7 +18,13 @@ import { agentRouter } from "./routes/agent.js";
 import { rpcRouter } from "./routes/rpc.js";
 import { usageRouter } from "./routes/usage.js";
 import { signalRouter } from "./routes/signal.js";
+import { polymarketMarketsRouter } from "./routes/polymarketMarkets.js";
+import { polymarketWalletsRouter } from "./routes/polymarketWallets.js";
+import { autopilotRouter, postAnalyzeAutopilot } from "./routes/autopilot.js";
 import { gatewayRouter } from "./gateway/router.js";
+import { getPgPool } from "./db/pool.js";
+import { runMigrations } from "./db/migrate.js";
+import { isPaperTradingMode } from "./autopilot/decisionPipeline.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
@@ -92,6 +98,12 @@ app.use("/api/agent", agentRouter);
 app.use("/api/rpc", rpcRouter);
 app.use("/api/usage", usageRouter);
 app.use("/api/signal", signalRouter);
+app.use("/api/markets", polymarketMarketsRouter);
+app.use("/api/wallets", polymarketWalletsRouter);
+app.use("/api/autopilot", autopilotRouter);
+app.post("/api/agent/analyze", (req, res, next) => {
+  postAnalyzeAutopilot(req, res).catch(next);
+});
 
 if (process.env.API_GATEWAY_ENABLED !== "0") {
   app.use("/api/v1", gatewayRouter);
@@ -103,6 +115,10 @@ app.get("/api/config", (_req, res) => {
   res.json({
     bitqueryToken: process.env.BITQUERY_TOKEN ?? "",
     shyftKey: process.env.SHYFT_API_KEY ?? "",
+    autopilot: {
+      paper: isPaperTradingMode(),
+      polygonChainId: 137,
+    },
   });
 });
 
@@ -117,8 +133,16 @@ app.get("/", (_req, res) => {
 
 // Only start HTTP server when not running on Vercel (serverless)
 if (process.env.VERCEL !== "1") {
+  const pool = getPgPool();
+  if (pool) {
+    runMigrations(pool).catch((e) => console.error("[autopilot/db] migration failed:", e));
+  }
+
   app.listen(PORT, () => {
     console.log(`Plankton API running at http://localhost:${PORT}`);
+    import("./autopilot/scheduler.js")
+      .then((m) => m.startAutopilotDataJobs())
+      .catch((e) => console.warn("[autopilot/scheduler] failed to start:", e));
   });
 }
 

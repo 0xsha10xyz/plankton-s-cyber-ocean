@@ -6,7 +6,10 @@
       "source": "/api/config",
       "destination": "/api/health?mode=config"
     },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
@@ -18,5 +21,16 @@
         }
       ]
     }
-  ]
+  ],
+  "experimentalServices": {
+    "frontend": {
+      "entrypoint": "frontend",
+      "routePrefix": "/",
+      "framework": "vite"
+    },
+    "backend": {
+      "entrypoint": "backend",
+      "routePrefix": "/_/backend"
+    }
+  }
 }

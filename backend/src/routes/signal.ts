@@ -20,7 +20,8 @@ const SOURCES = new Set([
 
 const BARS = new Set(["1m", "15m", "1h", "4h", "1d"]);
 
-const SIGNAL_FETCH_MS = 10_000;
+/** x402 verify + settle can exceed a few seconds. */
+const SIGNAL_FETCH_MS = 55_000;
 
 function clampLimit(n: number): number {
   if (!Number.isFinite(n) || n < 1) return 200;

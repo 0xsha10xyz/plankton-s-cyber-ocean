@@ -256,7 +256,10 @@ export default function DocsHome() {
               <li className="flex gap-3">
                 <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                 <span>
-                  <strong className="text-foreground/95">Syraa signal agent</strong> — self-hosted VPS poller, env &amp; PM2:{" "}
+                  <strong className="text-foreground/95">Syraa signals</strong> — VPS <DocsCmd>POST /api/signal</DocsCmd> (Faremeter{" "}
+                  <span className="font-mono text-[11px]">@faremeter/fetch</span>):{" "}
+                  <DocLink file="docs/syraa-signal-integration.md" />
+                  . Standalone poller (<span className="font-mono text-[11px]">@x402/fetch</span>):{" "}
                   <DocLink file="docs/agent-configuration.md" />
                 </span>
               </li>
@@ -481,9 +484,10 @@ export default function DocsHome() {
           <p className="text-sm docs-body-muted leading-[1.7]">
             HTTP 402 micropayments in USDC on Solana, same-origin proxying, and environment setup are documented in{" "}
             <DocLink file="docs/x402-payments.md" />. For <strong className="text-foreground/95">Planktonomous</strong> and{" "}
-            <DocsCmd>POST /api/signal</DocsCmd> on your VPS, see <DocLink file="docs/syraa-signal-integration.md" />. For the{" "}
-            <strong className="text-foreground/95">Syraa signal agent</strong> (standalone Node poller), see{" "}
-            <DocLink file="docs/agent-configuration.md" />.
+            <DocsCmd>POST /api/signal</DocsCmd> on your VPS (server-side Syraa x402 via Faremeter{" "}
+            <span className="font-mono text-[11px]">@faremeter/fetch</span>), see <DocLink file="docs/syraa-signal-integration.md" />
+            . For the <strong className="text-foreground/95">standalone Syraa poller</strong> (Node,{" "}
+            <span className="font-mono text-[11px]">@x402/fetch</span>), see <DocLink file="docs/agent-configuration.md" />.
           </p>
         </HoloCard>
       </section>

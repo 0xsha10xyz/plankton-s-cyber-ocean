@@ -1,4 +1,4 @@
-This page documents the **production integration** between the **Planktonomous Intelligent Assistant** (launch-agent UI), the **Express backend** on your VPS, and the **Syraa Signal API** (`api.syraa.fun`) using the **x402** micropayment protocol. It complements the standalone **[Syraa signal agent](./agent-configuration.md)** guide, which covers the optional PM2 poller (`src/agent.ts`).
+This page documents the **production integration** between the **Planktonomous Intelligent Assistant** (launch-agent UI), the **Express backend** on your VPS, and the **Syraa Signal API** (`api.syraa.fun`) using the **x402** micropayment protocol. The backend pays Syraa with **agent-to-agent** HTTP 402 handling via **[Faremeter](https://www.npmjs.com/package/@faremeter/fetch)** (`@faremeter/fetch`). It complements the standalone **[Syraa signal agent](./agent-configuration.md)** guide, which covers the optional PM2 poller (`src/agent.ts`).
 
 **Published on the Plankton docs site:** [https://planktonomous.dev/docs/syraa-signal-integration](https://planktonomous.dev/docs/syraa-signal-integration) (same Markdown as `docs/syraa-signal-integration.md` in the repo).
 
@@ -10,7 +10,7 @@ This page documents the **production integration** between the **Planktonomous I
 
 | Layer | Behavior |
 |-------|----------|
-| **Backend** | `POST /api/signal` — validates a wallet-signed usage message, calls Syraa with **server-side** x402 (no private keys in the browser). |
+| **Backend** | `POST /api/signal` — validates a wallet-signed usage message, calls Syraa with **server-side** x402 using **`@faremeter/fetch`** (no private keys in the browser). |
 | **Frontend** | **Signal** quick action, signal keyword routing, structured signal card in chat, retries on failure. |
 | **LLM chat** | Unchanged — Claude (or your configured LLM) handles general chat; **signals are Syraa-only** (no LLM fallback for trading signals). |
 
@@ -22,7 +22,9 @@ This page documents the **production integration** between the **Planktonomous I
 2. **Payment to Syraa** is performed by **separate key material on the server** (`SYRAA_*` in `backend/.env` on the VPS). The user’s connected wallet **does not** pay Syraa’s USDC for the signal in this design.
 3. All **secrets** (Solana private key for payment, optional Base EVM key, RPC URLs with API keys) stay **on the server** — never in the SPA bundle or client storage.
 
-**Data flow:** Browser (Planktonomous) → signed `POST /api/signal` → Express on VPS → `@x402` client (Exact SVM and/or Exact EVM) → `GET` Syraa Signal API with payment headers → JSON signal returned to the client.
+**Data flow:** Browser (Planktonomous) → signed `POST /api/signal` → Express on VPS → **`@faremeter/fetch`** (402-aware fetch) with Faremeter payment handlers — **Solana SPL USDC** via `@faremeter/payment-solana` / `@faremeter/wallet-solana`, and optionally **Base EVM USDC** via `@faremeter/payment-evm` / `@faremeter/wallet-evm` — → `GET` Syraa Signal API with payment headers → JSON signal returned to the client.
+
+**Note (standalone poller):** The optional self-hosted PM2 agent (`src/agent.ts`, `src/signal-client.ts`) still uses the **`@x402/fetch`** stack. See **[Syraa signal agent](./agent-configuration.md)**. Only the **Express** `POST /api/signal` implementation in `backend/src/lib/syraaClient.ts` uses **Faremeter** for agent-to-agent x402 payments.
 
 ---
 
@@ -45,11 +47,12 @@ Copy from **`backend/.env.example`** and set values **only on the server**. Neve
 | `SYRAA_SIGNAL_API_URL` | Base URL for the signal endpoint (for `api.syraa.fun`, use **`http://`** so the request URL matches x402 `resource.url`). |
 | `SYRAA_SIGNAL_PAY_TO` | Merchant `payTo` from Syraa’s `accepts[]` — must match exactly (default documented in `.env.example`). |
 | `SYRAA_SIGNAL_MAX_PAYMENT_ATOMIC` | Maximum charge allowed per request in **atomic USDC** (6 decimals); e.g. `100000` ≈ **0.10 USDC**. |
-| `SYRAA_RPC_URL` / `SOLANA_RPC_URL` | Solana JSON-RPC used by the x402 SVM client — **use a reliable provider** (e.g. Helius) in production, not a fragile public endpoint. |
+| `SYRAA_RPC_URL` / `SOLANA_RPC_URL` | Solana JSON-RPC — **use a reliable provider** (e.g. Helius) in production for healthy SPL / settlement behavior; public endpoints are fragile under load. |
 | `SYRAA_EVM_PRIVATE_KEY` | **Optional** — Base (eip155:8453) payer if Solana fails or if you force EVM-first (see below). Fund **USDC on Base** for this wallet. |
 | `SYRAA_BASE_RPC_URL` | Optional Base RPC for EVM path. |
 | `SYRAA_SIGNAL_PAY_TO_BASE` | Optional trusted EVM `payTo` override. |
 | `SYRAA_TRY_EVM_FIRST` | If `1` / `true` and **both** Solana and EVM keys are set, try **Base before Solana** (workaround when Solana verification returns `Invalid transaction` but Base works). |
+| `SYRAA_PAYMENT_DRIVER` | Optional: `auto` (default), `x402`, or `faremeter`. **`auto`** tries **`@x402/fetch`** (Exact SVM / EVM) first, then **Faremeter** if the response is still HTTP **402** / **`invalid transaction`**. Use `x402` to force the legacy client only, or `faremeter` to force Faremeter only. |
 
 **Security:** Treat `SYRAA_SOLANA_PRIVATE_KEY` and `SYRAA_EVM_PRIVATE_KEY` like hot wallet keys — minimal balance, monitoring, rotation if exposed. See **[SECURITY.md](../SECURITY.md)** for repository hygiene (no secrets in git).
 
@@ -57,9 +60,10 @@ Copy from **`backend/.env.example`** and set values **only on the server**. Neve
 
 ## Payment paths
 
-1. **Solana (default):** `ExactSvmScheme` builds a partial transaction; the facilitator verifies settlement per x402 v2.
-2. **Base EVM (fallback):** If Solana throws and `SYRAA_EVM_PRIVATE_KEY` is set, the client retries with `ExactEvmScheme` on Base USDC.
-3. **EVM first:** Set `SYRAA_TRY_EVM_FIRST=1` when both keys exist to prefer Base for environments where Solana settlement is problematic.
+1. **Default (`SYRAA_PAYMENT_DRIVER` unset or `auto`):** The backend tries **`@x402/fetch`** with **ExactSvmScheme** / **ExactEvmScheme** first (same family as the Coinbase x402 client). If Syraa still returns **402** / **`invalid transaction`**, it retries with **Faremeter** `@faremeter/fetch` + payment handlers.
+2. **Solana / Base keys:** Same as before — at least one of **`SYRAA_SOLANA_PRIVATE_KEY`** or **`SYRAA_EVM_PRIVATE_KEY`**; optional **`SYRAA_TRY_EVM_FIRST=1`** when both are set to prefer Base.
+
+The server enforces **trusted `payTo`** addresses and a **maximum atomic charge** (`SYRAA_SIGNAL_MAX_PAYMENT_ATOMIC`) before selecting a payer.
 
 ---
 
@@ -105,6 +109,6 @@ For operator-level Syraa API and standalone agent details, see **[Syraa signal a
 ## Changelog (summary)
 
 - Syraa-only signal path (no LLM signal fallback).
-- Solana x402 via `@x402/fetch` + `@x402/svm`; optional Base via `@x402/evm`.
-- Optional `SYRAA_TRY_EVM_FIRST` and automatic Base fallback when Solana fails and EVM is configured.
+- **VPS / Express:** Agent-to-agent x402 for signals via **`@faremeter/fetch`** + `@faremeter/payment-solana` (mainnet-beta USDC) and optional **`@faremeter/payment-evm`** (Base). **Standalone poller** (`src/signal-client.ts`) still documents **`@x402/fetch`** — see [agent-configuration.md](./agent-configuration.md).
+- Optional `SYRAA_TRY_EVM_FIRST` and payer selection when both Solana and EVM keys are configured.
 - Launch-agent UI: Signal button, keyword intent, structured card + raw JSON disclosure.
