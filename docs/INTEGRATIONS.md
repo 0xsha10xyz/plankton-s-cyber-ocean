@@ -54,14 +54,6 @@ Without Birdeye, charts may use fallback/sample data depending on route.
 
 ---
 
-## Syraa Signal API (VPS)
-
-| Integration | Purpose | Configuration |
-|-------------|---------|----------------|
-| **Syraa** (`api.syraa.fun`) | Paid trading signals via **HTTP 402 + x402** on the VPS backend (**`@faremeter/fetch`**, Faremeter Solana + optional Base EVM handlers) | Server-side keys in `backend/.env` — see **[Syraa signal integration](./syraa-signal-integration.md)**. Not the same as optional agent-chat x402 (treasury); signals use **`SYRAA_*`** vars. The optional standalone poller still uses **`@x402/fetch`** — see **[agent-configuration](./agent-configuration.md)**. |
-
----
-
 ## Stats & persistence (dashboard user count)
 
 | Integration | Purpose | Configuration |

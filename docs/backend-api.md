@@ -102,14 +102,6 @@ Powers the in-app agent chat. The backend calls LLMs in order: **Anthropic → G
 
 ---
 
-### Trading signals (Syraa)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/signal` | **Syraa** trading signal JSON. **Auth:** `wallet`, `usageTs`, `usageSignature` (usage-signing pattern shared with other signed routes). **Body:** optional `token`, `source`, `instId`, `bar`, `limit`. Payment to Syraa is **server-side x402** via **Faremeter** [`@faremeter/fetch`](https://www.npmjs.com/package/@faremeter/fetch) (`backend/src/lib/syraaClient.ts`). See **[Syraa signal integration](./syraa-signal-integration.md)**. |
-
----
-
 ### Stats (user count)
 
 | Method | Path | Description |
@@ -165,7 +157,6 @@ Powers the in-app agent chat. The backend calls LLMs in order: **Anthropic → G
 | `OPENAI_AGENT_MODEL` | OpenAI model id | See `backend/.env.example` |
 | `X402_TREASURY_ADDRESS` | Enables x402 USDC payment per chat message | Optional |
 | `DISABLE_AGENT_CHAT_X402` | If `1` / `true`, disable paid chat even if treasury env is set | Optional |
-| `SYRAA_*` | **Syraa** signal/brain payers for **`POST /api/signal`** (Faremeter x402 on the server) | Optional; see **[Syraa signal integration](./syraa-signal-integration.md)** |
 
 Create `backend/.env` from **`backend/.env.example`**. The server loads **`backend/.env`** with path resolution so PM2 cwd does not skip it. For provider order and x402, see **[Configuration — Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)** and **[Integrations](./INTEGRATIONS.md)**.
 

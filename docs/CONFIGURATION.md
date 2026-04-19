@@ -2,8 +2,6 @@
 
 These steps are **manual**: create or edit `.env` files and fill in the required values. For a concise list of **third-party integrations** (LLM, Jupiter, Birdeye, RPC, Redis, x402), see **[Integrations](./INTEGRATIONS.md)**.
 
-For **Syraa trading signals** on a self-hosted Express API (**`POST /api/signal`**, server-side x402 via **Faremeter** [`@faremeter/fetch`](https://www.npmjs.com/package/@faremeter/fetch)), see **[Syraa signal integration (Planktonomous & VPS)](./syraa-signal-integration.md)**.
-
 ## Who this is for
 
 - **Forking the repo** — Use this file together with **[README.md](../README.md)**, **[DEPLOYMENT.md](./DEPLOYMENT.md)**, and **[SECURITY.md](../SECURITY.md)**. Copy `frontend/.env.example` and `backend/.env.example` to `.env` (never commit real values).

@@ -10,8 +10,6 @@ export const DOC_ROUTE_FILES = [
   "docs/DEPLOYMENT.md",
   "docs/INTEGRATIONS.md",
   "docs/x402-payments.md",
-  "docs/agent-configuration.md",
-  "docs/syraa-signal-integration.md",
   "docs/plankton-documentation.md",
   "SECURITY.md",
 ] as const;

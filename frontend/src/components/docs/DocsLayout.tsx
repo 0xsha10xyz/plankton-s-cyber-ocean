@@ -6,7 +6,6 @@ import {
   Coins,
   Landmark,
   Rocket,
-  Server,
   Shield,
   Zap,
   ChevronRight,
@@ -27,12 +26,6 @@ const sidebarSections = [
   { id: "autonomous", label: "Autonomous Agent", icon: Rocket },
   { id: "security", label: "Security", icon: Shield },
   { id: "x402-payments", label: "x402 payments", icon: Landmark, path: "/docs/x402-payments" as const },
-  {
-    id: "syraa-signal-agent",
-    label: "Syraa signal agent (optional poller)",
-    icon: Server,
-    path: "/docs/agent-configuration" as const,
-  },
 ] as const;
 
 export default function DocsLayout() {

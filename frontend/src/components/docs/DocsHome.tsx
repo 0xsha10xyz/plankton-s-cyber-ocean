@@ -253,14 +253,6 @@ export default function DocsHome() {
                   facilitator verification: <DocLink file="docs/x402-payments.md" />
                 </span>
               </li>
-              <li className="flex gap-3">
-                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                <span>
-                  <strong className="text-foreground/95">Optional Syraa poller</strong> (repo root, Node +{" "}
-                  <span className="font-mono text-[11px]">@x402/fetch</span>) — not part of the hosted Express API:{" "}
-                  <DocLink file="docs/agent-configuration.md" />
-                </span>
-              </li>
             </ul>
           </HoloCard>
           <HoloCard className="p-6 md:p-8">
@@ -481,9 +473,7 @@ export default function DocsHome() {
           <h3 className="text-base font-semibold text-foreground mb-2 tracking-tight">Paid agent chat (x402)</h3>
           <p className="text-sm docs-body-muted leading-[1.7]">
             HTTP 402 micropayments in USDC on Solana, same-origin proxying, and environment setup are documented in{" "}
-            <DocLink file="docs/x402-payments.md" />. For an <strong className="text-foreground/95">optional standalone Syraa
-            signal poller</strong> (Node, <span className="font-mono text-[11px]">@x402/fetch</span>), see{" "}
-            <DocLink file="docs/agent-configuration.md" />.
+            <DocLink file="docs/x402-payments.md" />.
           </p>
         </HoloCard>
       </section>
@@ -557,10 +547,6 @@ export default function DocsHome() {
           <DocLink file="docs/CONFIGURATION.md" />
           <span className="opacity-40">·</span>
           <DocLink file="docs/x402-payments.md" />
-          <span className="opacity-40">·</span>
-          <DocLink file="docs/agent-configuration.md">docs/agent-configuration.md</DocLink>
-          <span className="opacity-40">·</span>
-          <DocLink file="docs/syraa-signal-integration.md">docs/syraa-signal-integration.md</DocLink>
           <span className="opacity-40">·</span>
           <DocLink file="SECURITY.md" />
         </p>
