@@ -155,14 +155,14 @@ export function getConnectionConfig(): ConnectionConfig {
 
 /**
  * RPC URLs to try for balance, token accounts, and `sendRawTransaction` fallbacks.
- * When using `/api/rpc`, do not add browser-direct public RPCs (they often 403 in production).
+ *
+ * Note: we still include browser-direct public RPCs even when primary is `/api/rpc`.
+ * In real deployments the same-origin proxy can be misconfigured (returning 405/5xx), and without
+ * a public fallback the Swap page becomes unusable. We try proxy first, then public RPCs.
  */
 export function getFallbackRpcs(): string[] {
   const primary = getPrimaryRpcEndpoint();
-  if (usesSameOriginRpcProxy()) {
-    return [primary];
-  }
-  const extras = ["https://api.mainnet-beta.solana.com", "https://rpc.ankr.com/solana"];
+  const extras = [SOLANA_PUBLIC_MAINNET_HTTP, ANKR_PUBLIC_MAINNET];
   return [primary, ...extras.filter((u) => u !== primary)];
 }
 
