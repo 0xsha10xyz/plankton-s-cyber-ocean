@@ -5,6 +5,27 @@ function getEnvRpcUrl(): string | null {
   return typeof env === "string" && env.trim() ? env.trim() : null;
 }
 
+function normalizeEnvBase(raw: string): string {
+  let u = raw.trim().replace(/\/$/, "");
+  // Accept values like https://host/api/agent or https://host/api and normalize to origin/base.
+  if (/\/api\/agent$/i.test(u)) u = u.replace(/\/api\/agent$/i, "");
+  if (/\/api$/i.test(u)) u = u.replace(/\/api$/i, "");
+  return u.replace(/\/$/, "");
+}
+
+function getAgentRpcUrl(): string | null {
+  if (typeof import.meta === "undefined") return null;
+  const raw = String(import.meta.env?.VITE_AGENT_API_URL ?? "").trim();
+  if (!raw) return null;
+  try {
+    const base = normalizeEnvBase(raw);
+    const origin = new URL(base).origin;
+    return `${origin}/api/rpc`;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Primary RPC URL for `ConnectionProvider` / `useConnection` and x402-solana.
  * - **Browser (dev + production):** same-origin `POST /api/rpc` first — keys stay on the server (Vercel
@@ -162,8 +183,17 @@ export function getConnectionConfig(): ConnectionConfig {
  */
 export function getFallbackRpcs(): string[] {
   const primary = getPrimaryRpcEndpoint();
-  const extras = [SOLANA_PUBLIC_MAINNET_HTTP, ANKR_PUBLIC_MAINNET];
-  return [primary, ...extras.filter((u) => u !== primary)];
+  const agentRpc = getAgentRpcUrl();
+  const extras = [agentRpc, SOLANA_PUBLIC_MAINNET_HTTP, ANKR_PUBLIC_MAINNET].filter(
+    (u): u is string => Boolean(u)
+  );
+  const out: string[] = [];
+  const push = (u: string) => {
+    if (u && !out.includes(u)) out.push(u);
+  };
+  push(primary);
+  for (const u of extras) push(u);
+  return out;
 }
 
 function fallbackList(): string[] {
