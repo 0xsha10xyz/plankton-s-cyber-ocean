@@ -24,11 +24,33 @@ function isRetriableUpstreamStatus(status: number): boolean {
 }
 
 /**
+ * Health / CDN probes sometimes use GET/HEAD against `/api/rpc`.
+ * Mirror the Vercel serverless handler: respond 204 (not 404/405) and advertise allowed methods.
+ */
+rpcRouter.get("/", (_req: Request, res: Response) => {
+  res.setHeader("Allow", "POST, OPTIONS");
+  res.status(204).end();
+});
+
+rpcRouter.head("/", (_req: Request, res: Response) => {
+  res.setHeader("Allow", "POST, OPTIONS");
+  res.status(204).end();
+});
+
+/**
  * CORS preflight — browsers may send OPTIONS before POST to `/api/rpc` (x402 / wallet flows).
  */
 rpcRouter.options("/", (_req: Request, res: Response) => {
   res.setHeader("Allow", "POST, OPTIONS");
   res.status(204).end();
+});
+
+// Anything else should be a clear 405 (Express otherwise falls through to 404).
+rpcRouter.all("/", (req: Request, res: Response, next) => {
+  const method = String(req.method || "GET").toUpperCase();
+  if (method === "POST" || method === "OPTIONS" || method === "GET" || method === "HEAD") return next();
+  res.setHeader("Allow", "POST, OPTIONS");
+  res.status(405).json({ error: "Method not allowed" });
 });
 
 /**
