@@ -59,9 +59,6 @@ const Footer = () => {
 
         <div className="text-center mt-8">
           <p className="text-xs text-muted-foreground mt-2">
-            All links — <span className="text-primary/70">Coming Soon</span>
-          </p>
-          <p className="text-xs text-muted-foreground mt-2">
             © 2026 Plankton. The Autonomous Web4 Trading Protocol.
           </p>
         </div>
