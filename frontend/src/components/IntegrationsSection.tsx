@@ -50,6 +50,11 @@ const INTEGRATIONS: Integration[] = [
     role: "Default Solana RPC fallback for wallet balances and swaps.",
     logoUrl: "/logos/ankr.png",
   },
+  {
+    name: "PayAi",
+    role: "Payments and AI-powered settlement rails for on-chain execution.",
+    logoUrl: "/logos/payai.png",
+  },
 ];
 
 export function IntegrationsSection() {
