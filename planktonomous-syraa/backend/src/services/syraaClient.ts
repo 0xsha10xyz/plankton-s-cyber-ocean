@@ -75,6 +75,15 @@ function urlJoin(base: string, path: string): string {
   return `${base.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
 }
 
+function syraaAuthHeaders(env: Env): Record<string, string> {
+  // Some Syraa deployments accept either x-api-key or Authorization bearer.
+  // Sending both keeps compatibility without impacting our own auth.
+  return {
+    "x-api-key": env.SYRAA_API_KEY,
+    Authorization: `Bearer ${env.SYRAA_API_KEY}`,
+  };
+}
+
 async function parseJsonOrThrow<T>(res: Response, context: Record<string, unknown>): Promise<T> {
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -118,7 +127,7 @@ export function createSyraaClient({
         () =>
           x402.requestWithPaymentDetailed<SyraaSignalPayload>(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...syraaAuthHeaders(env) },
             body: JSON.stringify(params),
           }),
         { retryOn: () => true }
@@ -135,7 +144,7 @@ export function createSyraaClient({
         async () => {
           const res = await fetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...syraaAuthHeaders(env) },
             body: JSON.stringify(payload),
           });
           if (!res.ok) {
@@ -159,7 +168,7 @@ export function createSyraaClient({
         async () => {
           const res = await fetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...syraaAuthHeaders(env) },
             body: JSON.stringify({ walletAddress }),
           });
           if (!res.ok) {
@@ -181,7 +190,7 @@ export function createSyraaClient({
 
       const out = await withRetry(
         async () => {
-          const res = await fetch(url, { method: "GET" });
+          const res = await fetch(url, { method: "GET", headers: syraaAuthHeaders(env) });
           if (!res.ok) {
             const body = await res.text().catch(() => "");
             throw new SyraaApiError("Syraa request failed", { endpoint: "corbits", asset, status: res.status, body });
@@ -201,7 +210,7 @@ export function createSyraaClient({
 
       const out = await withRetry(
         async () => {
-          const res = await fetch(url, { method: "GET" });
+          const res = await fetch(url, { method: "GET", headers: syraaAuthHeaders(env) });
           if (!res.ok) {
             const body = await res.text().catch(() => "");
             throw new SyraaApiError("Syraa request failed", { endpoint: "nansen", asset, status: res.status, body });

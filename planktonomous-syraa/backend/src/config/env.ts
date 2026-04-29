@@ -15,6 +15,7 @@ const envSchema = z.object({
   API_KEY_SECRET: z.string().min(16),
 
   SYRAA_API_BASE_URL: z.string().url().default("https://api.syraa.fun"),
+  SYRAA_API_KEY: z.string().min(1),
   SYRAA_SIGNAL_ENDPOINT: z.string().default("/signal"),
   SYRAA_INSIGHT_ENDPOINT: z.string().default("/v1/insight"),
   SYRAA_TRACKING_ENDPOINT: z.string().default("/v1/tracking"),
