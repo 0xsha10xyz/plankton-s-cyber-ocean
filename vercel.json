@@ -2,6 +2,8 @@
   "buildCommand": "npm run build && npm run vercel-build",
   "outputDirectory": "dist",
   "routes": [
+    { "src": "/api/agent/(.*)", "dest": "https://api.planktonomous.dev/api/agent/$1" },
+    { "src": "/api/usage/(.*)", "dest": "https://api.planktonomous.dev/api/usage/$1" },
     { "handle": "filesystem" },
     { "src": "/api/config", "dest": "/api/health?mode=config" },
     { "src": "/(.*)", "dest": "/index.html" }
