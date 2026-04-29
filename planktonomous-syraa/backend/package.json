@@ -13,9 +13,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "apikey:create": "tsx src/scripts/createApiKey.ts",
-    "test": "vitest run",
+    "test": "vitest run --config vitest.config.ts",
     "test:int": "vitest run --config vitest.integration.config.ts",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --config vitest.config.ts --coverage"
   },
   "dependencies": {
     "@prisma/client": "^6.16.1",
