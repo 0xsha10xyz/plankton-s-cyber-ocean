@@ -12,7 +12,7 @@
     "lint": "tsc --noEmit -p tsconfig.json",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "apikey:create": "tsx src/scripts/createApiKey.ts",
+    "apikey:create": "node dist/scripts/createApiKey.js",
     "test": "vitest run --config vitest.config.ts",
     "test:int": "vitest run --config vitest.integration.config.ts",
     "test:coverage": "vitest run --config vitest.config.ts --coverage"
