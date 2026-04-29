@@ -30,25 +30,46 @@ export function createAuthMiddleware({ env, prisma }: { env: Env; prisma: Prisma
       const apiKey = req.header("x-api-key")?.trim();
       const authz = req.header("authorization")?.trim();
 
-      if (apiKey) {
-        const keyHash = hmacSha256(env.API_KEY_SECRET, apiKey);
+      const tryApiKey = async (raw: string): Promise<boolean> => {
+        const keyHash = hmacSha256(env.API_KEY_SECRET, raw);
         const key = await prisma.apiKey.findUnique({ where: { keyHash } });
-        if (!key || !key.isActive) throw new UnauthorizedError("Invalid API key");
+        if (!key || !key.isActive) return false;
         await prisma.apiKey.update({ where: { id: key.id }, data: { lastUsedAt: new Date() } });
         setAuth(req, { apiKeyId: key.id, apiKeyLabel: key.label, apiKeyHash: keyHash });
+        return true;
+      };
+
+      if (apiKey) {
+        const ok = await tryApiKey(apiKey);
+        if (!ok) throw new UnauthorizedError("Invalid API key");
         next();
         return;
       }
 
       if (authz?.toLowerCase().startsWith("bearer ")) {
         const token = authz.slice("bearer ".length).trim();
-        const decoded = jwt.verify(token, env.JWT_SECRET);
-        if (typeof decoded !== "object" || decoded === null) throw new UnauthorizedError("Invalid JWT");
-        const sub = typeof decoded.sub === "string" ? decoded.sub : undefined;
-        if (!sub) throw new UnauthorizedError("JWT missing sub");
-        setAuth(req, { jwtSub: sub });
-        next();
-        return;
+        try {
+          const decoded = jwt.verify(token, env.JWT_SECRET);
+          if (typeof decoded !== "object" || decoded === null) throw new UnauthorizedError("Invalid JWT");
+          const sub = typeof decoded.sub === "string" ? decoded.sub : undefined;
+          if (!sub) throw new UnauthorizedError("JWT missing sub");
+          setAuth(req, { jwtSub: sub });
+          next();
+          return;
+        } catch {
+          // UX: allow API keys to be sent via Authorization: Bearer <apiKey>
+          // Our API keys are 32 random bytes hex-encoded => 64 hex chars.
+          const looksLikeApiKey = /^[a-f0-9]{64}$/i.test(token);
+          if (looksLikeApiKey) {
+            const ok = await tryApiKey(token);
+            if (ok) {
+              next();
+              return;
+            }
+            throw new UnauthorizedError("Invalid API key");
+          }
+          throw new UnauthorizedError("Invalid JWT");
+        }
       }
 
       throw new UnauthorizedError("Missing credentials");
