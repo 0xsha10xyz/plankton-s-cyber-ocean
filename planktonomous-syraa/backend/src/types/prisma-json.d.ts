@@ -7,8 +7,7 @@ declare module "@prisma/client" {
   namespace Prisma {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     export type InputJsonValue = unknown;
-    export type JsonNull = unknown;
-    export const JsonNull: JsonNull;
+    export const JsonNull: unknown;
   }
 }
 
