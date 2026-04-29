@@ -1,6 +1,6 @@
 /**
  * GET /api/agent/logs | /api/agent/status | /api/agent/config
- * POST /api/agent/chat — optional proxy to VPS when AGENT_BACKEND_ORIGIN is set (Hobby plan: one file, no extra function).
+ * POST /api/agent/chat — LLM chat hosted on Vercel (Hobby-safe, stateless).
  */
 import type { IncomingMessage, ServerResponse } from "http";
 
@@ -17,6 +17,21 @@ function sendJson(res: ServerResponse, statusCode: number, body: unknown, cache?
   res.setHeader("Cache-Control", cache ?? "private, max-age=10");
   res.end(JSON.stringify(body));
 }
+
+type AgentChatRequest = {
+  message?: unknown;
+  history?: unknown;
+  context?: unknown;
+  wallet?: unknown;
+  usageTs?: unknown;
+  usageSignature?: unknown;
+};
+
+type AgentChatResponse = {
+  insight: string;
+  additional_insight: string;
+  actions: string[];
+};
 
 function getQuery(url: string | undefined): URLSearchParams {
   const u = url || "/";
@@ -54,6 +69,116 @@ async function rpcCall<T>(
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+function pickFirstString(v: string | string[] | undefined): string {
+  if (!v) return "";
+  if (Array.isArray(v)) return v[0] ?? "";
+  return v;
+}
+
+function safeJsonParse<T>(s: string): T | null {
+  try {
+    return JSON.parse(s) as T;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeAgentJson(text: string): AgentChatResponse {
+  const parsed = safeJsonParse<Partial<AgentChatResponse>>(text);
+  if (parsed && typeof parsed === "object") {
+    const insight = typeof parsed.insight === "string" ? parsed.insight : "";
+    const additional_insight = typeof parsed.additional_insight === "string" ? parsed.additional_insight : "";
+    const actions = Array.isArray(parsed.actions) ? parsed.actions.map((x) => String(x)) : [];
+    if (insight) return { insight, additional_insight, actions };
+  }
+  return { insight: text.trim().slice(0, 2000) || "OK.", additional_insight: "", actions: [] };
+}
+
+async function callAnthropic(prompt: string): Promise<string> {
+  const key = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!key) throw new Error("ANTHROPIC_API_KEY is not set");
+  const model = process.env.ANTHROPIC_AGENT_MODEL?.trim() || "claude-sonnet-4-6";
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 512,
+      temperature: 0.3,
+      system:
+        "You are Planktonomous Intelligent Assistant. Respond ONLY as compact JSON with keys: insight (string), additional_insight (string), actions (string[]).",
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+  const data = (await r.json().catch(() => null)) as any;
+  if (!r.ok) throw new Error(`Anthropic HTTP ${r.status}: ${JSON.stringify(data)?.slice(0, 400)}`);
+  const text = Array.isArray(data?.content) ? String(data.content?.[0]?.text ?? "") : "";
+  return text || "";
+}
+
+async function callGroq(prompt: string): Promise<string> {
+  const key = process.env.GROQ_API_KEY?.trim();
+  if (!key) throw new Error("GROQ_API_KEY is not set");
+  const model = process.env.GROQ_AGENT_MODEL?.trim() || "llama-3.3-70b-versatile";
+  const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model,
+      temperature: 0.3,
+      max_tokens: 512,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are Planktonomous Intelligent Assistant. Respond ONLY as compact JSON with keys: insight (string), additional_insight (string), actions (string[]).",
+        },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+  const data = (await r.json().catch(() => null)) as any;
+  if (!r.ok) throw new Error(`Groq HTTP ${r.status}: ${JSON.stringify(data)?.slice(0, 400)}`);
+  return String(data?.choices?.[0]?.message?.content ?? "");
+}
+
+async function callOpenAI(prompt: string): Promise<string> {
+  const key = process.env.OPENAI_API_KEY?.trim();
+  if (!key) throw new Error("OPENAI_API_KEY is not set");
+  const model = process.env.OPENAI_AGENT_MODEL?.trim() || "gpt-4o-mini";
+  const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model,
+      temperature: 0.3,
+      max_tokens: 512,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are Planktonomous Intelligent Assistant. Respond ONLY as compact JSON with keys: insight (string), additional_insight (string), actions (string[]).",
+        },
+        { role: "user", content: prompt },
+      ],
+    }),
+  });
+  const data = (await r.json().catch(() => null)) as any;
+  if (!r.ok) throw new Error(`OpenAI HTTP ${r.status}: ${JSON.stringify(data)?.slice(0, 400)}`);
+  return String(data?.choices?.[0]?.message?.content ?? "");
+}
+
+async function llmRespond(prompt: string): Promise<string> {
+  if (process.env.ANTHROPIC_API_KEY?.trim()) return await callAnthropic(prompt);
+  if (process.env.GROQ_API_KEY?.trim()) return await callGroq(prompt);
+  if (process.env.OPENAI_API_KEY?.trim()) return await callOpenAI(prompt);
+  throw new Error("No LLM provider key set (ANTHROPIC_API_KEY / GROQ_API_KEY / OPENAI_API_KEY).");
 }
 
 async function handleLogs(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -135,90 +260,6 @@ function readRequestBody(req: IncomingMessage): Promise<Buffer> {
   });
 }
 
-function getAgentBackendOrigin(): string | null {
-  const raw = process.env.AGENT_BACKEND_ORIGIN?.trim() || process.env.VPS_AGENT_API_ORIGIN?.trim();
-  if (!raw) return null;
-  return raw.replace(/\/$/, "");
-}
-
-/** GET /api/agent/config → VPS when AGENT_BACKEND_ORIGIN is set (must match chat x402 flags or the browser never enables x402-solana). */
-async function handleConfigProxy(_req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const origin = getAgentBackendOrigin();
-  if (!origin) {
-    sendJson(res, 200, { x402AgentChat: { enabled: false } });
-    return;
-  }
-  const url = `${origin}/api/agent/config`;
-  try {
-    const upstream = await fetch(url, { method: "GET", headers: { Accept: "application/json" } });
-    const text = await upstream.text();
-    res.statusCode = upstream.status;
-    const uct = upstream.headers.get("content-type");
-    if (uct) res.setHeader("Content-Type", uct);
-    res.setHeader("Cache-Control", "private, max-age=5");
-    res.end(text);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    sendJson(res, 502, { error: `Upstream agent config unreachable: ${msg}`, code: "AGENT_CONFIG_PROXY_ERROR" });
-  }
-}
-
-/** POST /api/agent/chat → Express (Claude) on VPS when AGENT_BACKEND_ORIGIN is set. */
-async function handleChatProxy(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const origin = getAgentBackendOrigin();
-  if (!origin) {
-    res.statusCode = 503;
-    res.setHeader("Content-Type", "application/json");
-    res.setHeader("Cache-Control", "private, no-store");
-    res.end(
-      JSON.stringify({
-        error:
-          "Agent chat backend is not configured. Set AGENT_BACKEND_ORIGIN on Vercel to your VPS API origin (HTTPS, no path), or set VITE_AGENT_API_URL in the frontend.",
-        code: "AGENT_BACKEND_NOT_CONFIGURED",
-      })
-    );
-    return;
-  }
-
-  const url = `${origin}/api/agent/chat`;
-  const buf = await readRequestBody(req);
-  const headers: Record<string, string> = { Accept: "application/json" };
-  const ct = req.headers["content-type"];
-  if (ct) headers["Content-Type"] = typeof ct === "string" ? ct : ct[0] ?? "application/json";
-  // Forward x402 payment headers (v2: PAYMENT-SIGNATURE; fallback duplicate from browser: X-X402-Payment-Signature).
-  for (const key of [
-    "payment-signature",
-    "payment-response",
-    "x-payment",
-    "x-payment-response",
-    "x-x402-payment-signature",
-  ]) {
-    const v = req.headers[key];
-    if (v && typeof v === "string") headers[key] = v;
-    else if (Array.isArray(v) && v[0]) headers[key] = v[0];
-  }
-
-  try {
-    const upstream = await fetch(url, {
-      method: "POST",
-      headers,
-      body: buf.length ? new Uint8Array(buf) : undefined,
-    });
-    const text = await upstream.text();
-    res.statusCode = upstream.status;
-    const uct = upstream.headers.get("content-type");
-    if (uct) res.setHeader("Content-Type", uct);
-    // x402-solana v2 browser client needs PAYMENT-REQUIRED on 402 so it uses PAYMENT-SIGNATURE retry (not X-PAYMENT).
-    const paymentRequired = upstream.headers.get("payment-required");
-    if (paymentRequired) res.setHeader("PAYMENT-REQUIRED", paymentRequired);
-    res.setHeader("Cache-Control", "private, no-store");
-    res.end(text);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    sendJson(res, 502, { error: `Upstream agent unreachable: ${msg}`, code: "AGENT_PROXY_ERROR" });
-  }
-}
-
 /**
  * POST /api/agent/info — “Info Agent” hosted on Vercel, but usage/payments verified on VPS.
  *
@@ -228,12 +269,6 @@ async function handleChatProxy(req: IncomingMessage, res: ServerResponse): Promi
  * - On success, we return an info response (placeholder; replace with your real info logic).
  */
 async function handleInfo(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const origin = getAgentBackendOrigin();
-  if (!origin) {
-    sendJson(res, 503, { error: "Usage backend not configured. Set AGENT_BACKEND_ORIGIN.", code: "USAGE_BACKEND_NOT_CONFIGURED" });
-    return;
-  }
-
   const buf = await readRequestBody(req);
   let body: any = null;
   try {
@@ -252,45 +287,7 @@ async function handleInfo(req: IncomingMessage, res: ServerResponse): Promise<vo
     return;
   }
 
-  const usageUrl = `${origin}/api/usage/info`;
-  const headers: Record<string, string> = { "Content-Type": "application/json", Accept: "application/json" };
-  for (const name of ["payment-signature", "payment-response"]) {
-    const v = req.headers[name];
-    if (v && typeof v === "string") headers[name] = v;
-    else if (Array.isArray(v) && v[0]) headers[name] = v[0];
-  }
-
-  let usageRes: globalThis.Response;
-  try {
-    usageRes = await fetch(usageUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ wallet, ts, signature }),
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    sendJson(res, 502, { error: `Usage backend unreachable: ${msg}`, code: "USAGE_PROXY_ERROR" });
-    return;
-  }
-
-  if (usageRes.status === 402) {
-    const text = await usageRes.text();
-    res.statusCode = 402;
-    const ct = usageRes.headers.get("content-type");
-    if (ct) res.setHeader("Content-Type", ct);
-    const paymentRequired = usageRes.headers.get("payment-required");
-    if (paymentRequired) res.setHeader("PAYMENT-REQUIRED", paymentRequired);
-    res.setHeader("Cache-Control", "private, no-store");
-    res.end(text);
-    return;
-  }
-  if (!usageRes.ok) {
-    const text = await usageRes.text();
-    sendJson(res, 502, { error: "Usage backend error", upstreamStatus: usageRes.status, upstreamBody: text.slice(0, 400) });
-    return;
-  }
-
-  // Allowed -> return your info response. Replace with your real “Info Agent” logic.
+  // Hobby-safe: return a minimal response (no paid gating here; add quota/x402 later if needed).
   sendJson(
     res,
     200,
@@ -302,6 +299,50 @@ async function handleInfo(req: IncomingMessage, res: ServerResponse): Promise<vo
   );
 }
 
+async function handleConfig(_req: IncomingMessage, res: ServerResponse): Promise<void> {
+  // Hobby-safe default: free chat (no x402 gating). If you want paid gating later, add it here.
+  sendJson(
+    res,
+    200,
+    {
+      riskLevels: ["conservative", "mid", "aggressive"],
+      defaultRisk: "mid",
+      x402AgentChat: { enabled: false },
+    },
+    "private, max-age=10"
+  );
+}
+
+async function handleChat(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const buf = await readRequestBody(req);
+  const body = safeJsonParse<AgentChatRequest>(buf.toString("utf8")) ?? {};
+  const msg = typeof body.message === "string" ? body.message.trim() : "";
+  if (!msg) {
+    sendJson(res, 400, { error: "Missing message", code: "BAD_REQUEST" });
+    return;
+  }
+
+  const wallet = typeof body.wallet === "string" ? body.wallet.trim() : "";
+  const origin = pickFirstString(req.headers.origin as any);
+  const prompt = [
+    `User message: ${msg}`,
+    wallet ? `Wallet: ${wallet}` : "",
+    origin ? `Origin: ${origin}` : "",
+    "Return JSON only.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  try {
+    const raw = await llmRespond(prompt);
+    const out = normalizeAgentJson(raw);
+    sendJson(res, 200, out, "private, no-store");
+  } catch (e) {
+    const err = e instanceof Error ? e.message : String(e);
+    sendJson(res, 502, { error: "LLM request failed", details: err.slice(0, 400), code: "LLM_UPSTREAM_ERROR" }, "private, no-store");
+  }
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = (req.url || "/").split("#")[0];
   const pathOnly = url.split("?")[0] || "/";
@@ -310,7 +351,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const method = (req.method || "GET").toUpperCase();
 
   if (segment === "chat" && method === "POST") {
-    await handleChatProxy(req, res);
+    await handleChat(req, res);
     return;
   }
   if (segment === "info" && method === "POST") {
@@ -323,7 +364,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
   if (segment === "config" && method === "GET") {
-    await handleConfigProxy(req, res);
+    await handleConfig(req, res);
     return;
   }
   if (segment === "logs" && method === "GET") {
