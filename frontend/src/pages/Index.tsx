@@ -8,6 +8,8 @@ import Header from "@/components/Header";
 import HeroPlankton from "@/components/HeroPlankton";
 import ResearchTools from "@/components/ResearchTools";
 import ScreenerTools from "@/components/ScreenerTools";
+import { TokenDetailPanel } from "@/components/TokenDetailPanel";
+import { WalletActivityDrawer } from "@/components/WalletActivityDrawer";
 import TokenSection from "@/components/TokenSection";
 import IntegrationsSection from "@/components/IntegrationsSection";
 import PricingSection from "@/components/PricingSection";
@@ -161,6 +163,8 @@ const Index = () => {
         <Footer />
       </main>
 
+      <TokenDetailPanel />
+      <WalletActivityDrawer />
     </div>
   );
 };

@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Signal {
+  id           String    @id @default(cuid())
+  signalId     String    @unique
+  asset        String
+  direction    Direction
+  confidence   Float
+  entryPrice   Float?
+  targetPrice  Float?
+  stopLoss     Float?
+  timeframe    String
+  indicators   Json
+  rawResponse  Json
+  createdAt    DateTime  @default(now())
+
+  payment      Payment?
+  agentRequest AgentRequest?
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  signalId    String        @unique
+  signal      Signal        @relation(fields: [signalId], references: [id])
+  txSignature String        @unique
+  amount      Float
+  token       String
+  network     String
+  payer       String
+  recipient   String
+  status      PaymentStatus @default(PENDING)
+  confirmedAt DateTime?
+  createdAt   DateTime      @default(now())
+}
+
+model AgentRequest {
+  id               String   @id @default(cuid())
+  agentId          String
+  sessionId        String
+  intent           String
+  parameters       Json
+  responseStatus   String
+  processingTimeMs Int
+  signalId         String?  @unique
+  signal           Signal?  @relation(fields: [signalId], references: [id])
+  createdAt        DateTime @default(now())
+}
+
+model ApiKey {
+  id         String   @id @default(cuid())
+  keyHash    String   @unique
+  label      String
+  lastUsedAt DateTime?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}
+
+enum Direction {
+  BUY
+  SELL
+  HOLD
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  REFUNDED
+}
+
