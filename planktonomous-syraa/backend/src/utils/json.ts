@@ -1,8 +1,15 @@
+import { Prisma } from "@prisma/client";
+
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 export function toJsonValue(value: unknown): JsonValue {
-  // Prisma Json columns require JSON-serializable values.
-  // This also strips undefined / functions / symbols.
   return JSON.parse(JSON.stringify(value)) as JsonValue;
+}
+
+export function toPrismaJson(value: unknown): Prisma.JsonNull | Prisma.InputJsonValue {
+  const v = toJsonValue(value);
+  // Prisma doesn't accept `null` directly; use JsonNull.
+  if (v === null) return Prisma.JsonNull;
+  return v as unknown as Prisma.InputJsonValue;
 }
 

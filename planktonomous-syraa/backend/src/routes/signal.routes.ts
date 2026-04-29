@@ -8,7 +8,7 @@ import type { Env } from "../config/env.js";
 import type { SyraaClient, SyraaSignalPayload } from "../services/syraaClient.js";
 import type { SignalScheduler } from "../services/signalScheduler.js";
 import { validateBody } from "../middleware/validate.middleware.js";
-import { toJsonValue } from "../utils/json.js";
+import { toPrismaJson } from "../utils/json.js";
 
 const createSignalSchema = z.object({
   asset: z.string().min(1),
@@ -82,8 +82,8 @@ export function signalRouter({
             targetPrice: sig.targetPrice,
             stopLoss: sig.stopLoss,
             timeframe: sig.timeframe,
-            indicators: toJsonValue(sig.indicators),
-            rawResponse: toJsonValue(sig),
+            indicators: toPrismaJson(sig.indicators),
+            rawResponse: toPrismaJson(sig),
           },
         });
         if (paymentProof) {
