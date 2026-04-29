@@ -5,6 +5,7 @@ import type { Env } from "../config/env.js";
 import type { Logger } from "../middleware/logger.middleware.js";
 import type { SyraaClient, SyraaSignalPayload } from "./syraaClient.js";
 import { CircuitBreaker } from "../utils/retry.js";
+import { toJsonValue } from "../utils/json.js";
 
 export interface SchedulerStatus {
   running: boolean;
@@ -75,8 +76,8 @@ export function createSignalScheduler({
                 targetPrice: sig.targetPrice,
                 stopLoss: sig.stopLoss,
                 timeframe: sig.timeframe,
-                indicators: sig.indicators,
-                rawResponse: sig,
+                indicators: toJsonValue(sig.indicators),
+                rawResponse: toJsonValue(sig),
               },
             });
             if (paymentProof) {
@@ -155,8 +156,8 @@ export function createSignalScheduler({
               targetPrice: sig.targetPrice,
               stopLoss: sig.stopLoss,
               timeframe: sig.timeframe,
-              indicators: sig.indicators,
-              rawResponse: sig,
+              indicators: toJsonValue(sig.indicators),
+              rawResponse: toJsonValue(sig),
             },
           });
 

@@ -6,6 +6,7 @@ import type { SignalScheduler } from "./signalScheduler.js";
 import crypto from "node:crypto";
 import type { Redis } from "ioredis";
 import { UnauthorizedError } from "../utils/errors.js";
+import { toJsonValue } from "../utils/json.js";
 
 export interface PlanktonomousAgentRequest {
   agentId: string;
@@ -133,7 +134,7 @@ export function createPlanktonomousAdapter({
             agentId: req.agentId,
             sessionId: req.sessionId,
             intent: req.intent,
-            parameters: req.parameters,
+            parameters: toJsonValue(req.parameters),
             responseStatus: "SUCCESS",
             processingTimeMs,
           },
@@ -155,7 +156,7 @@ export function createPlanktonomousAdapter({
               agentId: req.agentId,
               sessionId: req.sessionId,
               intent: req.intent,
-              parameters: req.parameters,
+              parameters: toJsonValue(req.parameters),
               responseStatus: "ERROR",
               processingTimeMs,
             },
