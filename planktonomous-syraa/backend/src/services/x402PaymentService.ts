@@ -42,6 +42,10 @@ function safeNumber(v: string | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+function expectedSolanaNetworkFromRpcUrl(rpcUrl: string): "solana-devnet" | "solana-mainnet-beta" {
+  return rpcUrl.toLowerCase().includes("devnet") ? "solana-devnet" : "solana-mainnet-beta";
+}
+
 export function createX402PaymentService({
   env,
   solanaService,
@@ -90,8 +94,14 @@ export function createX402PaymentService({
       if (details.token !== "USDC") {
         throw new PaymentFailedError("Unsupported token", { token: details.token });
       }
-      if (details.network !== "solana-devnet") {
-        throw new PaymentFailedError("Unsupported network", { network: details.network });
+      const expected = expectedSolanaNetworkFromRpcUrl(env.SOLANA_RPC_URL);
+      const network = details.network === "solana-mainnet" ? "solana-mainnet-beta" : details.network;
+      if (network !== expected) {
+        throw new PaymentFailedError("Unsupported or mismatched network", {
+          requiredBySyraa: details.network,
+          expectedFromRpc: expected,
+          solanaRpcUrl: env.SOLANA_RPC_URL,
+        });
       }
 
       logger.info("payment.attempt", {

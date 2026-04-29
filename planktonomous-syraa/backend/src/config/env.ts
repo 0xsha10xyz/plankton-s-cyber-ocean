@@ -24,7 +24,8 @@ const envSchema = z.object({
   PLANKTONOMOUS_AGENT_URL: z.string().url().default("https://planktonomous.dev/launch-agent"),
   PLANKTONOMOUS_API_KEY: z.string().min(1),
 
-  SOLANA_RPC_URL: z.string().url().default("https://api.devnet.solana.com"),
+  // Mainnet by default (override to devnet for testing)
+  SOLANA_RPC_URL: z.string().url().default("https://api.mainnet-beta.solana.com"),
   SOLANA_WALLET_PRIVATE_KEY: z.string().min(1),
   USDC_MINT_ADDRESS: z.string().min(1),
   X402_SIGNAL_COST_USDC: z.coerce.number().positive().default(0.0001),

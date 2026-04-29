@@ -2,7 +2,7 @@ export const SERVICE_NAME = "planktonomous-syraa-backend" as const;
 
 // Defaults used when corresponding env vars are not provided.
 export const SYRAA_BASE_URL_DEFAULT = "https://api.syraa.fun" as const;
-export const SOLANA_RPC_URL_DEFAULT = "https://api.devnet.solana.com" as const;
+export const SOLANA_RPC_URL_DEFAULT = "https://api.mainnet-beta.solana.com" as const;
 export const PLANKTONOMOUS_AGENT_URL_DEFAULT = "https://planktonomous.dev/launch-agent" as const;
 
 export const SYRAA_ENDPOINTS_DEFAULT = {
