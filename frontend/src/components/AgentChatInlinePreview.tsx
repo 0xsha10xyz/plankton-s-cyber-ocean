@@ -37,6 +37,123 @@ type AgentJsonResponse = {
   actions: string[];
 };
 
+type AgentJsonEnvelope =
+  | (AgentJsonResponse & { kind?: undefined })
+  | (AgentJsonResponse & { kind: "syraa_signal"; payload: unknown });
+
+type SyraaSignalPayload = {
+  signal?: {
+    metadata?: {
+      instrument?: unknown;
+      market?: unknown;
+      timestamp?: unknown;
+      analysisDate?: unknown;
+      dataPoints?: unknown;
+      TRADING_SIGNAL?: unknown;
+      SIGNAL_STRENGTH?: unknown;
+    };
+    marketOverview?: {
+      currentPrice?: unknown;
+      priceChange24h?: unknown;
+      high24h?: unknown;
+      low24h?: unknown;
+      volume24h?: unknown;
+      quoteVolume24h?: unknown;
+    };
+    tradingRecommendation?: {
+      action?: unknown;
+      confidence?: unknown;
+      reasoning?: unknown;
+    };
+    priceTargets?: {
+      support?: unknown;
+      resistance?: unknown;
+      longEntry?: unknown;
+      longStopLoss?: unknown;
+      longTarget1?: unknown;
+      longTarget2?: unknown;
+      longTarget3?: unknown;
+      shortEntry?: unknown;
+      shortStopLoss?: unknown;
+      shortTarget1?: unknown;
+      shortTarget2?: unknown;
+      shortTarget3?: unknown;
+    };
+    technicalIndicators?: {
+      rsi?: unknown;
+      vwap?: unknown;
+      adx?: { value?: unknown; trendStrength?: unknown; trendDirection?: unknown };
+      mfi?: { value?: unknown; signal?: unknown; volumePressure?: unknown };
+    };
+  };
+};
+
+function safeString(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  try {
+    return JSON.stringify(v);
+  } catch {
+    return String(v);
+  }
+}
+
+function asRecord(v: unknown): Record<string, unknown> | null {
+  return v && typeof v === "object" ? (v as Record<string, unknown>) : null;
+}
+
+function getField(obj: unknown, key: string): unknown {
+  const r = asRecord(obj);
+  return r ? r[key] : undefined;
+}
+
+function formatSyraaSummary(payloadUnknown: unknown): { title: string; lines: string[]; rawPretty: string } {
+  const payload = (payloadUnknown && typeof payloadUnknown === "object" ? payloadUnknown : {}) as SyraaSignalPayload;
+  const s = payload.signal ?? {};
+  const md = s.metadata ?? {};
+  const mo = s.marketOverview ?? {};
+  const rec = s.tradingRecommendation ?? {};
+  const pt = s.priceTargets ?? {};
+  const ti = s.technicalIndicators ?? {};
+
+  const instrument = safeString(md.instrument) || safeString(md.market) || "Signal";
+  const action = safeString(getField(rec, "action") ?? getField(md, "TRADING_SIGNAL")) || "—";
+  const strength = safeString(getField(md, "SIGNAL_STRENGTH")) || "";
+  const confidence = safeString(getField(rec, "confidence")) || "";
+  const price = safeString(mo.currentPrice) || "—";
+  const change = safeString(mo.priceChange24h) || "";
+  const support = safeString(getField(pt, "support")) || "";
+  const resistance = safeString(getField(pt, "resistance")) || "";
+
+  const rsi = safeString(getField(ti, "rsi"));
+  const vwap = safeString(getField(ti, "vwap"));
+  const adx = ti.adx ? `${safeString(ti.adx.value)} (${safeString(ti.adx.trendStrength)} ${safeString(ti.adx.trendDirection)})` : "";
+  const mfi = ti.mfi ? `${safeString(ti.mfi.value)} (${safeString(ti.mfi.signal)})` : "";
+
+  const lines: string[] = [];
+  lines.push(`Action: ${action}${strength ? ` • Strength: ${strength}` : ""}${confidence ? ` • Confidence: ${confidence}` : ""}`);
+  lines.push(`Price: ${price}${change ? ` • 24h: ${change}` : ""}`);
+  if (support || resistance) lines.push(`Levels: ${support ? `Support ${support}` : ""}${support && resistance ? " • " : ""}${resistance ? `Resistance ${resistance}` : ""}`);
+  const indBits = [
+    rsi ? `RSI ${rsi}` : "",
+    vwap ? `VWAP ${vwap}` : "",
+    adx ? `ADX ${adx}` : "",
+    mfi ? `MFI ${mfi}` : "",
+  ].filter(Boolean);
+  if (indBits.length) lines.push(`Key indicators: ${indBits.join(" • ")}`);
+
+  const rawPretty = (() => {
+    try {
+      return JSON.stringify(payloadUnknown, null, 2);
+    } catch {
+      return String(payloadUnknown);
+    }
+  })();
+
+  return { title: `Syraa signal • ${instrument}`.trim(), lines, rawPretty };
+}
+
 type ChatContext = {
   tokenMint?: string;
   wallet?: string;
@@ -241,11 +358,12 @@ function AgentMessageBubble({
   connected: boolean;
   onAction: (action: string) => void;
 }) {
-  let parsed: AgentJsonResponse | null = null;
+  let parsed: AgentJsonEnvelope | null = null;
   if (msg.role === "agent") {
     try {
-      const maybe = JSON.parse(msg.content) as AgentJsonResponse;
-      if (maybe?.insight && Array.isArray(maybe.actions)) parsed = maybe;
+      const maybe = JSON.parse(msg.content) as AgentJsonEnvelope;
+      const actionsVal = getField(maybe, "actions");
+      if (maybe?.insight && Array.isArray(actionsVal)) parsed = maybe;
     } catch {
       parsed = null;
     }
@@ -260,7 +378,53 @@ function AgentMessageBubble({
     >
       {msg.role === "agent" && parsed ? (
         <div className="space-y-2">
-          <p className="whitespace-pre-wrap">{parsed.insight}</p>
+          {parsed.kind === "syraa_signal" ? (
+            (() => {
+              const { title, lines, rawPretty } = formatSyraaSummary(parsed.payload);
+              return (
+                <div className="space-y-2">
+                  <p className="font-medium">{title}</p>
+                  <div className="text-xs opacity-90 space-y-1">
+                    {lines.map((l) => (
+                      <p key={l} className="whitespace-pre-wrap">
+                        {l}
+                      </p>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="h-8 px-3 text-xs"
+                      onClick={() => {
+                        void (async () => {
+                          try {
+                            await navigator.clipboard.writeText(rawPretty);
+                            toast.success("Copied JSON to clipboard.");
+                          } catch {
+                            toast.error("Copy failed.");
+                          }
+                        })();
+                      }}
+                    >
+                      Copy JSON
+                    </Button>
+                  </div>
+
+                  <details className="pt-1">
+                    <summary className="cursor-pointer text-xs opacity-80 hover:opacity-100">Show full JSON</summary>
+                    <pre className="mt-2 max-h-[320px] overflow-auto rounded-lg bg-black/20 border border-border/40 p-2 text-[11px] leading-snug whitespace-pre-wrap">
+                      {rawPretty}
+                    </pre>
+                  </details>
+                </div>
+              );
+            })()
+          ) : (
+            <p className="whitespace-pre-wrap">{parsed.insight}</p>
+          )}
               {parsed.additional_insight ? (
                 <p className="text-xs opacity-80 whitespace-pre-wrap">{parsed.additional_insight}</p>
               ) : null}
@@ -1117,15 +1281,20 @@ export function AgentChatInlinePreview({
           }
 
           const data = await res.json().catch(() => null);
-          const pretty = data?.data != null ? JSON.stringify(data.data, null, 2) : JSON.stringify(data, null, 2);
+          const payload = (() => {
+            const maybeData = getField(data, "data");
+            return maybeData != null ? maybeData : data;
+          })();
           const agentMsg: ChatMessage = {
             id: `agent-${Date.now()}`,
             role: "agent",
             content: JSON.stringify({
+              kind: "syraa_signal",
               insight: "Syraa signal result",
-              additional_insight: pretty.slice(0, 3500),
+              additional_insight: "",
               actions: [],
-            } satisfies AgentJsonResponse),
+              payload,
+            } satisfies AgentJsonEnvelope),
             timestamp: new Date(),
           };
           setMessages((prev) => [...prev, agentMsg]);
