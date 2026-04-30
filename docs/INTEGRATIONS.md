@@ -72,6 +72,18 @@ See **`api/stats/`** and backend stats routes.
 
 ---
 
+## Syraa Signal (x402 paid upstream)
+
+Syraa Signal is a **server-to-server** integration used when a user types `signal ...` and chooses **Syraa Agent** in the chat UI:
+
+- Frontend calls same-origin `POST /api/agent/signal`
+- Vercel proxies to the VPS (`AGENT_BACKEND_ORIGIN`)
+- VPS pays Syraa upstream via x402 (Solana-first by default)
+
+Configuration is documented in **[Syraa Signal Agent](./syraa-signal-agent.md)**.
+
+---
+
 ## Deployment platforms
 
 | Platform | What it hosts |
