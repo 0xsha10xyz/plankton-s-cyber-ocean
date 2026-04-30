@@ -76,6 +76,7 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 | GET | `/api/agent/status` | Agent status (active, riskLevel, profit24h, totalPnL, message) |
 | GET | `/api/agent/config` | Agent config (riskLevels, defaultRisk) |
 | POST | `/api/agent/chat` | **Plankton Agent** LLM chat (JSON body). Requires at least one of `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, or `OPENAI_API_KEY` on the server. |
+| POST | `/api/agent/signal` | **Syraa Signal** fetch (server-to-server, x402 paid upstream). Requires Syraa env vars on the VPS (`SYRAA_*`). |
 
 **Example:** `GET /api/agent/status`  
 **Response:** `{ "active": false, "riskLevel": "mid", "profit24h": "0", "totalPnL": "0", "message": "..." }`
@@ -99,6 +100,41 @@ Powers the in-app agent chat. The backend calls LLMs in order: **Anthropic → G
 **Success response:** `{ "insight": string, "additional_insight": string, "actions": string[] }` (parsed from model JSON).
 
 **Errors:** `400` invalid message; `503` no LLM keys (`LLM_DISABLED`); `402` if **x402** paid chat is enabled (`X402_TREASURY_ADDRESS`) without payment; `502` parse/model failure. Optional: **`DISABLE_AGENT_CHAT_X402=1`** for free chat. See **[Configuration — Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)** and **[Integrations](./INTEGRATIONS.md)**.
+
+#### `POST /api/agent/signal`
+
+Fetches a trading signal from Syraa (`/signal`) on behalf of the user. The request is authenticated with a **wallet usage signature** (anti-spoof) and the server pays upstream via **x402** (Solana-first by default).
+
+**Request body (JSON):**
+
+| Field | Type | Description |
+|--------|------|-------------|
+| `token` | string | Optional. Asset name (e.g. `bitcoin`). |
+| `instId` | string | Optional. Instrument id (e.g. `BTCUSDT`). Prefer this for exchange symbols. |
+| `source` | string | Optional. Exchange/provider (e.g. `binance`). |
+| `bar` | string | Optional. Timeframe (e.g. `30m`, `1h`). |
+| `limit` | number | Optional. Data points to analyze. |
+| `wallet` | string | Required. User wallet address (base58). |
+| `usageTs` | number | Required. Unix ms timestamp used in the signature message. |
+| `usageSignature` | string | Required. Base64 signature of the usage message. |
+
+**Success response:** `{ "ok": true, "data": <syraa-payload> }`
+
+**Errors:** `401` invalid usage signature; `503` Syraa not configured (missing keys); `502/504` upstream unavailable; `500` upstream rejected params (e.g. invalid symbol).
+
+See **[Syraa Signal Agent](./syraa-signal-agent.md)** for deployment and troubleshooting.
+
+---
+
+### Wallet usage signatures (agent endpoints)
+
+Sensitive agent endpoints (e.g. `/api/agent/chat`, `/api/agent/signal`) require a wallet-signed **usage message** to reduce spoofing and replay.
+
+- The signature is **path-bound** and **method-bound**.
+- Do **not** reuse a signature across different endpoints (e.g. chat vs signal).
+- The frontend caches signatures per **(wallet + method + path)** for a short TTL to reduce prompts.
+
+If you see `WALLET_SIGNATURE_INVALID`, generate a new signature for the correct path.
 
 ---
 
@@ -157,6 +193,10 @@ Powers the in-app agent chat. The backend calls LLMs in order: **Anthropic → G
 | `OPENAI_AGENT_MODEL` | OpenAI model id | See `backend/.env.example` |
 | `X402_TREASURY_ADDRESS` | Enables x402 USDC payment per chat message | Optional |
 | `DISABLE_AGENT_CHAT_X402` | If `1` / `true`, disable paid chat even if treasury env is set | Optional |
+| `SYRAA_API_BASE_URL` | Syraa API origin (use `http://api.syraa.fun` if required by upstream x402 resource URL) | `https://api.syraa.fun` |
+| `SYRAA_SOLANA_PRIVATE_KEY` | Solana base58 secret key used to fund x402 Syraa requests (preferred when both exist) | Optional (required for Solana payments) |
+| `SYRAA_EVM_PRIVATE_KEY` | EVM hex private key used to fund x402 Syraa requests (fallback or primary if configured) | Optional |
+| `SYRAA_TRY_EVM_FIRST` | If `1` / `true`, prefer EVM payments when both keys exist | Optional |
 
 Create `backend/.env` from **`backend/.env.example`**. The server loads **`backend/.env`** with path resolution so PM2 cwd does not skip it. For provider order and x402, see **[Configuration — Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)** and **[Integrations](./INTEGRATIONS.md)**.
 
