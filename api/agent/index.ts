@@ -1,6 +1,15 @@
 /**
- * GET /api/agent/logs | /api/agent/status | /api/agent/config
- * POST /api/agent/chat — optional proxy to VPS when AGENT_BACKEND_ORIGIN is set (Hobby plan: one file, no extra function).
+ * Single-function agent router for Vercel serverless.
+ *
+ * We avoid bracket/dynamic filenames (e.g. `[segment].ts`) because plain Vercel
+ * Functions routing may not map them as dynamic routes outside Next.js.
+ *
+ * Routes handled:
+ * - GET  /api/agent/logs | /api/agent/status | /api/agent/config
+ * - POST /api/agent/chat
+ * - POST /api/agent/info
+ *
+ * When `AGENT_BACKEND_ORIGIN` (or `VPS_AGENT_API_ORIGIN`) is set, chat/config/info are proxied to the VPS.
  */
 import type { IncomingMessage, ServerResponse } from "http";
 
@@ -34,12 +43,7 @@ function clampInt(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.trunc(n)));
 }
 
-async function rpcCall<T>(
-  rpcUrl: string,
-  method: string,
-  params: unknown[] = [],
-  signal?: AbortSignal
-): Promise<T> {
+async function rpcCall<T>(rpcUrl: string, method: string, params: unknown[] = [], signal?: AbortSignal): Promise<T> {
   const r = await fetch(rpcUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -87,9 +91,7 @@ async function handleLogs(req: IncomingMessage, res: ServerResponse): Promise<vo
           ac.signal
         );
         const s = perf?.[0];
-        if (s && s.samplePeriodSecs > 0) {
-          tps = Math.round(s.numTransactions / s.samplePeriodSecs);
-        }
+        if (s && s.samplePeriodSecs > 0) tps = Math.round(s.numTransactions / s.samplePeriodSecs);
       } finally {
         clearTimeout(timeout);
       }
@@ -105,12 +107,13 @@ async function handleLogs(req: IncomingMessage, res: ServerResponse): Promise<vo
     return;
   }
 
-  const lines: LogLine[] = [];
   const time = nowIso();
-  lines.push({ id: `slot-${slot}`, time, message: `[SLOT] ${slot}`, type: "info" });
-  if (typeof tps === "number") lines.push({ id: `tps-${slot}`, time, message: `[TPS] ~${tps}`, type: "info" });
-  lines.push({ id: `scan-${slot}`, time, message: "[SCANNING] Solana mainnet (live RPC)", type: "info" });
-  lines.push({ id: `ready-${slot}`, time, message: "[ACTION] Agent ready.", type: "info" });
+  const lines: LogLine[] = [
+    { id: `slot-${slot}`, time, message: `[SLOT] ${slot}`, type: "info" },
+    ...(typeof tps === "number" ? [{ id: `tps-${slot}`, time, message: `[TPS] ~${tps}`, type: "info" }] : []),
+    { id: `scan-${slot}`, time, message: "[SCANNING] Solana mainnet (live RPC)", type: "info" },
+    { id: `ready-${slot}`, time, message: "[ACTION] Agent ready.", type: "info" },
+  ];
 
   sendJson(
     res,
@@ -127,9 +130,7 @@ async function handleLogs(req: IncomingMessage, res: ServerResponse): Promise<vo
 function readRequestBody(req: IncomingMessage): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on("data", (c: Buffer | string) => {
-      chunks.push(typeof c === "string" ? Buffer.from(c) : c);
-    });
+    req.on("data", (c: Buffer | string) => chunks.push(typeof c === "string" ? Buffer.from(c) : c));
     req.on("end", () => resolve(Buffer.concat(chunks)));
     req.on("error", reject);
   });
@@ -141,20 +142,18 @@ function getAgentBackendOrigin(): string | null {
   return raw.replace(/\/$/, "");
 }
 
-/** GET /api/agent/config → VPS when AGENT_BACKEND_ORIGIN is set (must match chat x402 flags or the browser never enables x402-solana). */
 async function handleConfigProxy(_req: IncomingMessage, res: ServerResponse): Promise<void> {
   const origin = getAgentBackendOrigin();
   if (!origin) {
     sendJson(res, 200, { x402AgentChat: { enabled: false } });
     return;
   }
-  const url = `${origin}/api/agent/config`;
   try {
-    const upstream = await fetch(url, { method: "GET", headers: { Accept: "application/json" } });
+    const upstream = await fetch(`${origin}/api/agent/config`, { method: "GET", headers: { Accept: "application/json" } });
     const text = await upstream.text();
     res.statusCode = upstream.status;
-    const uct = upstream.headers.get("content-type");
-    if (uct) res.setHeader("Content-Type", uct);
+    const ct = upstream.headers.get("content-type");
+    if (ct) res.setHeader("Content-Type", ct);
     res.setHeader("Cache-Control", "private, max-age=5");
     res.end(text);
   } catch (e) {
@@ -163,43 +162,25 @@ async function handleConfigProxy(_req: IncomingMessage, res: ServerResponse): Pr
   }
 }
 
-/** POST /api/agent/chat → Express (Claude) on VPS when AGENT_BACKEND_ORIGIN is set. */
 async function handleChatProxy(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const origin = getAgentBackendOrigin();
   if (!origin) {
-    res.statusCode = 503;
-    res.setHeader("Content-Type", "application/json");
-    res.setHeader("Cache-Control", "private, no-store");
-    res.end(
-      JSON.stringify({
-        error:
-          "Agent chat backend is not configured. Set AGENT_BACKEND_ORIGIN on Vercel to your VPS API origin (HTTPS, no path), or set VITE_AGENT_API_URL in the frontend.",
-        code: "AGENT_BACKEND_NOT_CONFIGURED",
-      })
-    );
+    sendJson(res, 503, { error: "Agent chat backend is not configured. Set AGENT_BACKEND_ORIGIN.", code: "AGENT_BACKEND_NOT_CONFIGURED" }, "private, no-store");
     return;
   }
 
-  const url = `${origin}/api/agent/chat`;
   const buf = await readRequestBody(req);
   const headers: Record<string, string> = { Accept: "application/json" };
   const ct = req.headers["content-type"];
   if (ct) headers["Content-Type"] = typeof ct === "string" ? ct : ct[0] ?? "application/json";
-  // Forward x402 payment headers (v2: PAYMENT-SIGNATURE; fallback duplicate from browser: X-X402-Payment-Signature).
-  for (const key of [
-    "payment-signature",
-    "payment-response",
-    "x-payment",
-    "x-payment-response",
-    "x-x402-payment-signature",
-  ]) {
+  for (const key of ["payment-signature", "payment-response", "x-payment", "x-payment-response", "x-x402-payment-signature"]) {
     const v = req.headers[key];
     if (v && typeof v === "string") headers[key] = v;
     else if (Array.isArray(v) && v[0]) headers[key] = v[0];
   }
 
   try {
-    const upstream = await fetch(url, {
+    const upstream = await fetch(`${origin}/api/agent/chat`, {
       method: "POST",
       headers,
       body: buf.length ? new Uint8Array(buf) : undefined,
@@ -208,29 +189,20 @@ async function handleChatProxy(req: IncomingMessage, res: ServerResponse): Promi
     res.statusCode = upstream.status;
     const uct = upstream.headers.get("content-type");
     if (uct) res.setHeader("Content-Type", uct);
-    // x402-solana v2 browser client needs PAYMENT-REQUIRED on 402 so it uses PAYMENT-SIGNATURE retry (not X-PAYMENT).
     const paymentRequired = upstream.headers.get("payment-required");
     if (paymentRequired) res.setHeader("PAYMENT-REQUIRED", paymentRequired);
     res.setHeader("Cache-Control", "private, no-store");
     res.end(text);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    sendJson(res, 502, { error: `Upstream agent unreachable: ${msg}`, code: "AGENT_PROXY_ERROR" });
+    sendJson(res, 502, { error: `Upstream agent unreachable: ${msg}`, code: "AGENT_PROXY_ERROR" }, "private, no-store");
   }
 }
 
-/**
- * POST /api/agent/info — “Info Agent” hosted on Vercel, but usage/payments verified on VPS.
- *
- * Browser sends JSON: { wallet, ts, signature, prompt }
- * - `wallet/ts/signature` are used by VPS `/api/usage/info` (prevents quota spoofing).
- * - When quota is exceeded, VPS returns HTTP 402 with x402 requirements; we forward as-is.
- * - On success, we return an info response (placeholder; replace with your real info logic).
- */
 async function handleInfo(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const origin = getAgentBackendOrigin();
   if (!origin) {
-    sendJson(res, 503, { error: "Usage backend not configured. Set AGENT_BACKEND_ORIGIN.", code: "USAGE_BACKEND_NOT_CONFIGURED" });
+    sendJson(res, 503, { error: "Usage backend not configured. Set AGENT_BACKEND_ORIGIN.", code: "USAGE_BACKEND_NOT_CONFIGURED" }, "private, no-store");
     return;
   }
 
@@ -239,7 +211,7 @@ async function handleInfo(req: IncomingMessage, res: ServerResponse): Promise<vo
   try {
     body = buf.length ? JSON.parse(buf.toString("utf8")) : {};
   } catch {
-    sendJson(res, 400, { error: "Invalid JSON body" });
+    sendJson(res, 400, { error: "Invalid JSON body" }, "private, no-store");
     return;
   }
 
@@ -248,7 +220,7 @@ async function handleInfo(req: IncomingMessage, res: ServerResponse): Promise<vo
   const signature = typeof body.signature === "string" ? body.signature.trim() : "";
   const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
   if (!wallet || !Number.isFinite(ts) || !signature || !prompt) {
-    sendJson(res, 400, { error: "Missing wallet/ts/signature/prompt", code: "BAD_REQUEST" });
+    sendJson(res, 400, { error: "Missing wallet/ts/signature/prompt", code: "BAD_REQUEST" }, "private, no-store");
     return;
   }
 
@@ -262,14 +234,10 @@ async function handleInfo(req: IncomingMessage, res: ServerResponse): Promise<vo
 
   let usageRes: globalThis.Response;
   try {
-    usageRes = await fetch(usageUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ wallet, ts, signature }),
-    });
+    usageRes = await fetch(usageUrl, { method: "POST", headers, body: JSON.stringify({ wallet, ts, signature }) });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    sendJson(res, 502, { error: `Usage backend unreachable: ${msg}`, code: "USAGE_PROXY_ERROR" });
+    sendJson(res, 502, { error: `Usage backend unreachable: ${msg}`, code: "USAGE_PROXY_ERROR" }, "private, no-store");
     return;
   }
 
@@ -286,28 +254,30 @@ async function handleInfo(req: IncomingMessage, res: ServerResponse): Promise<vo
   }
   if (!usageRes.ok) {
     const text = await usageRes.text();
-    sendJson(res, 502, { error: "Usage backend error", upstreamStatus: usageRes.status, upstreamBody: text.slice(0, 400) });
+    sendJson(res, 502, { error: "Usage backend error", upstreamStatus: usageRes.status, upstreamBody: text.slice(0, 400) }, "private, no-store");
     return;
   }
 
-  // Allowed -> return your info response. Replace with your real “Info Agent” logic.
-  sendJson(
-    res,
-    200,
-    {
-      ok: true,
-      answer: `Info Agent response (placeholder). Prompt: ${prompt.slice(0, 500)}`,
-    },
-    "private, no-store"
-  );
+  sendJson(res, 200, { ok: true, answer: `Info Agent response (placeholder). Prompt: ${prompt.slice(0, 500)}` }, "private, no-store");
+}
+
+function normalizeSegment(raw: string): string {
+  return String(raw || "")
+    .trim()
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "")
+    .split("/")[0] || "";
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const method = (req.method || "GET").toUpperCase();
+  const q = getQuery(req.url);
+  const segFromQuery = q.get("segment") || "";
   const url = (req.url || "/").split("#")[0];
   const pathOnly = url.split("?")[0] || "/";
   const parts = pathOnly.replace(/\/+$/, "").split("/").filter(Boolean);
-  const segment = parts[parts.length - 1] || "";
-  const method = (req.method || "GET").toUpperCase();
+  const segFromPath = parts[parts.length - 1] || "";
+  const segment = normalizeSegment(segFromQuery || segFromPath);
 
   if (segment === "chat" && method === "POST") {
     await handleChatProxy(req, res);
@@ -317,7 +287,6 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     await handleInfo(req, res);
     return;
   }
-
   if (segment === "status" && method === "GET") {
     sendJson(res, 200, { active: false, riskLevel: 0, profit24h: 0, totalPnL: 0 });
     return;
@@ -333,3 +302,4 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   sendJson(res, 404, { error: "Not found" });
 }
+
