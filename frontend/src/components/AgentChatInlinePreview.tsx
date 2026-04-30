@@ -319,7 +319,9 @@ export function AgentChatInlinePreview({
   const [agentX402, setAgentX402] = useState<AgentChatX402Info | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<ChatMessage[]>(messages);
-  const usageSigRef = useRef<{ wallet: string; ts: number; sig: string } | null>(null);
+  // Cache usage signatures per (wallet,path,method) to avoid re-signing every request.
+  // Important: signatures are tied to the path, so chat and signal must not share the same cached value.
+  const usageSigCacheRef = useRef<Record<string, { wallet: string; ts: number; sig: string }>>({});
   const lastUserTextRef = useRef<string>("");
   const [pendingSignal, setPendingSignal] = useState<{ text: string } | null>(null);
   const signalChoiceActions = useMemo(() => ["Plankton Agent", "Syraa Agent"], []);
@@ -858,7 +860,8 @@ export function AgentChatInlinePreview({
 
         const SIGNATURE_TTL_MS = 2 * 60 * 1000;
         const now = Date.now();
-        const cached = usageSigRef.current;
+        const cacheKey = `${connectedWallet}|POST|/api/agent/chat`;
+        const cached = usageSigCacheRef.current[cacheKey];
         const canReuse = cached && cached.wallet === connectedWallet && now - cached.ts <= SIGNATURE_TTL_MS;
         const usageTs = canReuse ? cached.ts : now;
         let usageSignature = canReuse ? cached.sig : "";
@@ -872,7 +875,7 @@ export function AgentChatInlinePreview({
           try {
             const usageSigBytes = await wallet.signMessage(new TextEncoder().encode(usageMsg));
             usageSignature = btoa(String.fromCharCode(...usageSigBytes));
-            usageSigRef.current = { wallet: connectedWallet, ts: usageTs, sig: usageSignature };
+            usageSigCacheRef.current[cacheKey] = { wallet: connectedWallet, ts: usageTs, sig: usageSignature };
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
             toast.error("Message signature cancelled or failed.");
@@ -1037,7 +1040,8 @@ export function AgentChatInlinePreview({
           const connectedWallet = publicKey.toBase58();
           const SIGNATURE_TTL_MS = 2 * 60 * 1000;
           const now = Date.now();
-          const cached = usageSigRef.current;
+          const cacheKey = `${connectedWallet}|POST|/api/agent/signal`;
+          const cached = usageSigCacheRef.current[cacheKey];
           const canReuse = cached && cached.wallet === connectedWallet && now - cached.ts <= SIGNATURE_TTL_MS;
           const usageTs = canReuse ? cached.ts : now;
           let usageSignature = canReuse ? cached.sig : "";
@@ -1050,7 +1054,7 @@ export function AgentChatInlinePreview({
             });
             const usageSigBytes = await wallet.signMessage(new TextEncoder().encode(usageMsg));
             usageSignature = btoa(String.fromCharCode(...usageSigBytes));
-            usageSigRef.current = { wallet: connectedWallet, ts: usageTs, sig: usageSignature };
+            usageSigCacheRef.current[cacheKey] = { wallet: connectedWallet, ts: usageTs, sig: usageSignature };
           }
 
           const params = parseSignalParams(original);

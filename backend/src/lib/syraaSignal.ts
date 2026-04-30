@@ -1,6 +1,6 @@
-import { wrapFetchWithPayment, x402Client } from "@x402/fetch";
-import { registerExactEvmScheme } from "@x402/evm/exact/client";
-import { registerExactSvmScheme } from "@x402/svm/exact/client";
+import { wrapFetchWithPaymentFromConfig } from "@x402/fetch";
+import { ExactEvmScheme } from "@x402/evm";
+import { ExactSvmScheme } from "@x402/svm";
 import { privateKeyToAccount } from "viem/accounts";
 import { createKeyPairSignerFromBytes } from "@solana/kit";
 import { base58 } from "@scure/base";
@@ -24,22 +24,24 @@ function envTrim(name: string): string {
 async function getFetchWithPayment(): Promise<FetchWithPayment> {
   if (fetchWithPaymentPromise) return fetchWithPaymentPromise;
   fetchWithPaymentPromise = (async () => {
-    const client = new x402Client();
-
     const evmKey = envTrim("SYRAA_EVM_PRIVATE_KEY");
-    if (evmKey) {
-      // Accept with or without 0x prefix.
-      const hex = (evmKey.startsWith("0x") ? evmKey : `0x${evmKey}`) as `0x${string}`;
-      registerExactEvmScheme(client, { signer: privateKeyToAccount(hex) });
+    const svmKey = envTrim("SYRAA_SOLANA_PRIVATE_KEY");
+    if (!evmKey && !svmKey) {
+      throw new Error("Syraa payments not configured: set SYRAA_SOLANA_PRIVATE_KEY and/or SYRAA_EVM_PRIVATE_KEY");
     }
 
-    const svmKey = envTrim("SYRAA_SOLANA_PRIVATE_KEY");
+    const schemes: Array<{ network: string; client: unknown; x402Version: 2 }> = [];
+    if (evmKey) {
+      const hex = (evmKey.startsWith("0x") ? evmKey : `0x${evmKey}`) as `0x${string}`;
+      schemes.push({ network: "eip155:*", client: new ExactEvmScheme(privateKeyToAccount(hex)), x402Version: 2 });
+    }
     if (svmKey) {
       const signer = await createKeyPairSignerFromBytes(base58.decode(svmKey));
-      registerExactSvmScheme(client, { signer });
+      schemes.push({ network: "solana:*", client: new ExactSvmScheme(signer), x402Version: 2 });
     }
 
-    return wrapFetchWithPayment(fetch, client);
+    // @x402/fetch will read v2 PAYMENT-REQUIRED requirements and construct a v2 payment payload.
+    return wrapFetchWithPaymentFromConfig(fetch, { schemes: schemes as any });
   })();
   return fetchWithPaymentPromise;
 }
@@ -63,29 +65,9 @@ function shouldTryEvmFirst(): boolean {
 
 export async function fetchSyraaSignal(payload: SyraaSignalRequest): Promise<{ ok: true; data: unknown } | { ok: false; status: number; error: string; body?: string }> {
   const url = buildSyraaSignalUrl(payload);
+  // Payment preference is scheme order. If you want EVM-first, set SYRAA_TRY_EVM_FIRST=1 and provide both keys.
+  if (shouldTryEvmFirst()) fetchWithPaymentPromise = null;
   const f = await getFetchWithPayment();
-
-  // Payment preference is decided by registered schemes order; to keep it simple and deterministic,
-  // we optionally create a client with EVM registered before SVM via env flag.
-  // If both keys are set but you want EVM first, set SYRAA_TRY_EVM_FIRST=1 and provide both keys.
-  if (shouldTryEvmFirst()) {
-    // Rebuild once with EVM-first order.
-    fetchWithPaymentPromise = null;
-    fetchWithPaymentPromise = (async () => {
-      const client = new x402Client();
-      const evmKey = envTrim("SYRAA_EVM_PRIVATE_KEY");
-      if (evmKey) {
-        const hex = (evmKey.startsWith("0x") ? evmKey : `0x${evmKey}`) as `0x${string}`;
-        registerExactEvmScheme(client, { signer: privateKeyToAccount(hex) });
-      }
-      const svmKey = envTrim("SYRAA_SOLANA_PRIVATE_KEY");
-      if (svmKey) {
-        const signer = await createKeyPairSignerFromBytes(base58.decode(svmKey));
-        registerExactSvmScheme(client, { signer });
-      }
-      return wrapFetchWithPayment(fetch, client);
-    })();
-  }
 
   let res: Response;
   try {
