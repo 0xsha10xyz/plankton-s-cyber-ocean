@@ -30,18 +30,29 @@ async function getFetchWithPayment(): Promise<FetchWithPayment> {
       throw new Error("Syraa payments not configured: set SYRAA_SOLANA_PRIVATE_KEY and/or SYRAA_EVM_PRIVATE_KEY");
     }
 
+    // IMPORTANT: Prefer Solana by default (SVM-first). EVM is fallback unless SYRAA_TRY_EVM_FIRST=1.
     const schemes: Array<{ network: string; client: unknown; x402Version: 2 }> = [];
-    if (evmKey) {
-      const hex = (evmKey.startsWith("0x") ? evmKey : `0x${evmKey}`) as `0x${string}`;
-      schemes.push({ network: "eip155:*", client: new ExactEvmScheme(privateKeyToAccount(hex)), x402Version: 2 });
-    }
-    if (svmKey) {
+    const addSvm = async () => {
+      if (!svmKey) return;
       const signer = await createKeyPairSignerFromBytes(base58.decode(svmKey));
       schemes.push({ network: "solana:*", client: new ExactSvmScheme(signer), x402Version: 2 });
+    };
+    const addEvm = () => {
+      if (!evmKey) return;
+      const hex = (evmKey.startsWith("0x") ? evmKey : `0x${evmKey}`) as `0x${string}`;
+      schemes.push({ network: "eip155:*", client: new ExactEvmScheme(privateKeyToAccount(hex)), x402Version: 2 });
+    };
+
+    if (shouldTryEvmFirst()) {
+      addEvm();
+      await addSvm();
+    } else {
+      await addSvm();
+      addEvm();
     }
 
     // @x402/fetch will read v2 PAYMENT-REQUIRED requirements and construct a v2 payment payload.
-    return wrapFetchWithPaymentFromConfig(fetch, { schemes: schemes as any });
+    return wrapFetchWithPaymentFromConfig(fetch, { schemes: schemes as unknown as any });
   })();
   return fetchWithPaymentPromise;
 }
@@ -65,16 +76,37 @@ function shouldTryEvmFirst(): boolean {
 
 export async function fetchSyraaSignal(payload: SyraaSignalRequest): Promise<{ ok: true; data: unknown } | { ok: false; status: number; error: string; body?: string }> {
   const url = buildSyraaSignalUrl(payload);
-  // Payment preference is scheme order. If you want EVM-first, set SYRAA_TRY_EVM_FIRST=1 and provide both keys.
+  // If preference flag changes, rebuild once.
   if (shouldTryEvmFirst()) fetchWithPaymentPromise = null;
+
   const f = await getFetchWithPayment();
 
-  let res: Response;
-  try {
-    res = await f(url, { method: "GET", headers: { Accept: "application/json" } });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return { ok: false, status: 502, error: `Syraa request failed: ${msg}` };
+  let res: Response | null = null;
+  const MAX_ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      res = await f(url, { method: "GET", headers: { Accept: "application/json" } });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise((r) => setTimeout(r, 400 * attempt));
+        continue;
+      }
+      return { ok: false, status: 502, error: `Syraa request failed: ${msg}` };
+    }
+
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      // Syraa edge can be flaky; retry with small backoff.
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise((r) => setTimeout(r, 500 * attempt));
+        continue;
+      }
+    }
+    break;
+  }
+
+  if (!res) {
+    return { ok: false, status: 502, error: "Syraa request failed: no response" };
   }
 
   const text = await res.text().catch(() => "");
