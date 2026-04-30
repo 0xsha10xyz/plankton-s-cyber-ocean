@@ -81,6 +81,15 @@ export default {
           400: "hsl(160 80% 55%)",
           500: "hsl(160 80% 45%)",
         },
+        /** Hybrid Arkham (intel blue) + Nansen (signal green) */
+        signal: {
+          DEFAULT: "hsl(var(--signal))",
+          foreground: "hsl(var(--signal-foreground))",
+        },
+        intel: {
+          DEFAULT: "hsl(var(--intel))",
+          muted: "hsl(var(--intel-muted))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

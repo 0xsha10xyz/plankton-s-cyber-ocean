@@ -8,10 +8,10 @@ import { AccountSidebar } from "./AccountSidebar";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 
 const NAV_CONFIG: { label: string; sectionId?: string; path?: string }[] = [
-  { label: "Dashboard", sectionId: "dashboard" },
+  { label: "Dashboard", path: "/dashboard" },
   { label: "Swap", path: "/swap" },
-  { label: "Research", sectionId: "research" },
-  { label: "Screener", sectionId: "screener" },
+  { label: "Research", path: "/dashboard#insights" },
+  { label: "Screener", path: "/dashboard#screener" },
   { label: "Governance", sectionId: "tokenomics" },
   { label: "Subscription", sectionId: "pricing" },
   { label: "Roadmap", sectionId: "roadmap" },
@@ -32,12 +32,12 @@ const Header = () => {
   const [accountSidebarOpen, setAccountSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("dashboard");
   const [showDisconnect, setShowDisconnect] = useState(false);
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const { connected, publicKey, disconnect } = useWallet();
   const { openWalletModal } = useWalletModal();
 
   const updateActiveSection = useCallback(() => {
-    if (pathname !== "/") return;
+    if (pathname !== "/home") return;
     const headerOffset = 100;
     const sectionItems = NAV_CONFIG.filter((c): c is { label: string; sectionId: string } => !!c.sectionId);
     let current = sectionItems[0]?.sectionId ?? "dashboard";
@@ -92,9 +92,11 @@ const Header = () => {
   const isActive = (item: (typeof NAV_CONFIG)[number]) => {
     if (item.path) {
       if (item.path === "/docs") return pathname === "/docs" || pathname.startsWith("/docs/");
+      const full = `${pathname}${hash ?? ""}`;
+      if (item.path.includes("#")) return full === item.path;
       return pathname === item.path;
     }
-    return pathname === "/" && activeSection === item.sectionId;
+    return pathname === "/home" && activeSection === item.sectionId;
   };
 
   const handleDisconnect = useCallback(() => {
@@ -108,46 +110,53 @@ const Header = () => {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 header-shell">
-        <div className="container mx-auto flex items-center justify-between px-4 sm:px-6 py-3.5">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex w-full max-w-[1680px] items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Link
-              to="/"
+              to="/home"
               onClick={() => {
                 setMobileOpen(false);
-                if (pathname === "/") {
+                if (pathname === "/home") {
                   window.scrollTo({ top: 0, behavior: "auto" });
                 }
               }}
-              className="flex items-center gap-3 outline-none rounded-md focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="flex items-center gap-3 outline-none rounded-md focus-visible:ring-2 focus-visible:ring-ring/60 min-w-0"
             >
               <img
                 src="/brand/plankton-token-logo.png"
                 alt="Plankton logo"
                 width={34}
                 height={34}
-                className="shrink-0 rounded-full"
+                className="shrink-0 rounded-full ring-1 ring-border/60 shadow-[0_0_20px_-6px_hsl(var(--primary)/0.45)]"
                 loading="eager"
                 decoding="async"
               />
-              <span className="text-xl font-bold glow-text text-primary">PLANKTON</span>
+              <div className="flex flex-col min-w-0">
+                <span className="brand-wordmark text-lg sm:text-xl font-bold leading-none truncate">
+                  PLANKTON
+                </span>
+                <span className="mt-0.5 hidden sm:block text-[9px] font-mono uppercase tracking-[0.24em] text-muted-foreground/55">
+                  Intelligence
+                </span>
+              </div>
             </Link>
           </div>
 
-          {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center flex-nowrap gap-0.5 xl:gap-1 rounded-full border border-border/40 bg-background/35 px-1.5 py-1 shadow-inner">
+          {/* Desktop nav — Arkham density + Nansen active accent */}
+          <nav className="hidden lg:flex items-center flex-nowrap gap-0 rounded-xl border border-border/55 bg-black/22 px-1 py-1 shadow-inner backdrop-blur-sm">
             {NAV_CONFIG.map((item) => {
               const sectionId = "sectionId" in item ? item.sectionId : undefined;
               const path = "path" in item ? item.path : undefined;
               const active = isActive(item);
               const linkClass = cn(
-                "relative px-3 py-2.5 text-sm transition-colors rounded-md hover:bg-secondary/50 min-h-[44px] flex items-center",
+                "relative px-2.5 xl:px-3 py-2 text-[13px] tracking-tight transition-colors rounded-lg min-h-[40px] flex items-center",
                 active
-                  ? "text-primary font-semibold"
-                  : "text-muted-foreground hover:text-primary"
+                  ? "text-signal font-semibold bg-signal/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/45"
               );
               const activeUnderline =
                 active &&
-                "after:content-[''] after:absolute after:left-2 after:right-2 after:bottom-0 after:h-0.5 after:bg-primary after:rounded-full after:opacity-60";
+                "after:content-[''] after:absolute after:left-2 after:right-2 after:bottom-1 after:h-[2px] after:bg-signal after:rounded-full";
               if (path) {
                 if (path === "/docs") {
                   return (
@@ -173,11 +182,11 @@ const Header = () => {
                   </Link>
                 );
               }
-              if (pathname !== "/") {
+              if (pathname !== "/home") {
                 return (
                   <Link
                     key={sectionId}
-                    to={`/#${sectionId}`}
+                    to={`/home#${sectionId}`}
                     onClick={() => setMobileOpen(false)}
                     className={linkClass}
                   >
@@ -204,7 +213,7 @@ const Header = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setAccountSidebarOpen(true)}
-                className="flex items-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:text-primary hover:bg-secondary/50 rounded-md transition-colors min-h-[44px]"
+                className="flex items-center gap-2 px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-lg transition-colors min-h-[40px]"
               >
                 <User size={16} />
                 Account
@@ -221,7 +230,7 @@ const Header = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowDisconnect((v) => !v)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/15 border border-accent/40 text-accent text-sm font-mono"
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg bg-intel/10 border border-intel/35 text-intel text-[13px] font-mono"
                   >
                     <Wallet size={14} />
                     <span className="hidden sm:inline max-w-[120px] truncate" title={addressString}>
@@ -269,7 +278,7 @@ const Header = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={openWalletModal}
-                  className="neon-button flex items-center gap-2 text-sm text-primary"
+                  className="neon-button flex items-center gap-2 text-[13px] text-primary"
                 >
                   <Wallet size={16} />
                   <span className="hidden sm:inline">Connect Wallet</span>
@@ -297,7 +306,7 @@ const Header = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.15 }}
-              className="lg:hidden overflow-hidden border-t border-border/30"
+              className="lg:hidden overflow-hidden border-t border-border/45 bg-black/15 backdrop-blur-md"
               aria-label="Main navigation"
             >
               <div className="px-4 py-3 flex flex-col gap-0.5">
@@ -306,8 +315,8 @@ const Header = () => {
                   const path = "path" in item ? item.path : undefined;
                   const active = isActive(item);
                   const mobileItemClass = cn(
-                    "min-h-[44px] flex items-center px-3 py-3 text-sm transition-colors text-left rounded-md hover:bg-secondary/50",
-                    active ? "text-primary font-semibold bg-primary/10 border-l-2 border-primary" : "text-muted-foreground hover:text-primary"
+                    "min-h-[44px] flex items-center px-3 py-3 text-sm transition-colors text-left rounded-lg hover:bg-secondary/50",
+                    active ? "text-signal font-semibold bg-signal/10 border-l-2 border-signal" : "text-muted-foreground hover:text-foreground"
                   );
                   if (path) {
                     if (path === "/docs") {
@@ -340,7 +349,7 @@ const Header = () => {
                   return (
                     <Link
                       key={sectionId}
-                      to={`/#${sectionId}`}
+                      to={`/home#${sectionId}`}
                       onClick={() => setMobileOpen(false)}
                       className={mobileItemClass}
                     >

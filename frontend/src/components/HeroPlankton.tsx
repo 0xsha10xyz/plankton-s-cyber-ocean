@@ -1,22 +1,51 @@
+import { motion } from "framer-motion";
+
+/**
+ * Home hero copy — SYRA-inspired headline hierarchy + Plankton positioning.
+ * Parent controls layout (grid column); this block is always left-aligned for readability.
+ */
 export default function HeroPlankton() {
   return (
-    <div className="flex flex-col items-center max-w-4xl mx-auto">
-      <p className="text-[11px] sm:text-xs font-semibold tracking-[0.28em] text-primary/75 uppercase mb-4">
-        Autonomous protocol · Solana
-      </p>
-      <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mt-1 mb-5 tracking-[-0.04em] leading-[1.05]">
-        <span className="bg-gradient-to-b from-white via-primary to-teal-500/85 bg-clip-text text-transparent drop-shadow-[0_0_40px_hsl(180_90%_50%/0.2)]">
-          PLANKTON
-        </span>
-      </h1>
+    <div className="text-left max-w-xl lg:max-w-[540px]">
+      <motion.p
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45 }}
+        className="text-[10px] font-mono font-medium tracking-[0.28em] text-muted-foreground/65 uppercase mb-4"
+      >
+        Surface · Depth · Signal
+      </motion.p>
 
-      <p className="text-lg sm:text-xl md:text-2xl text-foreground/95 font-semibold max-w-3xl mb-3 leading-snug tracking-tight">
-        Advanced autonomous AI agents with a robust human oversight layer
-      </p>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.06, duration: 0.45 }}
+        className="inline-flex items-center rounded-full border border-border/55 bg-black/35 px-3 py-1.5 text-[11px] font-mono text-muted-foreground backdrop-blur-sm mb-6"
+      >
+        <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-signal shadow-[0_0_8px_hsl(var(--signal)/0.6)]" />
+        Powered by Solana
+      </motion.div>
 
-      <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-xl mb-2 leading-relaxed">
-        The Autonomous Protocol — all execution on Solana.
-      </p>
+      <motion.h1
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.12, duration: 0.5 }}
+        className="text-4xl sm:text-5xl lg:text-[3.15rem] xl:text-[3.35rem] font-bold tracking-[-0.035em] leading-[1.08] text-foreground"
+      >
+        Agent-ready trading infrastructure{" "}
+        <span className="text-muted-foreground/80 font-semibold">layer</span>{" "}
+        <span className="text-signal">for smart markets</span>
+      </motion.h1>
+
+      <motion.p
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.22, duration: 0.5 }}
+        className="mt-5 text-base sm:text-lg text-muted-foreground leading-relaxed"
+      >
+        Institutional-grade density when you need it — dashboard intelligence, Solana execution, and a compact agent
+        terminal layout: bold headline, command bar, and a glass deck that stays readable at a glance.
+      </motion.p>
     </div>
   );
 }

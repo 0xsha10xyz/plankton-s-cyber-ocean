@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="600" viewBox="0 0 1800 600" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#020711"/>
+      <stop offset="0.48" stop-color="#061422"/>
+      <stop offset="1" stop-color="#02050C"/>
+    </linearGradient>
+    <radialGradient id="leftGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(360 300) rotate(90) scale(280 430)">
+      <stop stop-color="#2EF4DA" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#2EF4DA" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="rightGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1330 280) rotate(90) scale(250 460)">
+      <stop stop-color="#2EA7FF" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#2EA7FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="headline" x1="505" y1="240" x2="1290" y2="240" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#67FFF1"/>
+      <stop offset="0.46" stop-color="#F7FFFF"/>
+      <stop offset="1" stop-color="#66C7FF"/>
+    </linearGradient>
+    <linearGradient id="syraa" x1="1260" y1="266" x2="1580" y2="266" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.52" stop-color="#77FFF0"/>
+      <stop offset="1" stop-color="#4AA8FF"/>
+    </linearGradient>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.1 0 0 0 0 1 0 0 0 0 0.86 0 0 0 0.7 0"/>
+      <feBlend in="SourceGraphic"/>
+    </filter>
+    <filter id="textGlow" x="-15%" y="-60%" width="130%" height="220%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.2" fill="#A8FFF5" opacity="0.10"/>
+    </pattern>
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M80 0H0V80" stroke="#64FFF0" stroke-opacity="0.05" stroke-width="1"/>
+    </pattern>
+    <clipPath id="logoClip">
+      <circle cx="320" cy="300" r="138"/>
+    </clipPath>
+  </defs>
+
+  <rect width="1800" height="600" fill="url(#bg)"/>
+  <rect width="1800" height="600" fill="url(#leftGlow)"/>
+  <rect width="1800" height="600" fill="url(#rightGlow)"/>
+  <rect width="1800" height="600" fill="url(#grid)"/>
+  <rect width="1800" height="600" fill="url(#dots)"/>
+
+  <path d="M80 470C250 380 370 422 530 360C690 298 760 226 930 266C1085 303 1165 388 1338 338C1478 298 1562 208 1715 245" stroke="#4AF7E5" stroke-opacity="0.16" stroke-width="2"/>
+  <path d="M85 505C285 424 430 455 620 394C780 343 884 292 1010 324C1138 356 1212 432 1370 394C1520 358 1595 292 1710 326" stroke="#66C7FF" stroke-opacity="0.12" stroke-width="2"/>
+
+  <g opacity="0.9">
+    <circle cx="320" cy="300" r="176" fill="#0A1D25" opacity="0.62"/>
+    <circle cx="320" cy="300" r="160" stroke="#42FFE8" stroke-opacity="0.35" stroke-width="2"/>
+    <circle cx="320" cy="300" r="142" stroke="#42FFE8" stroke-opacity="0.65" stroke-width="3" filter="url(#softGlow)"/>
+    <image href="../../frontend/public/brand/planktonomous-intelligent-assistant-logo.png" x="184" y="164" width="272" height="272" clip-path="url(#logoClip)" preserveAspectRatio="xMidYMid slice"/>
+  </g>
+
+  <g filter="url(#textGlow)">
+    <text x="540" y="230" fill="#8FFFF1" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="6">
+      CONFIGURATION PARTNERSHIP
+    </text>
+    <text x="540" y="310" fill="url(#headline)" font-family="Inter, Arial, sans-serif" font-size="74" font-weight="800" letter-spacing="-2">
+      Planktonomous
+    </text>
+    <text x="1098" y="310" fill="#5DFFF0" font-family="Inter, Arial, sans-serif" font-size="58" font-weight="300">
+      x
+    </text>
+    <text x="1165" y="310" fill="url(#syraa)" font-family="Inter, Arial, sans-serif" font-size="78" font-weight="900" letter-spacing="7">
+      SYRAA
+    </text>
+  </g>
+
+  <rect x="542" y="344" width="824" height="1.5" fill="#5DFFF0" opacity="0.28"/>
+  <text x="540" y="396" fill="#D9FFFA" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="600" opacity="0.92">
+    Signal agent integration - Vercel to VPS - x402 Solana-first
+  </text>
+
+  <g transform="translate(540 438)">
+    <rect width="204" height="40" rx="20" fill="#102D38" stroke="#4EFFE8" stroke-opacity="0.35"/>
+    <text x="22" y="26" fill="#8FFFF1" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700">Plankton Agent</text>
+  </g>
+  <g transform="translate(766 438)">
+    <rect width="174" height="40" rx="20" fill="#102D38" stroke="#4EFFE8" stroke-opacity="0.35"/>
+    <text x="22" y="26" fill="#8FFFF1" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700">Syraa Agent</text>
+  </g>
+  <g transform="translate(962 438)">
+    <rect width="230" height="40" rx="20" fill="#102D38" stroke="#4EFFE8" stroke-opacity="0.35"/>
+    <text x="22" y="26" fill="#8FFFF1" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700">Secure server-side keys</text>
+  </g>
+
+  <text x="1600" y="536" fill="#84FFF1" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700" opacity="0.85">
+    planktonomous.dev
+  </text>
+
+  <rect x="24" y="24" width="1752" height="552" rx="34" stroke="#5DFFF0" stroke-opacity="0.12" stroke-width="2"/>
+</svg>

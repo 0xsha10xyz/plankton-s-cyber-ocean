@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 const XIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -24,31 +26,47 @@ const socials = [
 
 const Footer = () => {
   return (
-    <footer className="relative mt-24 border-t border-border/40 bg-gradient-to-b from-transparent to-[hsl(222_50%_5%/0.85)]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/35 to-transparent" />
-      <div className="container mx-auto px-4 sm:px-6 py-14 md:py-16">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
+    <footer className="relative mt-24 border-t border-border/50 bg-gradient-to-b from-transparent to-[hsl(222_47%_3%/0.92)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-signal/25 to-transparent" />
+      <div className="mx-auto w-full max-w-[1680px] px-4 sm:px-6 py-12 md:py-14">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 min-w-0">
+            <Link to="/home" className="flex items-center gap-3 shrink-0 outline-none rounded-md focus-visible:ring-2 focus-visible:ring-ring/60">
             <img
               src="/brand/plankton-token-logo.png"
               alt="Plankton logo"
               width={28}
               height={28}
-              className="shrink-0 rounded-full"
+              className="shrink-0 rounded-full ring-1 ring-border/50"
               loading="lazy"
               decoding="async"
             />
-            <span className="font-bold text-primary glow-text">PLANKTON</span>
+            <span className="brand-wordmark text-base font-bold">PLANKTON</span>
+            </Link>
+            <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
+              <Link to="/dashboard" className="hover:text-signal transition-colors">
+                Dashboard
+              </Link>
+              <Link to="/swap" className="hover:text-signal transition-colors">
+                Swap
+              </Link>
+              <Link to="/launch-agent" className="hover:text-signal transition-colors">
+                Launch agent
+              </Link>
+              <a href="/docs" target="_blank" rel="noopener noreferrer" className="hover:text-intel transition-colors">
+                Docs
+              </a>
+            </nav>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 md:gap-4 shrink-0">
             {socials.map((s) => (
               <a
                 key={s.name}
                 href={s.href}
                 target={s.href.startsWith("http") ? "_blank" : undefined}
                 rel={s.href.startsWith("http") ? "noopener noreferrer" : undefined}
-                className="w-10 h-10 rounded-xl bg-secondary/45 border border-border/45 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 hover:shadow-glow-sm hover:-translate-y-0.5 transition-all duration-300"
+                className="w-10 h-10 rounded-xl bg-secondary/35 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-signal hover:border-signal/35 hover:shadow-[0_0_16px_-6px_hsl(var(--signal)/0.35)] hover:-translate-y-0.5 transition-all duration-300"
                 title={s.name}
               >
                 <s.icon />
@@ -57,9 +75,9 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="text-center mt-8">
-          <p className="text-xs text-muted-foreground mt-2">
-            © 2026 Plankton. The Autonomous Web4 Trading Protocol.
+        <div className="text-center mt-10 pt-8 border-t border-border/40">
+          <p className="text-[11px] font-mono text-muted-foreground/80 tracking-wide">
+            © 2026 Plankton · Autonomous Web4 trading protocol
           </p>
         </div>
       </div>

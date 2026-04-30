@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="600" viewBox="0 0 1800 600" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#020711"/>
+      <stop offset="0.48" stop-color="#071322"/>
+      <stop offset="1" stop-color="#030409"/>
+    </linearGradient>
+    <radialGradient id="tealGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(500 280) rotate(90) scale(280 520)">
+      <stop stop-color="#22FFF0" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#22FFF0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="whiteGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1320 280) rotate(90) scale(250 440)">
+      <stop stop-color="#FFFFFF" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.1" fill="#AFFFF7" opacity="0.09"/>
+    </pattern>
+    <pattern id="grid" width="90" height="90" patternUnits="userSpaceOnUse">
+      <path d="M90 0H0V90" stroke="#54FFF0" stroke-opacity="0.045" stroke-width="1"/>
+    </pattern>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="headline" x1="260" y1="0" x2="1540" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#28FFF0"/>
+      <stop offset="0.5" stop-color="#F7FFFF"/>
+      <stop offset="1" stop-color="#D7D7D7"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1800" height="600" fill="url(#bg)"/>
+  <rect width="1800" height="600" fill="url(#tealGlow)"/>
+  <rect width="1800" height="600" fill="url(#whiteGlow)"/>
+  <rect width="1800" height="600" fill="url(#grid)"/>
+  <rect width="1800" height="600" fill="url(#dots)"/>
+
+  <path d="M95 454C260 384 414 418 586 350C748 286 835 230 990 265C1160 304 1240 392 1418 344C1555 307 1635 246 1712 270" stroke="#43FFF0" stroke-opacity="0.14" stroke-width="2"/>
+  <path d="M92 491C304 420 455 452 635 398C794 350 910 312 1040 334C1170 356 1262 430 1405 402C1552 373 1627 325 1712 348" stroke="#FFFFFF" stroke-opacity="0.09" stroke-width="2"/>
+
+  <rect x="72" y="70" width="1656" height="460" rx="38" fill="#07111C" fill-opacity="0.38" stroke="#5DFFF0" stroke-opacity="0.14"/>
+
+  <!-- Plankton brand block -->
+  <g transform="translate(180 178)">
+    <rect x="0" y="0" width="500" height="244" rx="30" fill="#06111B" fill-opacity="0.72" stroke="#34FFF0" stroke-opacity="0.18"/>
+    <image href="../../frontend/public/brand/plankton-token-logo.png" x="54" y="62" width="120" height="120" preserveAspectRatio="xMidYMid meet"/>
+    <text x="205" y="118" fill="#24FFF0" font-family="Inter, Arial, sans-serif" font-size="46" font-weight="900" letter-spacing="1.5">PLANKTON</text>
+    <text x="207" y="154" fill="#D9FFFA" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="600" opacity="0.78">Planktonomous Intelligent Assistant</text>
+  </g>
+
+  <!-- Center divider -->
+  <g transform="translate(850 182)" filter="url(#glow)">
+    <line x1="50" y1="0" x2="50" y2="236" stroke="#5DFFF0" stroke-opacity="0.28" stroke-width="2"/>
+    <circle cx="50" cy="118" r="46" fill="#071923" stroke="#62FFF0" stroke-opacity="0.55" stroke-width="2"/>
+    <text x="50" y="135" text-anchor="middle" fill="#EFFFFD" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="300">×</text>
+  </g>
+
+  <!-- Syra brand block -->
+  <g transform="translate(1120 178)">
+    <rect x="0" y="0" width="500" height="244" rx="30" fill="#08090B" fill-opacity="0.74" stroke="#FFFFFF" stroke-opacity="0.16"/>
+    <g transform="translate(58 63)">
+      <rect x="0" y="0" width="118" height="118" rx="14" fill="#050505"/>
+      <path d="M59 18L88 30V55C88 77 74 92 59 100C44 92 30 77 30 55V30L59 18Z" stroke="#F2F2F2" stroke-width="5" fill="none" stroke-linejoin="round"/>
+      <path d="M68 42C64 36 53 35 49 42C45 50 55 54 61 57C69 61 74 67 69 76C64 85 49 85 43 76" stroke="#F2F2F2" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M59 32V88" stroke="#F2F2F2" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <text x="210" y="121" fill="#D9D9D9" font-family="Inter, Arial, sans-serif" font-size="52" font-weight="900" letter-spacing="1">SYRA</text>
+    <text x="212" y="156" fill="#F4F4F4" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="600" opacity="0.72">AI trading infrastructure layer</text>
+  </g>
+
+  <text x="900" y="112" text-anchor="middle" fill="#9AFFF6" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="5" opacity="0.9">
+    CONFIGURATION BANNER
+  </text>
+  <text x="900" y="486" text-anchor="middle" fill="url(#headline)" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800">
+    Signal Agent Integration " VPS Backend " x402 Solana-first
+  </text>
+  <text x="1640" y="545" text-anchor="end" fill="#8FFFF1" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700" opacity="0.82">
+    planktonomous.dev
+  </text>
+</svg>

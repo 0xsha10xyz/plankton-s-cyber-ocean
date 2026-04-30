@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MotionConfig } from "framer-motion";
@@ -21,6 +21,7 @@ import DocsHome from "@/components/docs/DocsHome";
 import DocArticle from "@/components/docs/DocArticle";
 import AgentChatPage from "./pages/AgentChatPage";
 import LaunchAgentPage from "./pages/LaunchAgentPage";
+import Dashboard from "./pages/Dashboard";
 import { EvmWalletProviders } from "@/contexts/EvmWalletProviders";
 import { AppConfigProvider } from "@/hooks/useAppConfig";
 
@@ -47,7 +48,11 @@ const App = () => (
                 <ScrollToTop />
                 <StatsWalletTracker />
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  {/* Default: open on the professional dashboard experience */}
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  {/* Marketing / landing content stays available */}
+                  <Route path="/home" element={<Index />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/swap" element={<Swap />} />
                   <Route path="/docs" element={<DocsLayout />}>
                     <Route index element={<DocsHome />} />

@@ -67,7 +67,7 @@ export default function DocsLayout() {
         <button
           type="button"
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="fixed top-20 left-4 z-50 lg:hidden p-2.5 rounded-xl glass-card text-primary border border-primary/15 shadow-lg"
+          className="fixed top-20 left-4 z-50 lg:hidden p-2.5 rounded-xl glass-card text-signal border border-signal/20 shadow-lg"
           aria-expanded={sidebarOpen}
           aria-label="Toggle documentation menu"
         >
@@ -101,16 +101,16 @@ export default function DocsLayout() {
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 text-left",
                     activeSection === section.id
-                      ? "bg-primary/[0.12] text-primary border border-primary/25 shadow-[0_0_20px_hsl(var(--primary)/0.12)]"
+                      ? "bg-signal/[0.12] text-signal border border-signal/25 shadow-[0_0_20px_hsl(var(--signal)/0.12)]"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary/30 border border-transparent",
                   )}
                 >
                   <section.icon
                     size={16}
-                    className={activeSection === section.id ? "text-primary" : "text-muted-foreground/55"}
+                    className={activeSection === section.id ? "text-signal" : "text-muted-foreground/55"}
                   />
                   <span className="font-medium">{section.label}</span>
-                  {activeSection === section.id ? <ChevronRight size={14} className="ml-auto text-primary shrink-0" /> : null}
+                  {activeSection === section.id ? <ChevronRight size={14} className="ml-auto text-signal shrink-0" /> : null}
                 </button>
               ))}
             </nav>
