@@ -131,6 +131,13 @@ function formatSyraaSummary(payloadUnknown: unknown): { title: string; lines: st
   const adx = ti.adx ? `${safeString(ti.adx.value)} (${safeString(ti.adx.trendStrength)} ${safeString(ti.adx.trendDirection)})` : "";
   const mfi = ti.mfi ? `${safeString(ti.mfi.value)} (${safeString(ti.mfi.signal)})` : "";
 
+  const reasoning = (() => {
+    const r = getField(rec, "reasoning");
+    if (Array.isArray(r)) return r.map((x) => safeString(x)).filter(Boolean);
+    if (typeof r === "string") return r.split("\n").map((x) => x.trim()).filter(Boolean);
+    return [];
+  })();
+
   const lines: string[] = [];
   lines.push(`Action: ${action}${strength ? ` • Strength: ${strength}` : ""}${confidence ? ` • Confidence: ${confidence}` : ""}`);
   lines.push(`Price: ${price}${change ? ` • 24h: ${change}` : ""}`);
@@ -142,6 +149,10 @@ function formatSyraaSummary(payloadUnknown: unknown): { title: string; lines: st
     mfi ? `MFI ${mfi}` : "",
   ].filter(Boolean);
   if (indBits.length) lines.push(`Key indicators: ${indBits.join(" • ")}`);
+  if (reasoning.length) {
+    lines.push("Why:");
+    for (const x of reasoning.slice(0, 3)) lines.push(`- ${x}`);
+  }
 
   const rawPretty = (() => {
     try {
@@ -213,6 +224,27 @@ function parseSignalParams(text: string): SignalParams {
   if (!out.source) out.source = "binance";
   if (!out.bar) out.bar = "1h";
   if (!out.limit) out.limit = 200;
+
+  // Normalize common symbol formats so Syraa/Binance don't reject them.
+  // Examples:
+  // - "BTC/USDT" -> "BTCUSDT"
+  // - "btcusdt"  -> "BTCUSDT"
+  // Prefer instId for exchange symbols; keep token for names like "bitcoin".
+  const normalizeSymbol = (v: string) => v.replace(/[^a-z0-9]/gi, "").toUpperCase();
+  const t = typeof out.token === "string" ? out.token.trim() : "";
+  const i = typeof out.instId === "string" ? out.instId.trim() : "";
+  if (i) out.instId = normalizeSymbol(i);
+  if (t) {
+    const sym = normalizeSymbol(t);
+    const looksLikePair = /^[A-Z0-9]{2,20}USDT$/.test(sym) || /^[A-Z0-9]{2,20}USD$/.test(sym) || /^[A-Z0-9]{2,20}USDC$/.test(sym);
+    if (looksLikePair && !out.instId) {
+      out.instId = sym;
+      out.token = undefined;
+    } else {
+      // Keep as token, but strip obvious separators just in case.
+      out.token = t.includes("/") ? sym : t;
+    }
+  }
 
   // If user typed just "signal", we keep token empty and ask for it.
   if (lower === "signal" || lower === "/signal") {
