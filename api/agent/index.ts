@@ -8,6 +8,7 @@
  * - GET  /api/agent/logs | /api/agent/status | /api/agent/config
  * - POST /api/agent/chat
  * - POST /api/agent/info
+ * - POST /api/agent/signal (Syraa proxy)
  *
  * When `AGENT_BACKEND_ORIGIN` (or `VPS_AGENT_API_ORIGIN`) is set, chat/config/info are proxied to the VPS.
  */
@@ -199,6 +200,46 @@ async function handleChatProxy(req: IncomingMessage, res: ServerResponse): Promi
   }
 }
 
+async function handleSignalProxy(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const origin = getAgentBackendOrigin();
+  if (!origin) {
+    sendJson(
+      res,
+      503,
+      { error: "Agent backend is not configured. Set AGENT_BACKEND_ORIGIN.", code: "AGENT_BACKEND_NOT_CONFIGURED" },
+      "private, no-store"
+    );
+    return;
+  }
+
+  const buf = await readRequestBody(req);
+  const headers: Record<string, string> = { Accept: "application/json" };
+  const ct = req.headers["content-type"];
+  if (ct) headers["Content-Type"] = typeof ct === "string" ? ct : ct[0] ?? "application/json";
+  for (const key of ["payment-signature", "payment-response", "x-payment", "x-payment-response", "x-x402-payment-signature"]) {
+    const v = req.headers[key];
+    if (v && typeof v === "string") headers[key] = v;
+    else if (Array.isArray(v) && v[0]) headers[key] = v[0];
+  }
+
+  try {
+    const upstream = await fetch(`${origin}/api/agent/signal`, {
+      method: "POST",
+      headers,
+      body: buf.length ? new Uint8Array(buf) : undefined,
+    });
+    const text = await upstream.text();
+    res.statusCode = upstream.status;
+    const uct = upstream.headers.get("content-type");
+    if (uct) res.setHeader("Content-Type", uct);
+    res.setHeader("Cache-Control", "private, no-store");
+    res.end(text);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    sendJson(res, 502, { error: `Upstream signal unreachable: ${msg}`, code: "SIGNAL_PROXY_ERROR" }, "private, no-store");
+  }
+}
+
 async function handleInfo(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const origin = getAgentBackendOrigin();
   if (!origin) {
@@ -281,6 +322,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   if (segment === "chat" && method === "POST") {
     await handleChatProxy(req, res);
+    return;
+  }
+  if (segment === "signal" && method === "POST") {
+    await handleSignalProxy(req, res);
     return;
   }
   if (segment === "info" && method === "POST") {

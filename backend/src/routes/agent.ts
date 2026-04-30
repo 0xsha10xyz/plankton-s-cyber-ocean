@@ -2,6 +2,7 @@ import { Router } from "express";
 import { resolveX402UsdcMint } from "../lib/x402UsdcMint.js";
 import { consumeUsageOrBlock, requireBlockPaymentAndCredit, sendJsonWithPaymentRequiredHeader } from "../usage/x402-blocks.js";
 import { verifyUsageSignature } from "../usage/verify-wallet.js";
+import { fetchSyraaSignal, type SyraaSignalRequest } from "../lib/syraaSignal.js";
 
 export const agentRouter = Router();
 
@@ -498,4 +499,65 @@ agentRouter.post("/chat", async (req, res) => {
   } finally {
     clearTimeout(t);
   }
+});
+
+/**
+ * POST /api/agent/signal — fetch a Syraa trading signal via the VPS (server pays x402 upstream).
+ *
+ * Body:
+ * - token/source/instId/bar/limit: forwarded as query params to https://api.syraa.fun/signal
+ * - wallet/usageTs/usageSignature: same anti-spoof signature gate as /api/agent/chat
+ */
+agentRouter.post("/signal", async (req, res) => {
+  const body = req.body as {
+    token?: string;
+    source?: string;
+    instId?: string;
+    bar?: string;
+    limit?: number;
+    wallet?: string;
+    usageTs?: number;
+    usageSignature?: string;
+  };
+
+  const wallet = typeof body.wallet === "string" ? body.wallet.trim() : "";
+  const usageTs = typeof body.usageTs === "number" ? body.usageTs : Number(body.usageTs);
+  const usageSig = typeof body.usageSignature === "string" ? body.usageSignature.trim() : "";
+  if (!wallet || !Number.isFinite(usageTs) || !usageSig) {
+    res.status(401).json({ error: "Wallet signature required", code: "WALLET_SIGNATURE_REQUIRED" });
+    return;
+  }
+
+  const sigOk = verifyUsageSignature({
+    wallet,
+    ts: usageTs,
+    signatureB64: usageSig,
+    path: "/api/agent/signal",
+    method: "POST",
+  });
+  if (!sigOk) {
+    res.status(401).json({ error: "Invalid wallet signature", code: "WALLET_SIGNATURE_INVALID" });
+    return;
+  }
+
+  const payload: SyraaSignalRequest = {
+    token: typeof body.token === "string" ? body.token.trim() : undefined,
+    source: typeof body.source === "string" ? body.source.trim() : undefined,
+    instId: typeof body.instId === "string" ? body.instId.trim() : undefined,
+    bar: typeof body.bar === "string" ? body.bar.trim() : undefined,
+    limit: typeof body.limit === "number" ? body.limit : Number(body.limit),
+  };
+
+  const out = await fetchSyraaSignal(payload);
+  if (!out.ok) {
+    res.status(out.status >= 400 && out.status < 600 ? out.status : 502).json({
+      error: out.error,
+      upstreamBody: out.body ?? "",
+      code: "SYRAA_SIGNAL_FAILED",
+    });
+    return;
+  }
+
+  res.setHeader("Cache-Control", "private, no-store");
+  res.json({ ok: true, data: out.data });
 });

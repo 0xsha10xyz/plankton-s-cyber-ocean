@@ -48,6 +48,63 @@ function detectBase58(text: string): string[] {
   return text.match(BASE58_RE) ?? [];
 }
 
+function isSignalIntent(text: string): boolean {
+  const t = (text || "").trim().toLowerCase();
+  if (!t) return false;
+  // Keep this conservative so normal conversation isn't interrupted.
+  return t === "signal" || t.startsWith("signal ") || t.startsWith("/signal ");
+}
+
+type SignalParams = { token?: string; source?: string; instId?: string; bar?: string; limit?: number };
+function parseSignalParams(text: string): SignalParams {
+  const raw = (text || "").trim();
+  const lower = raw.toLowerCase();
+  const out: SignalParams = {};
+
+  // Support key=value pairs: token=bitcoin source=binance instId=BTCUSDT bar=1h limit=200
+  const kv = Array.from(raw.matchAll(/\b(token|source|instid|bar|limit)\s*=\s*([^\s]+)/gi));
+  for (const m of kv) {
+    const k = String(m[1] || "").toLowerCase();
+    const v = String(m[2] || "").trim();
+    if (!v) continue;
+    if (k === "token") out.token = v;
+    if (k === "source") out.source = v;
+    if (k === "instid") out.instId = v;
+    if (k === "bar") out.bar = v;
+    if (k === "limit") {
+      const n = parseInt(v, 10);
+      if (Number.isFinite(n)) out.limit = n;
+    }
+  }
+
+  // Lightweight positional parsing: "signal btcusdt 1h" or "signal bitcoin binance 1h 200"
+  if (!kv.length) {
+    const parts = raw.replace(/^\/?signal\s+/i, "").trim().split(/\s+/).filter(Boolean);
+    if (parts[0]) {
+      // heuristics: if includes letters+digits, treat as instId; else token
+      out.instId = /[0-9]/.test(parts[0]) ? parts[0] : undefined;
+      out.token = out.instId ? undefined : parts[0];
+    }
+    if (parts[1] && /^[0-9]+[mhdw]$/i.test(parts[1])) out.bar = parts[1];
+    if (parts[2] && /^\d+$/.test(parts[2])) out.limit = parseInt(parts[2], 10);
+    // allow specifying source anywhere
+    const src = parts.find((p) => /^(binance|okx|bybit|coinbase|kraken|bitget|kucoin|coingecko)$/i.test(p));
+    if (src) out.source = src;
+  }
+
+  // Defaults
+  if (!out.source) out.source = "binance";
+  if (!out.bar) out.bar = "1h";
+  if (!out.limit) out.limit = 200;
+
+  // If user typed just "signal", we keep token empty and ask for it.
+  if (lower === "signal" || lower === "/signal") {
+    out.token = undefined;
+    out.instId = undefined;
+  }
+  return out;
+}
+
 function shortenAddress(address: string, chars = 4): string {
   return `${address.slice(0, chars)}...${address.slice(-chars)}`;
 }
@@ -264,6 +321,8 @@ export function AgentChatInlinePreview({
   const messagesRef = useRef<ChatMessage[]>(messages);
   const usageSigRef = useRef<{ wallet: string; ts: number; sig: string } | null>(null);
   const lastUserTextRef = useRef<string>("");
+  const [pendingSignal, setPendingSignal] = useState<{ text: string } | null>(null);
+  const signalChoiceActions = useMemo(() => ["Plankton Agent", "Syraa Agent"], []);
 
   useEffect(() => {
     let cancelled = false;
@@ -318,6 +377,31 @@ export function AgentChatInlinePreview({
 
     const lower = trimmed.toLowerCase();
     const connectedWallet = publicKey?.toBase58();
+
+    // If the user asks for "signal", prompt for agent choice (once).
+    if (isSignalIntent(trimmed) && !pendingSignal) {
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: "user",
+        content: trimmed,
+        timestamp: new Date(),
+      };
+      const prompt: AgentJsonResponse = {
+        insight: "Signal request detected. Which agent should handle it?",
+        additional_insight: "Choose Plankton Agent for general reasoning, or Syraa Agent for a direct Syraa signal fetch.",
+        actions: signalChoiceActions,
+      };
+      const agentMsg: ChatMessage = {
+        id: `agent-${Date.now() + 1}`,
+        role: "agent",
+        content: JSON.stringify(prompt),
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMsg, agentMsg]);
+      setPendingSignal({ text: trimmed });
+      setInput("");
+      return;
+    }
 
     // Multi-step flow: user clicked "Check another wallet" -> paste a base58 wallet
     if (awaitingWalletAddress) {
@@ -933,6 +1017,103 @@ export function AgentChatInlinePreview({
   };
 
   const onAction = (action: string) => {
+    // Resolve pending signal choice actions
+    if (pendingSignal && (action === "Plankton Agent" || action === "Syraa Agent")) {
+      const original = pendingSignal.text;
+      setPendingSignal(null);
+
+      if (action === "Plankton Agent") {
+        // Re-send the original message, but skip the signal prompt loop.
+        // We do that by appending a harmless suffix that doesn't trigger isSignalIntent.
+        handleSendWithText(`Plankton: ${original}`);
+        return;
+      }
+
+      // Syraa Agent: call VPS via the same-origin agent base (Vercel proxies to VPS).
+      (async () => {
+        if (!connected || !wallet.signMessage || !publicKey) return;
+        setSending(true);
+        try {
+          const connectedWallet = publicKey.toBase58();
+          const SIGNATURE_TTL_MS = 2 * 60 * 1000;
+          const now = Date.now();
+          const cached = usageSigRef.current;
+          const canReuse = cached && cached.wallet === connectedWallet && now - cached.ts <= SIGNATURE_TTL_MS;
+          const usageTs = canReuse ? cached.ts : now;
+          let usageSignature = canReuse ? cached.sig : "";
+          if (!canReuse) {
+            const usageMsg = usageSignMessage({
+              wallet: connectedWallet,
+              ts: usageTs,
+              path: "/api/agent/signal",
+              method: "POST",
+            });
+            const usageSigBytes = await wallet.signMessage(new TextEncoder().encode(usageMsg));
+            usageSignature = btoa(String.fromCharCode(...usageSigBytes));
+            usageSigRef.current = { wallet: connectedWallet, ts: usageTs, sig: usageSignature };
+          }
+
+          const params = parseSignalParams(original);
+          const agentOrigin = getAgentApiBase();
+          const url = `${agentOrigin}/api/agent/signal`;
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({ ...params, wallet: connectedWallet, usageTs, usageSignature }),
+          });
+          if (!res.ok) {
+            const errUnknown: unknown = await res.json().catch(() => null);
+            const errObj =
+              errUnknown && typeof errUnknown === "object"
+                ? (errUnknown as { error?: unknown; upstreamBody?: unknown })
+                : null;
+            const errText = errObj?.error ? String(errObj.error) : `HTTP ${res.status}`;
+            const more = errObj?.upstreamBody ? String(errObj.upstreamBody).slice(0, 300) : "";
+            const agentMsg: ChatMessage = {
+              id: `agent-${Date.now()}`,
+              role: "agent",
+              content: JSON.stringify({
+                insight: "Syraa signal request failed.",
+                additional_insight: [errText, more].filter(Boolean).join("\n"),
+                actions: ["Retry"],
+              } satisfies AgentJsonResponse),
+              timestamp: new Date(),
+            };
+            setMessages((prev) => [...prev, agentMsg]);
+            return;
+          }
+
+          const data = await res.json().catch(() => null);
+          const pretty = data?.data != null ? JSON.stringify(data.data, null, 2) : JSON.stringify(data, null, 2);
+          const agentMsg: ChatMessage = {
+            id: `agent-${Date.now()}`,
+            role: "agent",
+            content: JSON.stringify({
+              insight: "Syraa signal result",
+              additional_insight: pretty.slice(0, 3500),
+              actions: [],
+            } satisfies AgentJsonResponse),
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, agentMsg]);
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `agent-${Date.now()}`,
+              role: "agent",
+              content: JSON.stringify({ insight: "Syraa signal failed.", additional_insight: msg, actions: ["Retry"] } satisfies AgentJsonResponse),
+              timestamp: new Date(),
+            },
+          ]);
+        } finally {
+          setSending(false);
+        }
+      })();
+      return;
+    }
+
     if (connected) {
       handleSendWithText(action);
     } else {
