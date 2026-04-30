@@ -1069,16 +1069,45 @@ export function AgentChatInlinePreview({
             const errUnknown: unknown = await res.json().catch(() => null);
             const errObj =
               errUnknown && typeof errUnknown === "object"
-                ? (errUnknown as { error?: unknown; upstreamBody?: unknown })
+                ? (errUnknown as { error?: unknown; upstreamBody?: unknown; code?: unknown })
                 : null;
-            const errText = errObj?.error ? String(errObj.error) : `HTTP ${res.status}`;
-            const more = errObj?.upstreamBody ? String(errObj.upstreamBody).slice(0, 300) : "";
+            const errText = (() => {
+              const e = errObj?.error;
+              if (!e) return `HTTP ${res.status}`;
+              if (typeof e === "string") return e;
+              try {
+                return JSON.stringify(e);
+              } catch {
+                return String(e);
+              }
+            })();
+            const codeText = errObj?.code ? `Code: ${String(errObj.code)}` : "";
+            const more = (() => {
+              const u = errObj?.upstreamBody;
+              if (u == null || u === "") {
+                // If the server did not include an upstreamBody, show the full JSON error object for debugging.
+                if (errUnknown && typeof errUnknown === "object") {
+                  try {
+                    return JSON.stringify(errUnknown, null, 2).slice(0, 1200);
+                  } catch {
+                    return String(errUnknown).slice(0, 1200);
+                  }
+                }
+                return "";
+              }
+              if (typeof u === "string") return u.slice(0, 1200);
+              try {
+                return JSON.stringify(u, null, 2).slice(0, 1200);
+              } catch {
+                return String(u).slice(0, 1200);
+              }
+            })();
             const agentMsg: ChatMessage = {
               id: `agent-${Date.now()}`,
               role: "agent",
               content: JSON.stringify({
                 insight: "Syraa signal request failed.",
-                additional_insight: [errText, more].filter(Boolean).join("\n"),
+                additional_insight: [errText, codeText, more].filter(Boolean).join("\n"),
                 actions: ["Retry"],
               } satisfies AgentJsonResponse),
               timestamp: new Date(),
