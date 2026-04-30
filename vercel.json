@@ -1,6 +1,13 @@
 {
-  "buildCommand": "npm run build && npm run vercel-build",
+  "version": 2,
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    }
+  },
   "routes": [
     { "handle": "filesystem" },
     { "src": "/api/config", "dest": "/api/health?mode=config" },
@@ -16,16 +23,5 @@
         }
       ]
     }
-  ],
-  "experimentalServices": {
-    "frontend": {
-      "entrypoint": "frontend",
-      "routePrefix": "/",
-      "framework": "vite"
-    },
-    "backend": {
-      "entrypoint": "backend",
-      "routePrefix": "/_/backend"
-    }
-  }
+  ]
 }
