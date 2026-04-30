@@ -30,6 +30,8 @@ The browser usually calls **`https://<your-domain>/api/...`** (Vercel). Agent ch
 
 Implementation: `backend/src/routes/agent.ts` (Express). Vercel can **proxy** `POST /api/agent/chat` to the VPS when **`AGENT_BACKEND_ORIGIN`** is set (merged into `api/agent/[segment].ts` to respect the Hobby serverless function limit).
 
+Detailed setup and security guidance: **[LLM providers](./llm-providers.md)**.
+
 ---
 
 ## Solana & RPC

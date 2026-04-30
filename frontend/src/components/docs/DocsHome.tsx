@@ -249,6 +249,13 @@ export default function DocsHome() {
               <li className="flex gap-3">
                 <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                 <span>
+                  <strong className="text-foreground/95">LLM providers</strong> — Claude/Groq/OpenAI setup and security-first
+                  deployment: <DocLink file="docs/llm-providers.md" />
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                <span>
                   <strong className="text-foreground/95">x402 (Solana / USDC)</strong> — paid Agent Chat, Vercel → VPS proxy,
                   facilitator verification: <DocLink file="docs/x402-payments.md" />
                 </span>
@@ -552,6 +559,8 @@ export default function DocsHome() {
           <DocLink file="docs/README.md" />
           <span className="opacity-40">·</span>
           <DocLink file="docs/CONFIGURATION.md" />
+          <span className="opacity-40">·</span>
+          <DocLink file="docs/llm-providers.md" />
           <span className="opacity-40">·</span>
           <DocLink file="docs/x402-payments.md" />
           <span className="opacity-40">·</span>

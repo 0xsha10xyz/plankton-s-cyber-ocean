@@ -4,6 +4,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Book,
   Coins,
+  Cpu,
   Landmark,
   Rocket,
   Signal,
@@ -26,6 +27,7 @@ const sidebarSections = [
   { id: "tokenomics", label: "Tokenomics", icon: Coins },
   { id: "autonomous", label: "Autonomous Agent", icon: Rocket },
   { id: "security", label: "Security", icon: Shield },
+  { id: "llm-providers", label: "LLM providers", icon: Cpu, path: "/docs/llm-providers" as const },
   { id: "x402-payments", label: "x402 payments", icon: Landmark, path: "/docs/x402-payments" as const },
   { id: "syraa-signal-agent", label: "Syraa signal agent", icon: Signal, path: "/docs/syraa-signal-agent" as const },
 ] as const;
