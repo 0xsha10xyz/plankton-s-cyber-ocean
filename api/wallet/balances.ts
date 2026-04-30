@@ -3,7 +3,6 @@
  * Standalone implementation (no imports) to avoid bundling/runtime issues on Vercel.
  * Uses SOLANA_RPC_URL or public RPCs server-side (no browser CORS).
  */
-import https from "node:https";
 
 export const config = {
   runtime: "nodejs",
@@ -42,50 +41,32 @@ function sendJson(res: Res, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
-function httpsJsonPost<T>(url: string, body: unknown): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const u = new URL(url);
-    const payload = JSON.stringify(body);
-    const req = https.request(
-      {
-        protocol: u.protocol,
-        hostname: u.hostname,
-        port: u.port ? Number(u.port) : undefined,
-        path: u.pathname + u.search,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(payload),
-        },
-      },
-      (res) => {
-        const chunks: Buffer[] = [];
-        res.on("data", (d) => chunks.push(Buffer.isBuffer(d) ? d : Buffer.from(d)));
-        res.on("end", () => {
-          const text = Buffer.concat(chunks).toString("utf8");
-          if ((res.statusCode ?? 0) < 200 || (res.statusCode ?? 0) >= 300) {
-            reject(new Error(`RPC ${res.statusCode ?? 0}: ${text.slice(0, 200)}`));
-            return;
-          }
-          try {
-            resolve(JSON.parse(text) as T);
-          } catch (e) {
-            reject(e instanceof Error ? e : new Error("Invalid JSON response"));
-          }
-        });
-      }
-    );
-    req.on("error", reject);
-    req.setTimeout(15_000, () => {
-      req.destroy(new Error("RPC timeout"));
+async function jsonPost<T>(url: string, body: unknown): Promise<T> {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), 15_000);
+  try {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body),
+      signal: ac.signal,
     });
-    req.write(payload);
-    req.end();
-  });
+    const text = await r.text();
+    if (!r.ok) {
+      throw new Error(`RPC ${r.status}: ${text.slice(0, 200)}`);
+    }
+    try {
+      return JSON.parse(text) as T;
+    } catch (e) {
+      throw (e instanceof Error ? e : new Error("Invalid JSON response"));
+    }
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 async function rpcCall<T>(rpcUrl: string, method: string, params: unknown[]): Promise<T> {
-  const json = await httpsJsonPost<{ result?: T; error?: { message?: string } }>(rpcUrl, {
+  const json = await jsonPost<{ result?: T; error?: { message?: string } }>(rpcUrl, {
     jsonrpc: "2.0",
     id: 1,
     method,

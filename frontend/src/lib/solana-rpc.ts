@@ -156,6 +156,23 @@ function usesSameOriginRpcProxy(): boolean {
   return getPrimaryRpcEndpoint().includes("/api/rpc");
 }
 
+function sanitizeWsEndpoint(raw: string): string | null {
+  const s = (raw || "").trim();
+  if (!s) return null;
+  if (/undefined|null/i.test(s)) return null;
+  if (/\/api\/rpc\b/i.test(s)) return null; // serverless JSON-RPC proxy has no WS upgrade
+  try {
+    const u = new URL(s);
+    if (u.protocol !== "wss:" && u.protocol !== "ws:") return null;
+    const apiKey = u.searchParams.get("api-key") ?? u.searchParams.get("api_key");
+    if (apiKey != null && !apiKey.trim()) return null;
+    if (apiKey != null && /^(undefined|null)$/i.test(apiKey.trim())) return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
 /**
  * WebSocket URL for account/slot subscriptions. Must NOT be `wss://…/api/rpc` — Vercel serverless has no WS upgrade.
  * HTTP JSON-RPC still uses `getPrimaryRpcEndpoint()` (same-origin `/api/rpc`).
@@ -163,12 +180,11 @@ function usesSameOriginRpcProxy(): boolean {
 export function getConnectionConfig(): ConnectionConfig {
   const commitment = "confirmed" as const;
   if (usesSameOriginRpcProxy()) {
-    const ws =
-      typeof import.meta !== "undefined" &&
-      typeof import.meta.env?.VITE_SOLANA_WS_URL === "string" &&
-      import.meta.env.VITE_SOLANA_WS_URL.trim()
-        ? import.meta.env.VITE_SOLANA_WS_URL.trim()
-        : "wss://api.mainnet-beta.solana.com";
+    const wsEnv =
+      typeof import.meta !== "undefined" && typeof import.meta.env?.VITE_SOLANA_WS_URL === "string"
+        ? import.meta.env.VITE_SOLANA_WS_URL
+        : "";
+    const ws = sanitizeWsEndpoint(wsEnv) ?? "wss://api.mainnet-beta.solana.com";
     return { commitment, wsEndpoint: ws };
   }
   return { commitment };
