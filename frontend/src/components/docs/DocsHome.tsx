@@ -253,6 +253,13 @@ export default function DocsHome() {
                   facilitator verification: <DocLink file="docs/x402-payments.md" />
                 </span>
               </li>
+              <li className="flex gap-3">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                <span>
+                  <strong className="text-foreground/95">Syraa Signal Agent</strong> — “signal …” agent choice, Vercel → VPS
+                  proxy, Solana-first x402, troubleshooting: <DocLink file="docs/syraa-signal-agent.md" />
+                </span>
+              </li>
             </ul>
           </HoloCard>
           <HoloCard className="p-6 md:p-8">
@@ -547,6 +554,8 @@ export default function DocsHome() {
           <DocLink file="docs/CONFIGURATION.md" />
           <span className="opacity-40">·</span>
           <DocLink file="docs/x402-payments.md" />
+          <span className="opacity-40">·</span>
+          <DocLink file="docs/syraa-signal-agent.md" />
           <span className="opacity-40">·</span>
           <DocLink file="SECURITY.md" />
         </p>
