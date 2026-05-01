@@ -21,6 +21,11 @@ const DASHBOARD_NAV: { label: string; path: string }[] = [
   { label: "Swap", path: "/swap" },
 ];
 
+const SWAP_NAV: { label: string; path: string }[] = [
+  { label: "Dashboard", path: "/dashboard" },
+  { label: "Swap", path: "/swap" },
+];
+
 const LANDING_NAV: { label: string; sectionId: string }[] = [
   { label: "Governance", sectionId: "tokenomics" },
   { label: "Subscription", sectionId: "pricing" },
@@ -46,14 +51,16 @@ const Header = () => {
   const { openWalletModal } = useWalletModal();
   const isLanding = pathname === "/";
   const isDashboard = pathname === "/dashboard";
+  const isSwap = pathname === "/swap";
 
   const navItems = useMemo(() => {
     // On landing we avoid duplicating primary actions (Dashboard/Swap/Docs/etc)
     // that already exist as CTAs below the header.
     if (isLanding) return LANDING_NAV;
     if (isDashboard) return DASHBOARD_NAV;
+    if (isSwap) return SWAP_NAV;
     return NAV_CONFIG;
-  }, [isLanding, isDashboard]);
+  }, [isLanding, isDashboard, isSwap]);
 
   const updateActiveSection = useCallback(() => {
     if (pathname !== "/") return;

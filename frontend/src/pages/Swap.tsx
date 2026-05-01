@@ -566,160 +566,173 @@ export default function Swap() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45 }}
-            className="section-title mb-2"
+            className="section-title"
           >
             Swap
           </motion.h1>
-          <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-            Quotes and execution via Jupiter. Chart reflects your selected pair or USD reference.
-          </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="workspace-card p-6 md:p-7">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 lg:items-stretch">
+          <div className="flex min-h-0 h-full lg:col-span-8">
+            <div className="workspace-card flex h-full min-h-0 flex-col p-6 md:p-7">
               <TradingChart
                 pairLabel={pairLabel}
                 inputMint={chartBaseMint}
                 quoteMint={chartQuoteMint}
                 latestPriceFromQuote={latestPriceFromQuote}
                 getSymbol={getSymbol}
+                className="flex min-h-0 flex-1 flex-col"
               />
             </div>
           </div>
 
-          <div className="workspace-card p-0 overflow-hidden flex flex-col">
-            <div className="workspace-toolbar">
-              <ArrowDownLeft size={18} className="text-primary shrink-0" />
-              <h2 className="text-base font-semibold text-foreground tracking-tight">Execute trade</h2>
-            </div>
+          <div className="flex min-h-0 h-full lg:col-span-4">
+            <div className="workspace-card flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0">
+              <div className="workspace-toolbar shrink-0">
+                <ArrowDownLeft size={18} className="text-primary shrink-0" />
+                <h2 className="text-base font-semibold text-foreground tracking-tight">Execute trade</h2>
+              </div>
 
-            <div className="space-y-4 p-6 md:p-7">
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">From</label>
-                <div className="flex gap-2">
-                    <TokenSelect
-                    value={inputToken}
-                    options={tokenOptions}
-                    onSelect={setInputToken}
-                    resolveCa={resolveAndAddToken}
-                    getBalance={getBalanceForToken}
-                    getSymbol={getSymbol}
-                  />
-                  <div className="flex-1 space-y-1">
-                    <Input
-                      type="number"
-                      placeholder="0.0"
-                      min="0"
-                      step="any"
-                      value={amount}
-                      onChange={(e) => { setAmount(e.target.value); setQuote(null); }}
-                      className="w-full rounded-xl bg-secondary/45 border-border/60 h-11 text-base"
-                    />
+              <div className="flex min-h-0 flex-1 flex-col justify-between gap-6 p-6 md:p-7">
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-muted-foreground">From</label>
+                    <div className="flex gap-2.5">
+                      <TokenSelect
+                        value={inputToken}
+                        options={tokenOptions}
+                        onSelect={setInputToken}
+                        resolveCa={resolveAndAddToken}
+                        getBalance={getBalanceForToken}
+                        getSymbol={getSymbol}
+                      />
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <Input
+                          type="number"
+                          placeholder="0.0"
+                          min="0"
+                          step="any"
+                          value={amount}
+                          onChange={(e) => {
+                            setAmount(e.target.value);
+                            setQuote(null);
+                          }}
+                          className="h-11 w-full rounded-xl border-border/60 bg-secondary/45 text-base"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Balance:{" "}
+                          {getBalanceForToken(inputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })}{" "}
+                          {getSymbol(inputToken.mint)}
+                          <button
+                            type="button"
+                            onClick={() => setAmount(String(getMaxAmount(inputToken)))}
+                            className="ml-2 text-primary hover:underline"
+                          >
+                            Max
+                          </button>
+                        </p>
+                        {hasInsufficientBalance && (
+                          <p className="text-xs text-destructive">Amount exceeds balance</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-center py-0.5">
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.05, y: -1 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={switchTokens}
+                      className="rounded-xl border border-border/55 bg-secondary/35 p-2 text-muted-foreground shadow-surface-sm transition-colors hover:border-primary/35 hover:text-primary"
+                      aria-label="Switch tokens"
+                    >
+                      <ArrowDownLeft size={18} className="rotate-180" />
+                    </motion.button>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-xs font-medium text-muted-foreground">To</label>
+                    <div className="flex gap-2.5">
+                      <TokenSelect
+                        value={outputToken}
+                        options={tokenOptions}
+                        onSelect={setOutputToken}
+                        resolveCa={resolveAndAddToken}
+                        getBalance={getBalanceForToken}
+                        getSymbol={getSymbol}
+                      />
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <Input
+                          readOnly
+                          placeholder="0.0"
+                          value={
+                            quote && quote.outAmount != null
+                              ? (() => {
+                                  const n = Number(quote.outAmount) / 10 ** outputToken.decimals;
+                                  const s = Number.isFinite(n) ? n.toFixed(6).replace(/\.?0+$/, "") : "";
+                                  return s || "0";
+                                })()
+                              : ""
+                          }
+                          className="h-11 w-full rounded-xl border-border/50 bg-secondary/30 text-muted-foreground"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Balance:{" "}
+                          {getBalanceForToken(outputToken).toLocaleString(undefined, {
+                            maximumFractionDigits: 6,
+                          })}{" "}
+                          {getSymbol(outputToken.mint)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 border-t border-border/40 pt-4">
+                  {resolveError && <p className="text-xs text-destructive">{resolveError}</p>}
+
+                  {quote && (
                     <p className="text-xs text-muted-foreground">
-                      Balance: {getBalanceForToken(inputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })} {getSymbol(inputToken.mint)}
-                      <button
-                        type="button"
-                        onClick={() => setAmount(String(getMaxAmount(inputToken)))}
-                        className="ml-2 text-primary hover:underline"
+                      Price impact: {quote.priceImpactPct ? `${Number(quote.priceImpactPct).toFixed(2)}%` : "N/A"}
+                    </p>
+                  )}
+
+                  {error && <p className="text-sm text-destructive">{error}</p>}
+                  {txSuccess && (
+                    <p className="text-sm text-accent">
+                      Success!{" "}
+                      <a
+                        href={`https://solscan.io/tx/${txSuccess}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline"
                       >
-                        Max
-                      </button>
+                        View on Solscan
+                      </a>
                     </p>
-                    {hasInsufficientBalance && (
-                      <p className="text-xs text-destructive">Amount exceeds balance</p>
-                    )}
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="secondary"
+                      onClick={fetchQuote}
+                      disabled={quoteLoading || !amount.trim() || hasInsufficientBalance}
+                      className="h-11 w-full min-w-0 gap-2 rounded-xl border border-border/55 bg-secondary/45 shadow-surface-sm hover:bg-secondary/65"
+                    >
+                      {quoteLoading ? <Loader2 size={16} className="animate-spin" /> : null}
+                      Get quote
+                    </Button>
+                    <Button
+                      onClick={() => void executeSwap()}
+                      disabled={swapLoading || !quote}
+                      className="h-11 w-full min-w-0 gap-2 rounded-xl border border-primary/35 bg-gradient-to-r from-primary to-teal-600 text-primary-foreground shadow-glow-sm hover:opacity-95 disabled:opacity-40"
+                    >
+                      {swapLoading ? <Loader2 size={16} className="animate-spin" /> : null}
+                      Swap
+                    </Button>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex justify-center">
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.05, y: -1 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={switchTokens}
-                  className="p-2.5 rounded-xl border border-border/55 bg-secondary/35 shadow-surface-sm text-muted-foreground hover:text-primary hover:border-primary/35 transition-colors"
-                  aria-label="Switch tokens"
-                >
-                  <ArrowDownLeft size={20} className="rotate-180" />
-                </motion.button>
-              </div>
-
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">To</label>
-                <div className="flex gap-2">
-                    <TokenSelect
-                    value={outputToken}
-                    options={tokenOptions}
-                    onSelect={setOutputToken}
-                    resolveCa={resolveAndAddToken}
-                    getBalance={getBalanceForToken}
-                    getSymbol={getSymbol}
-                  />
-                  <div className="flex-1 space-y-1">
-                    <Input
-                      readOnly
-                      placeholder="0.0"
-                      value={
-                        quote && quote.outAmount != null
-                          ? (() => {
-                              const n = Number(quote.outAmount) / 10 ** outputToken.decimals;
-                              const s = Number.isFinite(n) ? n.toFixed(6).replace(/\.?0+$/, "") : "";
-                              return s || "0";
-                            })()
-                          : ""
-                      }
-                      className="w-full rounded-xl bg-secondary/30 border-border/50 text-muted-foreground h-11"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Balance: {getBalanceForToken(outputToken).toLocaleString(undefined, { maximumFractionDigits: 6 })} {getSymbol(outputToken.mint)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {resolveError && <p className="text-xs text-destructive">{resolveError}</p>}
-
-              {quote && (
-                <p className="text-xs text-muted-foreground">
-                  Price impact: {quote.priceImpactPct ? `${Number(quote.priceImpactPct).toFixed(2)}%` : "N/A"}
-                </p>
-              )}
-
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              {txSuccess && (
-                <p className="text-sm text-accent">
-                  Success!{" "}
-                  <a
-                    href={`https://solscan.io/tx/${txSuccess}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline"
-                  >
-                    View on Solscan
-                  </a>
-                </p>
-              )}
-
-              <div className="flex gap-3 pt-3">
-                <Button
-                  variant="secondary"
-                  onClick={fetchQuote}
-                  disabled={quoteLoading || !amount.trim() || hasInsufficientBalance}
-                  className="flex-1 gap-2 h-11 rounded-xl border border-border/55 bg-secondary/45 hover:bg-secondary/65 shadow-surface-sm"
-                >
-                  {quoteLoading ? <Loader2 size={16} className="animate-spin" /> : null}
-                  Get quote
-                </Button>
-                <Button
-                  onClick={() => void executeSwap()}
-                  disabled={swapLoading || !quote}
-                  className="flex-1 gap-2 h-11 rounded-xl bg-gradient-to-r from-primary to-teal-600 hover:opacity-95 text-primary-foreground border border-primary/35 shadow-glow-sm disabled:opacity-40"
-                >
-                  {swapLoading ? <Loader2 size={16} className="animate-spin" /> : null}
-                  Swap
-                </Button>
               </div>
             </div>
           </div>

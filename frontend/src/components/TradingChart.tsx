@@ -4,6 +4,7 @@ import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { BarChart3 } from "lucide-react";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { getApiBase } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 type TimeRange = "1H" | "4H" | "1D" | "1W";
 
@@ -342,8 +343,8 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
         : [{ time: "-", price: 0 }, { time: "-", price: 0.01 }];
 
   return (
-    <div className={className}>
-      <div className="flex flex-col gap-1 mb-4">
+    <div className={cn("min-h-0", className)}>
+      <div className="mb-4 flex shrink-0 flex-col gap-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BarChart3 size={18} className="text-primary" />
@@ -381,16 +382,32 @@ export function TradingChart({ pairLabel = "SOL/USDC", inputMint, quoteMint, lat
           </p>
         )}
       </div>
-      <ChartContainer config={chartConfig} className="h-[260px] w-full">
-        <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+      <ChartContainer
+        config={chartConfig}
+        className="aspect-auto min-h-[260px] w-full flex-1 lg:min-h-[300px]"
+      >
+        <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 16, left: 4 }}>
           <defs>
             <linearGradient id="fillPrice" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--color-price)" stopOpacity={0.4} />
               <stop offset="100%" stopColor="var(--color-price)" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <XAxis dataKey="time" tickLine={false} axisLine={false} />
-          <YAxis domain={[yMin, yMax]} tickLine={false} axisLine={false} tickFormatter={(v) => formatPrice(v, isPairMode)} />
+          <XAxis
+            dataKey="time"
+            tickLine={false}
+            axisLine={false}
+            interval="preserveStartEnd"
+            minTickGap={28}
+            tick={{ fontSize: 10 }}
+          />
+          <YAxis
+            domain={[yMin, yMax]}
+            tickLine={false}
+            axisLine={false}
+            width={56}
+            tickFormatter={(v) => formatPrice(v, isPairMode)}
+          />
           <ChartTooltip content={<ChartTooltipContent indicator="line" formatter={(v) => formatPrice(Number(v), isPairMode)} />} />
           <Area type="monotone" dataKey="price" stroke="var(--color-price)" fill="url(#fillPrice)" strokeWidth={2} />
         </AreaChart>
