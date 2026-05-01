@@ -11,6 +11,11 @@ const INTEGRATIONS: Integration[] = [
     logoUrl: "/logos/solana.png",
   },
   {
+    name: "Syra",
+    role: "Signal intelligence and Solana first tooling for institutional workflows.",
+    logoUrl: "/logos/syra.png",
+  },
+  {
     name: "Jupiter",
     role: "Routing engine for swap quotes and execution across Solana DEXs.",
     logoUrl: "/logos/jupiter.png",
@@ -27,7 +32,7 @@ const INTEGRATIONS: Integration[] = [
   },
   {
     name: "Helius",
-    role: "RPC and webhook infrastructure for on-chain events and agent feeds.",
+    role: "RPC and webhook infrastructure for on chain events and agent feeds.",
     logoUrl: "/logos/helius.png",
   },
   {
@@ -52,7 +57,7 @@ const INTEGRATIONS: Integration[] = [
   },
   {
     name: "PayAi",
-    role: "Payments and AI-powered settlement rails for on-chain execution.",
+    role: "Payments and AI powered settlement rails for on chain execution.",
     logoUrl: "/logos/payai.png",
   },
 ];

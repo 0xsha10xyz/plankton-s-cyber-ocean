@@ -1,5 +1,5 @@
 /**
- * POST /api/rpc — Solana JSON-RPC proxy for browser (same-origin).
+ * POST /api/rpc: Solana JSON-RPC proxy for browser (same origin).
  */
 import type { IncomingMessage, ServerResponse } from "http";
 
@@ -12,7 +12,7 @@ export const config = {
 const RPC_CORS_ALLOW_HEADERS =
   "Content-Type, Accept, Authorization, solana-client";
 
-/** Public JSON-RPC proxy — allow browser calls from SPA + hybrid `api.*` subdomains. */
+/** Public JSON-RPC proxy. Allows browser calls from SPA + hybrid `api.*` subdomains. */
 function applyRpcCors(res: ServerResponse): void {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS, GET, HEAD");
@@ -39,7 +39,7 @@ function readIncomingBody(req: IncomingMessage): Promise<string> {
 }
 
 function isRetriableUpstreamStatus(status: number): boolean {
-  // Some providers return 402/405 for quota, billing, or wrong HTTP verb — not valid JSON-RPC; retry next upstream.
+  // Some providers return 402/405 for quota, billing, or wrong HTTP verb. Not valid JSON-RPC. Retry next upstream.
   return (
     status === 401 ||
     status === 402 ||
@@ -70,7 +70,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       sendOptions(res);
       return;
     }
-    // Health / CDN probes sometimes use GET or HEAD — avoid noisy 405s in front of JSON-RPC POST.
+    // Health / CDN probes sometimes use GET or HEAD. Avoid noisy 405s in front of JSON-RPC POST.
     if (method === "GET" || method === "HEAD") {
       applyRpcCors(res);
       res.statusCode = 204;

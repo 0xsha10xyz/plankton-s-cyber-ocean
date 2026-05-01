@@ -65,7 +65,7 @@ export function TerminalFeed({
       )}
     >
       {lines.length === 0 ? (
-        <div className="text-muted-foreground">No signals yet — waiting for on-chain activity…</div>
+        <div className="text-muted-foreground">No signals yet. Waiting for on chain activity…</div>
       ) : (
         lines.map((line) => (
           <div

@@ -68,7 +68,7 @@ export function requireGatewayAuth(requiredScopes: string[]) {
   };
 }
 
-/** Admin routes — `X-Gateway-Admin-Secret` must match `GATEWAY_ADMIN_SECRET`. */
+/** Admin routes: `X-Gateway-Admin-Secret` must match `GATEWAY_ADMIN_SECRET`. */
 export function requireGatewayAdmin(req: Request, res: Response, next: NextFunction): void {
   const requestId = getRequestId(res);
   const secret = process.env.GATEWAY_ADMIN_SECRET?.trim();

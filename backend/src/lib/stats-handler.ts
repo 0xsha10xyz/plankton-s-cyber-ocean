@@ -1,6 +1,6 @@
 /**
  * Total users = unique wallets that have ever connected.
- * Duplicate of ../../server-lib/stats-handler.ts — keep both files identical.
+ * Duplicate of ../../server-lib/stats-handler.ts. Keep both files identical.
  *
  * Supports:
  * - REDIS_URL (TCP / node-redis)

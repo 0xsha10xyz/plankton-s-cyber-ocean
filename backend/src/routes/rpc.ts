@@ -38,7 +38,7 @@ rpcRouter.head("/", (_req: Request, res: Response) => {
 });
 
 /**
- * CORS preflight — browsers may send OPTIONS before POST to `/api/rpc` (x402 / wallet flows).
+ * CORS preflight: browsers may send OPTIONS before POST to `/api/rpc` (x402 / wallet flows).
  */
 rpcRouter.options("/", (_req: Request, res: Response) => {
   res.setHeader("Allow", "POST, OPTIONS");
@@ -54,7 +54,7 @@ rpcRouter.all("/", (req: Request, res: Response, next) => {
 });
 
 /**
- * POST /api/rpc — JSON-RPC proxy to Solana mainnet.
+ * POST /api/rpc: JSON-RPC proxy to Solana mainnet.
  * Browsers should use this (same origin) instead of public RPC URLs (403 / CORS on production sites).
  */
 rpcRouter.post("/", async (req: Request, res: Response) => {

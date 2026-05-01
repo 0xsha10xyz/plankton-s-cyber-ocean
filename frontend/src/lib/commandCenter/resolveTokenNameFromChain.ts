@@ -9,7 +9,7 @@ function stripMetadataString(s: string): string {
   return s.split("\u0000").join("").trim();
 }
 
-/** Token-2022 mint extension `tokenMetadata.state.name`. */
+/** Token 2022 mint extension `tokenMetadata.state.name`. */
 function nameFromToken2022MintParsed(data: unknown): string | undefined {
   if (!data || typeof data !== "object" || !("parsed" in data)) return undefined;
   const ext = (data as { parsed?: { info?: { extensions?: unknown[] } } }).parsed?.info?.extensions;
@@ -49,7 +49,7 @@ function nameFromMetaplexParsed(data: unknown): string | undefined {
 }
 
 /**
- * Human-readable token name from on-chain metadata (Token-2022 extension or Metaplex metadata account).
+ * Human readable token name from on chain metadata (Token 2022 extension or Metaplex metadata account).
  */
 export async function resolveTokenNameFromChain(mintStr: string): Promise<string | undefined> {
   try {

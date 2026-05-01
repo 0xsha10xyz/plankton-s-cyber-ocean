@@ -116,11 +116,11 @@ export default function DocsHome() {
                 <span className="text-foreground"> documentation</span>
               </h1>
               <p className="text-base md:text-lg docs-body-muted leading-[1.7] max-w-2xl font-normal">
-                Complete technical reference for the Plankton Autonomous Protocol — architecture, token economics, operator
+                Complete technical reference for the Plankton Autonomous Protocol. Architecture, token economics, operator
                 setup, and security practices. Built for teams shipping production-grade experiences on Solana.
               </p>
               <p className="mt-4 text-xs font-mono text-[#9BBFBA]/90">
-                Last updated: {lastUpdated || "—"} · v{APP_VERSION}
+                Last updated: {lastUpdated || "N/A"} · v{APP_VERSION}
               </p>
               <div className="flex flex-wrap gap-2 mt-6">
                 <TrustChip>Engineering-grade stack</TrustChip>
@@ -175,7 +175,7 @@ export default function DocsHome() {
                 <h3 className="text-xs font-mono uppercase tracking-[0.1em] text-[#5eead4]/85">For operators</h3>
               </div>
               <p className="text-sm docs-body-muted leading-[1.7]">
-                Maintainer documentation lives under <DocsCmd>docs/</DocsCmd> in the repository — start with{" "}
+                Maintainer documentation lives under <DocsCmd>docs/</DocsCmd> in the repository. Start with{" "}
                 <DocLink file="docs/README.md" /> and <DocLink file="docs/CONFIGURATION.md" />. Never commit API keys or{" "}
                 <DocsCmd>.env</DocsCmd> files; follow <DocLink file="SECURITY.md" />.
               </p>
@@ -189,8 +189,8 @@ export default function DocsHome() {
               </div>
               <p className="text-sm docs-body-muted leading-[1.7]">
                 This hub covers how the application works, live PAP token metrics where shown, and integration points.
-                Deployment secrets are environment-isolated — see <DocLink file="docs/CONFIGURATION.md" />. Zero secrets in
-                static output — all keys injected at runtime via env.
+                Deployment secrets are environment isolated. See <DocLink file="docs/CONFIGURATION.md" />. Zero secrets in
+                static output. All keys are injected at runtime via env.
               </p>
             </HoloCard>
           </div>
@@ -202,7 +202,7 @@ export default function DocsHome() {
         <SectionHeading
           eyebrow="Ship & deploy"
           title="Adoption & setup"
-          subtitle="Clone, configure, and run the monorepo the same way core contributors do — clear separation between the SPA, serverless API, and optional Express backend."
+          subtitle="Clone, configure, and run the monorepo the same way core contributors do. Clear separation between the SPA, serverless API, and optional Express backend."
         />
         <div className="space-y-5 docs-body-muted leading-[1.7]">
           <HoloCard className="p-6 md:p-8">
@@ -228,43 +228,43 @@ export default function DocsHome() {
               <li className="flex gap-3">
                 <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                 <span>
-                  <strong className="text-foreground/95">Environment</strong> — charts, RPC, LLM keys, Vercel vs VPS:{" "}
+                  <strong className="text-foreground/95">Environment</strong>: charts, RPC, LLM keys, Vercel vs VPS.{" "}
                   <DocLink file="docs/CONFIGURATION.md" />
                 </span>
               </li>
               <li className="flex gap-3">
                 <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                 <span>
-                  <strong className="text-foreground/95">Deploy</strong> — SPA + root <DocsCmd>api/</DocsCmd>:{" "}
+                  <strong className="text-foreground/95">Deploy</strong>: SPA plus root <DocsCmd>api/</DocsCmd>.{" "}
                   <DocLink file="docs/DEPLOYMENT.md" /> (Root Directory <DocsCmd>.</DocsCmd>, not <DocsCmd>frontend</DocsCmd>)
                 </span>
               </li>
               <li className="flex gap-3">
                 <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                 <span>
-                  <strong className="text-foreground/95">Integrations</strong> — Jupiter, Birdeye, LLM providers:{" "}
+                  <strong className="text-foreground/95">Integrations</strong>: Jupiter, Birdeye, LLM providers.{" "}
                   <DocLink file="docs/INTEGRATIONS.md" />
                 </span>
               </li>
               <li className="flex gap-3">
                 <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                 <span>
-                  <strong className="text-foreground/95">LLM providers</strong> — Claude/Groq/OpenAI setup and security-first
-                  deployment: <DocLink file="docs/llm-providers.md" />
+                  <strong className="text-foreground/95">LLM providers</strong>: Claude, Groq, OpenAI setup with security first
+                  deployment. <DocLink file="docs/llm-providers.md" />
                 </span>
               </li>
               <li className="flex gap-3">
                 <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                 <span>
-                  <strong className="text-foreground/95">x402 (Solana / USDC)</strong> — paid Agent Chat, Vercel → VPS proxy,
-                  facilitator verification: <DocLink file="docs/x402-payments.md" />
+                  <strong className="text-foreground/95">x402 (Solana / USDC)</strong>: paid Agent Chat, Vercel to VPS proxy,
+                  facilitator verification. <DocLink file="docs/x402-payments.md" />
                 </span>
               </li>
               <li className="flex gap-3">
                 <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                 <span>
-                  <strong className="text-foreground/95">Syraa Signal Agent</strong> — “signal …” agent choice, Vercel → VPS
-                  proxy, Solana-first x402, troubleshooting: <DocLink file="docs/syraa-signal-agent.md" />
+                  <strong className="text-foreground/95">Syraa Signal Agent</strong>: “signal …” agent choice, Vercel to VPS
+                  proxy, Solana first x402, troubleshooting. <DocLink file="docs/syraa-signal-agent.md" />
                 </span>
               </li>
             </ul>
@@ -281,7 +281,7 @@ export default function DocsHome() {
               >
                 /plankton-documentation.html
               </a>{" "}
-              — source <DocLink file="docs/plankton-documentation.md" />. Print → Save as PDF. No secrets embedded; operators
+              Source <DocLink file="docs/plankton-documentation.md" />. Print and save as PDF. No secrets embedded. Operators
               use <DocLink file="docs/CONFIGURATION.md" /> for production keys.
             </p>
           </HoloCard>
@@ -299,15 +299,15 @@ export default function DocsHome() {
           <HoloCard className="p-6 md:p-7">
             <h3 className="text-base font-semibold text-foreground mb-3 tracking-tight">Architecture</h3>
             <p className="text-sm docs-body-muted leading-[1.7]">
-              Plankton targets autonomous on-chain workflows on Solana: real-time market analysis, whale and flow signals,
-              and strategy automation aligned with protocol parameters — built on low-latency infrastructure.
+              Plankton targets autonomous on chain workflows on Solana: real time market analysis, whale and flow signals,
+              and strategy automation aligned with protocol parameters. Built on low latency infrastructure.
             </p>
           </HoloCard>
           <HoloCard className="p-6 md:p-7">
             <h3 className="text-base font-semibold text-foreground mb-3 tracking-tight">Ecosystem integrations</h3>
             <p className="text-sm docs-body-muted leading-[1.7]">
               Curated Solana-native stack: Jupiter for routing, Birdeye and CoinGecko for market data, Helius and Ankr for RPC
-              and webhooks, Phantom / OKX / Solflare for wallet connectivity — composed for reliability at scale.
+              and webhooks, Phantom / OKX / Solflare for wallet connectivity. Composed for reliability at scale.
             </p>
           </HoloCard>
         </div>
@@ -316,7 +316,7 @@ export default function DocsHome() {
             <h3 className="text-base font-semibold text-foreground mb-3 tracking-tight">Market data &amp; charting</h3>
             <p className="text-sm docs-body-muted leading-[1.7]">
               Live price charts with automatic refresh; OHLCV from Birdeye when configured, CoinGecko fallback for core pairs.
-              Token metadata resolves via on-chain programs and market APIs with client-side caching for consistent labels
+              Token metadata resolves via on chain programs and market APIs with client side caching for consistent labels
               across Swap, Account, and charts.
             </p>
           </HoloCard>
@@ -454,7 +454,7 @@ export default function DocsHome() {
         <SectionHeading
           eyebrow="Intelligence layer"
           title="Autonomous Agent"
-          subtitle="Research, scanning, and risk-aware automation — the operational brain of the protocol experience."
+          subtitle="Research, scanning, and risk aware automation. The operational brain of the protocol experience."
         />
         <div className="grid gap-4 sm:grid-cols-2">
           {[
@@ -464,7 +464,7 @@ export default function DocsHome() {
             },
             {
               title: "AI research engine",
-              desc: "Structured analysis across fundamentals, sentiment, and on-chain context for supported workflows.",
+              desc: "Structured analysis across fundamentals, sentiment, and on chain context for supported workflows.",
             },
             {
               title: "Execution fabric",
@@ -497,7 +497,7 @@ export default function DocsHome() {
         <SectionHeading
           eyebrow="Trust model"
           title="Security"
-          subtitle="Production Web3 posture: keys stay in wallets; secrets stay in secure environments — never in the repository."
+          subtitle="Production Web3 posture: keys stay in wallets. Secrets stay in secure environments, never in the repository."
         />
         <HoloCard className="p-6 md:p-8 lg:p-10">
           <div className="space-y-4 text-sm docs-body-muted leading-[1.7]">
@@ -509,14 +509,14 @@ export default function DocsHome() {
               <li className="flex items-start gap-3">
                 <Shield size={16} className="text-accent mt-0.5 shrink-0" />
                 <span>
-                  <strong className="text-foreground/95">Non-custodial wallets</strong> — Solana Wallet Adapter; private keys
+                  <strong className="text-foreground/95">Noncustodial wallets</strong>: Solana Wallet Adapter. Private keys
                   are not transmitted to application servers.
                 </span>
               </li>
               <li className="flex items-start gap-3">
                 <Shield size={16} className="text-accent mt-0.5 shrink-0" />
                 <span>
-                  <strong className="text-foreground/95">Secrets discipline</strong> — never commit <DocsCmd>.env</DocsCmd> or
+                  <strong className="text-foreground/95">Secrets discipline</strong>: never commit <DocsCmd>.env</DocsCmd> or
                   paste keys into public tickets. Templates only in <DocsCmd>.env.example</DocsCmd>. See{" "}
                   <DocLink file="SECURITY.md" />.
                 </span>
@@ -524,14 +524,14 @@ export default function DocsHome() {
               <li className="flex items-start gap-3">
                 <Shield size={16} className="text-accent mt-0.5 shrink-0" />
                 <span>
-                  <strong className="text-foreground/95">Server-side intelligence</strong> — LLM and market provider keys live in
+                  <strong className="text-foreground/95">Server side intelligence</strong>: LLM and market provider keys live in
                   hosting or VPS environment only; they are not embedded in client bundles.
                 </span>
               </li>
               <li className="flex items-start gap-3">
                 <Shield size={16} className="text-accent mt-0.5 shrink-0" />
                 <span>
-                  <strong className="text-foreground/95">Fork review</strong> — audit dependencies, rotate all secrets,
+                  <strong className="text-foreground/95">Fork review</strong>: audit dependencies, rotate all secrets,
                   configure your own RPC and CORS, and complete your own review for any programs or treasuries you deploy.
                 </span>
               </li>
@@ -552,7 +552,7 @@ export default function DocsHome() {
           Continue in the repo
         </p>
         <p className="text-sm docs-body-muted max-w-xl mx-auto mb-6 leading-[1.7]">
-          Full configuration matrices, deployment diagrams, and integration keys belong in maintainer docs — not in static HTML
+          Full configuration matrices, deployment diagrams, and integration keys belong in maintainer docs. Not in static HTML
           shipped to browsers.
         </p>
         <p className="text-xs docs-body-muted font-mono flex flex-wrap justify-center gap-x-2 gap-y-1">

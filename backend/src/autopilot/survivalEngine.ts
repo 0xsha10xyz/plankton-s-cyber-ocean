@@ -25,7 +25,7 @@ export type SurvivalBlock = { code: string; message: string };
 const UNREACHABLE_PAUSE_SEC = 60;
 
 /**
- * SURVIVE layer — hard stops. Returns block reasons; empty means allowed (other layers still apply).
+ * SURVIVE layer. Hard stops. Returns block reasons; empty means allowed (other layers still apply).
  */
 export function evaluateSurvivalHardStops(s: SurvivalInput): SurvivalBlock[] {
   const blocks: SurvivalBlock[] = [];
@@ -33,25 +33,25 @@ export function evaluateSurvivalHardStops(s: SurvivalInput): SurvivalBlock[] {
   if (s.dailyLossPct >= s.limits.dailyLossLimitPct) {
     blocks.push({
       code: "DAILY_LOSS_LIMIT",
-      message: "Daily loss limit reached — agent must pause.",
+      message: "Daily loss limit reached. Agent must pause.",
     });
   }
   if (s.totalDrawdownPct >= s.limits.maxDrawdownPct) {
     blocks.push({
       code: "MAX_DRAWDOWN",
-      message: "Max drawdown reached — full stop and exit required.",
+      message: "Max drawdown reached. Full stop and exit required.",
     });
   }
   if (s.singlePositionLossVsStake >= 2) {
     blocks.push({
       code: "SINGLE_POSITION_LOSS_2X",
-      message: "Single position loss >= 2x stake — exit immediately.",
+      message: "Single position loss >= 2x stake. Exit immediately.",
     });
   }
   if (s.polymarketUnreachableSec > UNREACHABLE_PAUSE_SEC) {
     blocks.push({
       code: "POLY_UNREACHABLE",
-      message: "Polymarket data unavailable — pause execution.",
+      message: "Polymarket data unavailable. Pause execution.",
     });
   }
   if (s.confidence < s.limits.minConfidence) {

@@ -8,7 +8,7 @@ const REQ_PER_MIN: Record<GatewayTier, number> = {
   enterprise: 2000,
 };
 
-/** Burst capacity (token bucket placeholder — fixed window uses min(remaining, burst) display). */
+/** Burst capacity (token bucket placeholder. Fixed window uses min(remaining, burst) display). */
 const BURST: Record<GatewayTier, number> = {
   free: 30,
   basic: 150,

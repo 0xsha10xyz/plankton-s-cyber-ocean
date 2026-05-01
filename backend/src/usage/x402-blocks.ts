@@ -30,7 +30,7 @@ function normalizeX402HeaderCasing(
 /**
  * `x402-solana` browser client prefers the `PAYMENT-REQUIRED` response header for v2.
  * If it is missing, the client falls back to parsing the JSON body as "v1" and retries with `X-PAYMENT`,
- * while `X402PaymentHandler.extractPayment()` only reads `PAYMENT-SIGNATURE` — so payment never verifies.
+ * while `X402PaymentHandler.extractPayment()` only reads `PAYMENT-SIGNATURE`, so payment never verifies.
  * Base64-encode the same JSON body the client already receives.
  */
 export function paymentRequiredHeaderB64(body: unknown): string | null {

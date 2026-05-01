@@ -196,7 +196,7 @@ const AutoPilot = ({
             </motion.div>
           )}
 
-          {/* SOON — only when connected */}
+          {/* SOON. Only when connected. */}
           <div className="w-full mt-6 border-t border-border/35 pt-6">
             <p className="text-sm font-semibold text-primary tracking-wide">SOON</p>
             <p className="text-xs text-muted-foreground mt-1">Deeper execution controls ship next.</p>

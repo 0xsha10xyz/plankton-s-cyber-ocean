@@ -14,7 +14,7 @@ echo "[3/8] Installing Node.js 20 (NodeSource)..."
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-echo "[4/8] Installing PM2 globally (optional — for running backend/)..."
+echo "[4/8] Installing PM2 globally (optional. For running backend/)..."
 sudo npm install -g pm2
 
 echo "[5/8] Preparing app directory at ${APP_DIR}..."
@@ -41,7 +41,7 @@ echo "[7/8] Backend .env (if missing)..."
 if [ ! -f "backend/.env" ]; then
   if [ -f "backend/.env.example" ]; then
     cp backend/.env.example backend/.env
-    echo "Created backend/.env from backend/.env.example — edit before production:"
+    echo "Created backend/.env from backend/.env.example. Edit before production:"
     echo "  nano ${APP_DIR}/backend/.env"
   else
     echo "Create backend/.env manually (see docs/CONFIGURATION.md)."
@@ -50,4 +50,4 @@ fi
 
 echo "[8/8] Next: build and run Express (example)"
 echo "  cd ${APP_DIR}/backend && npm run build && npm run start"
-echo "Or configure pm2 to run the backend entrypoint — see docs/DEPLOYMENT.md."
+echo "Or configure pm2 to run the backend entrypoint. See docs/DEPLOYMENT.md."

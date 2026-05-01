@@ -185,8 +185,8 @@ Usage signatures are path-bound. Make sure the frontend calls:
 
 ## Related docs
 
-- [`docs/INTEGRATIONS.md`](./INTEGRATIONS.md) — external services overview
-- [`docs/x402-payments.md`](./x402-payments.md) — x402 background
-- [`docs/DEPLOYMENT.md`](./DEPLOYMENT.md) — Vercel + VPS deployment modes
-- [`SECURITY.md`](../SECURITY.md) — security rules and rotation guidance
+- [`docs/INTEGRATIONS.md`](./INTEGRATIONS.md): external services overview
+- [`docs/x402-payments.md`](./x402-payments.md): x402 background
+- [`docs/DEPLOYMENT.md`](./DEPLOYMENT.md): Vercel plus VPS deployment modes
+- [`SECURITY.md`](../SECURITY.md): security rules and rotation guidance
 

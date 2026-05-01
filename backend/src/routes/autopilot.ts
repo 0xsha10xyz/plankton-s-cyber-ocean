@@ -39,7 +39,7 @@ async function maybeVerifyWallet(
 }
 
 /**
- * POST /api/autopilot/analyze — also mounted at POST /api/agent/analyze
+ * POST /api/autopilot/analyze: also mounted at POST /api/agent/analyze
  */
 export async function postAnalyzeAutopilot(req: Request, res: Response): Promise<void> {
   const pool = getPgPool();
@@ -291,7 +291,7 @@ autopilotRouter.post("/control", async (req, res) => {
   res.status(400).json({ ok: false, error: "Unsupported" });
 });
 
-/** POST /api/autopilot/operator/register — stub: mark operator as registered after client signs allowance off-chain */
+/** POST /api/autopilot/operator/register: stub. Mark operator as registered after client signs allowance off chain */
 autopilotRouter.post("/operator/register", async (req, res) => {
   const pool = getPgPool();
   if (!pool) {
@@ -313,7 +313,7 @@ autopilotRouter.post("/operator/register", async (req, res) => {
   res.json({ ok: true, operatorRegistered: true, note: "Stub: store delegated signing key server-side in production." });
 });
 
-/** POST /api/autopilot/execute — validates guardrails + rate limit; does not place live CLOB orders unless AUTOPILOT_LIVE_TRADING=1 and signing is wired */
+/** POST /api/autopilot/execute: validates guardrails + rate limit. Does not place live CLOB orders unless AUTOPILOT_LIVE_TRADING=1 and signing is wired */
 autopilotRouter.post("/execute", async (req, res) => {
   const pool = getPgPool();
   const body = req.body as Record<string, unknown>;

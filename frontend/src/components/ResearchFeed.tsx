@@ -14,8 +14,8 @@ const feeds = [
     category: "New Token Launches",
     icon: Rocket,
     items: [
-      { text: "$KRILL — SPL Token", change: "NEW", positive: true, time: "12m ago" },
-      { text: "$DEEPSEA — SPL Token", change: "NEW", positive: true, time: "34m ago" },
+      { text: "$KRILL (SPL token)", change: "NEW", positive: true, time: "12m ago" },
+      { text: "$DEEPSEA (SPL token)", change: "NEW", positive: true, time: "34m ago" },
     ],
   },
   {

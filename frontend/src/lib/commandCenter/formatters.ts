@@ -21,13 +21,13 @@ export function formatFeedEvent(ev: FeedEvent): string {
       return `[WHALE_TRANSFER] ${sym}${usd} · ${shortAddr(ev.sender)} → ${shortAddr(ev.receiver)} · ${SOLSCAN_TX(ev.signature)}`;
     }
     case "LARGE_BUY": {
-      const usd = ev.amountUSD ? `$${ev.amountUSD}` : "—";
+      const usd = ev.amountUSD ? `$${ev.amountUSD}` : "N/A";
       const dex = ev.dex ?? "?";
       const tok = ev.token ?? shortAddr(ev.mint ?? "");
       return `[BIG_BUY] ${tok} · ${usd} · ${dex} · trader ${shortAddr(ev.trader)} · ${SOLSCAN_TX(ev.signature)}`;
     }
     case "LARGE_SELL": {
-      const usd = ev.amountUSD ? `$${ev.amountUSD}` : "—";
+      const usd = ev.amountUSD ? `$${ev.amountUSD}` : "N/A";
       const dex = ev.dex ?? "?";
       const tok = ev.token ?? shortAddr(ev.mint ?? "");
       return `[BIG_SALE] ${tok} · ${usd} · ${dex} · trader ${shortAddr(ev.trader)} · ${SOLSCAN_TX(ev.signature)}`;

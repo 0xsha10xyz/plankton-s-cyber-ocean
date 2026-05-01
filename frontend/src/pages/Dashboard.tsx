@@ -1,14 +1,13 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { Search, TrendingUp, Flame, LayoutGrid, ArrowUpRight, Settings2, RefreshCw } from "lucide-react";
+import { useState } from "react";
+import { Flame, LayoutGrid, Settings2, RefreshCw } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import ResearchFeed from "@/components/ResearchFeed";
 import ScreenerTools from "@/components/ScreenerTools";
-import { TotalUsersStat } from "@/components/TotalUsersStat";
+import CommandCenter from "@/components/command-center/CommandCenter";
+import PolymarketAutopilot from "@/components/PolymarketAutopilot";
+import { EvmWalletProviders } from "@/contexts/EvmWalletProviders";
 import { cn } from "@/lib/utils";
 import { getApiBase } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
@@ -44,22 +43,15 @@ type WalletRow = {
 };
 
 type SidebarItem = {
-  id: "overview" | "insights" | "screener";
+  id: "overview" | "autopilot" | "screener";
   label: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
 };
 
 const SIDEBAR: SidebarItem[] = [
   { id: "overview", label: "Overview", icon: LayoutGrid },
-  { id: "insights", label: "Insights", icon: TrendingUp },
+  { id: "autopilot", label: "Autopilot", icon: Settings2 },
   { id: "screener", label: "Screener", icon: Flame },
-];
-
-const TRENDING = [
-  { label: "PAP / SOL", sub: "Volume spike" },
-  { label: "KRILL", sub: "New token" },
-  { label: "CORAL", sub: "Whale flow" },
-  { label: "USDC", sub: "Stable flows" },
 ];
 
 function formatCompact(n: number): string {
@@ -70,7 +62,7 @@ function formatCompact(n: number): string {
 }
 
 function formatUsd(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return "—";
+  if (n == null || !Number.isFinite(n)) return "N/A";
   if (n >= 1000) return `$${formatCompact(n)}`;
   return `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
@@ -92,9 +84,6 @@ async function fetchJson<T>(url: string): Promise<T> {
 export default function Dashboard(): JSX.Element {
   const [active, setActive] = useState<SidebarItem["id"]>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [query, setQuery] = useState("");
-
-  const chips = useMemo(() => TRENDING, []);
 
   const jump = (id: SidebarItem["id"]) => {
     setActive(id);
@@ -256,9 +245,6 @@ export default function Dashboard(): JSX.Element {
                     Intelligence
                   </p>
                   <p className="text-sm font-semibold tracking-tight text-foreground">Plankton Dashboard</p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-0.5">
-                    Keep what exists. Upgrade the surface.
-                  </p>
                 </div>
 
                 <nav className="p-3 space-y-1">
@@ -289,65 +275,7 @@ export default function Dashboard(): JSX.Element {
             </div>
 
             {/* Content */}
-            <section className="flex-1 min-w-0 pt-8 lg:pt-2">
-              {/* Command bar */}
-              <div className="mb-6 lg:mb-7 glass-card border border-border/40 rounded-2xl shadow-surface-sm">
-                <div className="workspace-toolbar">
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-mono uppercase tracking-[0.28em] text-muted-foreground/60">
-                      Command bar
-                    </p>
-                    <p className="text-base sm:text-[1.05rem] font-semibold tracking-tight text-foreground">
-                      Search tokens, wallets, markets
-                    </p>
-                  </div>
-                  <div className="ml-auto hidden sm:block">
-                    <TotalUsersStat variant="strip" />
-                  </div>
-                </div>
-
-                <div className="px-4 pb-4">
-                  <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
-                    <div className="relative flex-1">
-                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/70" />
-                      <Input
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Try: PAP, wallet address, /swap, /launch-agent"
-                        className="pl-9 bg-secondary/30 border-border/50"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button asChild className="gap-2">
-                        <Link to="/swap">
-                          Open Swap <ArrowUpRight size={16} />
-                        </Link>
-                      </Button>
-                      <Button variant="secondary" asChild className="gap-2">
-                        <Link to="/launch-agent">
-                          Launch Agent <ArrowUpRight size={16} />
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {chips.map((c) => (
-                      <button
-                        key={c.label}
-                        type="button"
-                        onClick={() => setQuery(c.label)}
-                        className="rounded-full border border-border/50 bg-black/20 px-3 py-1.5 text-xs text-muted-foreground hover:text-signal hover:border-signal/30 hover:bg-signal/5 transition-colors"
-                        title={c.sub}
-                      >
-                        <span className="font-mono">{c.label}</span>
-                        <span className="ml-2 text-muted-foreground/60">{c.sub}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
+            <section className="flex-1 min-w-0 pt-3 lg:pt-0">
               {/* Main table (Arkham vibe) */}
               <div className="mb-6 glass-card border border-border/40 rounded-2xl shadow-surface overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3.5 border-b border-border/35">
@@ -357,12 +285,25 @@ export default function Dashboard(): JSX.Element {
                       Polymarket markets + scored wallets (local API).
                     </p>
                   </div>
-                  <Badge
-                    variant="secondary"
-                    className="bg-black/25 border border-intel/25 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
-                  >
-                    Live · API
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        marketsQ.refetch();
+                        walletsQ.refetch();
+                      }}
+                      className="inline-flex items-center justify-center rounded-xl border border-border/55 bg-black/20 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors"
+                      title="Refresh"
+                    >
+                      <RefreshCw size={14} className={marketsQ.isFetching || walletsQ.isFetching ? "animate-spin" : ""} />
+                    </button>
+                    <Badge
+                      variant="secondary"
+                      className="bg-black/25 border border-intel/25 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
+                    >
+                      Live · API
+                    </Badge>
+                  </div>
                 </div>
 
                 <div className="px-4 py-4">
@@ -416,7 +357,7 @@ export default function Dashboard(): JSX.Element {
                                 );
                               }
                               const row = m as MarketRow;
-                              const end = row.endDate ? new Date(row.endDate).toLocaleDateString() : "—";
+                              const end = row.endDate ? new Date(row.endDate).toLocaleDateString() : "N/A";
                               const bestBid = row.orderbook?.bestBid ?? null;
                               const bestAsk = row.orderbook?.bestAsk ?? null;
                               return (
@@ -443,10 +384,10 @@ export default function Dashboard(): JSX.Element {
                                   <TableCell className="font-mono text-muted-foreground text-right">
                                     {bestBid != null || bestAsk != null ? (
                                       <span>
-                                        {bestBid != null ? bestBid.toFixed(3) : "—"} / {bestAsk != null ? bestAsk.toFixed(3) : "—"}
+                                        {bestBid != null ? bestBid.toFixed(3) : "N/A"} / {bestAsk != null ? bestAsk.toFixed(3) : "N/A"}
                                       </span>
                                     ) : (
-                                      "—"
+                                      "N/A"
                                     )}
                                   </TableCell>
                                 </TableRow>
@@ -533,8 +474,8 @@ export default function Dashboard(): JSX.Element {
 
               {/* Overview */}
               <section id="overview" className="scroll-mt-28">
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-                  <div className="xl:col-span-2 glass-card rounded-2xl border border-border/40 shadow-surface p-5">
+                <div className="grid grid-cols-1 gap-5">
+                  <div className="glass-card rounded-2xl border border-border/40 shadow-surface p-5">
                     <div className="flex items-center justify-between mb-4">
                       <p className="text-sm font-semibold text-foreground">Trending insights</p>
                       <span className="text-[10px] font-mono uppercase tracking-[0.26em] text-muted-foreground/60">
@@ -543,49 +484,31 @@ export default function Dashboard(): JSX.Element {
                     </div>
                     <ResearchFeed />
                   </div>
-
-                  <div className="glass-card rounded-2xl border border-border/40 shadow-surface p-5">
-                    <p className="text-sm font-semibold text-foreground mb-1">Quick actions</p>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      Use existing features; just presented like a real terminal-grade dashboard.
-                    </p>
-                    <div className="grid grid-cols-1 gap-3">
-                      <Button asChild className="justify-between">
-                        <Link to="/swap">
-                          Swap
-                          <ArrowUpRight size={16} />
-                        </Link>
-                      </Button>
-                      <Button asChild variant="secondary" className="justify-between">
-                        <Link to="/launch-agent">
-                          Launch Agent
-                          <ArrowUpRight size={16} />
-                        </Link>
-                      </Button>
-                      <Button asChild variant="ghost" className="justify-between border border-border/50 bg-background/20 hover:bg-secondary/30">
-                        <Link to="/#research">
-                          Research & Screening (landing)
-                          <ArrowUpRight size={16} />
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
                 </div>
               </section>
 
-              {/* Insights */}
-              <section id="insights" className="mt-8 scroll-mt-28">
+              <section id="autopilot" className="mt-8 scroll-mt-28">
                 <div className="glass-card rounded-2xl border border-border/40 shadow-surface p-5">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-foreground">Insights feed</p>
+                    <p className="text-sm font-semibold text-foreground">Autopilot workspace</p>
                     <span className="text-[10px] font-mono uppercase tracking-[0.26em] text-muted-foreground/60">
-                      Panels
+                      Dashboard surface
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1 mb-4">
-                    This is intentionally built from the existing Plankton “research feed” patterns.
+                    Command Center and Autopilot live together here. Use Agent Chat for the assistant.
                   </p>
-                  <ResearchFeed />
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
+                    <div className="min-w-0">
+                      <CommandCenter />
+                    </div>
+                    <div className="min-w-0">
+                      <EvmWalletProviders>
+                        <PolymarketAutopilot />
+                      </EvmWalletProviders>
+                    </div>
+                  </div>
                 </div>
               </section>
 

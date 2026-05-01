@@ -18,7 +18,7 @@ export function docCanonicalUrl(slug: string): string {
   return `${DOCS_SITE_CANONICAL_ORIGIN}${docHref(slug)}`;
 }
 
-/** Same as {@link docCanonicalUrl} — full `https://planktonomous.dev/docs/{slug}` URL. */
+/** Same as {@link docCanonicalUrl}. Full `https://planktonomous.dev/docs/{slug}` URL. */
 export function docLink(slug: string): string {
   return docCanonicalUrl(slug);
 }

@@ -40,7 +40,7 @@ function base64ToUint8Array(base64: string): Uint8Array {
   return bytes;
 }
 
-/** Use before using `quoteOverride` — `onClick={fn}` passes a React mouse event as the first arg. */
+/** Use before using `quoteOverride`. `onClick={fn}` passes a React mouse event as the first arg. */
 function isJupiterQuoteResponse(x: unknown): x is JupiterQuoteResponse {
   if (x === null || typeof x !== "object") return false;
   const o = x as Record<string, unknown>;
@@ -291,7 +291,7 @@ export default function Swap() {
   }, [inputToken, outputToken, amount, slippageBps, getBalanceForToken]);
 
   const executeSwap = useCallback(async (quoteOverride?: JupiterQuoteResponse | null) => {
-    // Callers may pass a quote, or the Swap button passes a React click event — never treat events as quotes.
+    // Callers may pass a quote, or the Swap button passes a React click event. Never treat events as quotes.
     const override = isJupiterQuoteResponse(quoteOverride) ? quoteOverride : null;
     let finalQuote = override;
 
@@ -438,7 +438,7 @@ export default function Swap() {
       if (!res.ok) {
         if (res.status === 404 && !data.error && !text.trim().startsWith("{")) {
           setResolveError(
-            "API returned 404 (HTML). Deploy must include repo-root `api/` — set Vercel Root Directory to “.” and redeploy."
+            "API returned 404 (HTML). Deploy must include repo-root `api/`. Set Vercel Root Directory to “.” and redeploy."
           );
           return null;
         }
@@ -541,7 +541,7 @@ export default function Swap() {
               Connect wallet to swap
             </h1>
             <p className="text-sm text-muted-foreground mb-8 leading-relaxed max-w-sm mx-auto">
-              Manual swap unlocks after you connect. Route through Jupiter with live chart context—same stack as the agent workspace.
+              Manual swap unlocks after you connect. Route through Jupiter with live chart context. It uses the same stack as the agent workspace.
             </p>
             <button type="button" onClick={openWalletModal} className="btn-hero-primary inline-flex items-center justify-center gap-2 px-10">
               <Wallet size={18} />
@@ -683,7 +683,7 @@ export default function Swap() {
 
               {quote && (
                 <p className="text-xs text-muted-foreground">
-                  Price impact: {quote.priceImpactPct ? `${Number(quote.priceImpactPct).toFixed(2)}%` : "—"}
+                  Price impact: {quote.priceImpactPct ? `${Number(quote.priceImpactPct).toFixed(2)}%` : "N/A"}
                 </p>
               )}
 

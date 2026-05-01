@@ -36,7 +36,7 @@ plankton-s-cyber-ocean/
 │   ├── public/         # Static assets (e.g. printable documentation HTML)
 │   ├── package.json
 │   └── ...
-├── api/               # Vercel serverless (Node) — same-origin /api/* in production
+├── api/               # Vercel serverless (Node). Same origin /api/* in production
 │   ├── market/        # price, OHLCV, token-info, …
 │   ├── jupiter/       # quote/swap proxy
 │   └── ...
@@ -58,13 +58,13 @@ For **secrets and `.env`**, see **[SECURITY.md](../SECURITY.md)** and **[Configu
 For full configuration (Birdeye chart, RPC, production deployment), see **[Configuration](./CONFIGURATION.md)**.
 
 - **Frontend** (`frontend/.env`):  
-  - `VITE_API_URL` — Backend base URL (e.g. `http://localhost:3000`) when backend is on another host  
-  - `VITE_SOLANA_RPC_URL` — Custom Solana RPC URL (default: Ankr mainnet)
+  - `VITE_API_URL`: backend base URL (e.g. `http://localhost:3000`) when backend is on another host  
+  - `VITE_SOLANA_RPC_URL`: custom Solana RPC URL (default: Ankr mainnet)
 
 - **Backend** (`backend/.env`):  
-  - `PORT` — Server port (default `3000`)  
-  - `CORS_ORIGIN` — Allowed origin for CORS (default `http://localhost:8080`)  
-  - `BIRDEYE_API_KEY` — For real-time Swap chart (optional)
+  - `PORT`: server port (default `3000`)  
+  - `CORS_ORIGIN`: allowed origin for CORS (default `http://localhost:8080`)  
+  - `BIRDEYE_API_KEY`: for real time Swap chart (optional)
 
 ## Build
 

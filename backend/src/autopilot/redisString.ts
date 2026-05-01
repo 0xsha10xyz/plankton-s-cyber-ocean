@@ -1,5 +1,5 @@
 /**
- * String GET/SET for autopilot cache — mirrors Redis connectivity used in stats-handler
+ * String GET/SET for autopilot cache. Mirrors Redis connectivity used in stats-handler
  * (REDIS_URL node-redis, or Upstash REST).
  */
 function stripEnvQuotes(s: string | undefined): string {

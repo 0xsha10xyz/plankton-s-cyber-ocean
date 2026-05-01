@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Users } from "lucide-react";
 import { useStats } from "@/contexts/StatsContext";
 
-/** Prominent "Total Users" stat for social proof — hero and stats strip */
+/** Prominent "Total Users" stat for social proof. Hero and stats strip. */
 export function TotalUsersStat({
   variant = "default",
   className = "",

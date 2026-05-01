@@ -1,5 +1,5 @@
 /**
- * GET /api/subscription/:segment — tier stub (me, my, mc, my-wallet).
+ * GET /api/subscription/:segment: tier stub (me, my, mc, my-wallet).
  */
 import type { IncomingMessage, ServerResponse } from "http";
 

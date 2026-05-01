@@ -27,12 +27,12 @@ Without **`AGENT_BACKEND_ORIGIN`**, the serverless route cannot reach your VPS; 
 
 ## Request flow (Agent Chat)
 
-1. **Config** — The app calls **`GET /api/agent/config`**. The production site must return the real **`x402AgentChat`** object from the backend (enabled flag, network, amount, USDC mint). The Vercel handler proxies this to the VPS when **`AGENT_BACKEND_ORIGIN`** is set so the UI actually enables the x402 client.
-2. **Quota** — For each chat turn, the backend checks **usage** for the authenticated wallet. If within the free or paid allowance, the message is processed.
-3. **402 challenge** — If blocked, the API responds with **HTTP 402** and a strict x402 body, plus a **`PAYMENT-REQUIRED`** header where applicable so the client uses **`PAYMENT-SIGNATURE`** (not legacy `X-PAYMENT` only).
-4. **Payment** — The wallet approves the USDC transfer path required by the facilitator; the client retries **`POST /api/agent/chat`** with the payment proof in headers (and often duplicated in JSON for long header paths).
-5. **Verify / settle** — The backend must call **`verifyPayment`** and **`settlePayment`** with the **same** `paymentRequirements` object that was issued in the challenge. The implementation caches that object between the challenge and the retry so facilitator verification does not fail due to a regenerated fee payer or requirement drift.
-6. **Credit** — On success, the server credits the next block of messages; the client may retry the original chat request.
+1. **Config**: The app calls **`GET /api/agent/config`**. The production site must return the real **`x402AgentChat`** object from the backend (enabled flag, network, amount, USDC mint). The Vercel handler proxies this to the VPS when **`AGENT_BACKEND_ORIGIN`** is set so the UI enables the x402 client.
+2. **Quota**: For each chat turn, the backend checks **usage** for the authenticated wallet. If within the free or paid allowance, the message is processed.
+3. **402 challenge**: If blocked, the API responds with **HTTP 402** and a strict x402 body, plus a **`PAYMENT-REQUIRED`** header where applicable so the client uses **`PAYMENT-SIGNATURE`** (not legacy `X-PAYMENT` only).
+4. **Payment**: The wallet approves the USDC transfer path required by the facilitator. The client retries **`POST /api/agent/chat`** with the payment proof in headers (and often duplicated in JSON for long header paths).
+5. **Verify / settle**: The backend must call **`verifyPayment`** and **`settlePayment`** with the **same** `paymentRequirements` object that was issued in the challenge. The implementation caches that object between the challenge and the retry so facilitator verification does not fail due to a regenerated fee payer or requirement drift.
+6. **Credit**: On success, the server credits the next block of messages. The client may retry the original chat request.
 
 ---
 
@@ -57,7 +57,7 @@ Configure these on the **VPS** (and on **Vercel** where noted). Use your own val
 
 | Variable | Purpose |
 |----------|---------|
-| **`AGENT_BACKEND_ORIGIN`** | HTTPS origin of the Express API (e.g. `https://api.example.com`) — no trailing path. Required for proxied agent chat and config. |
+| **`AGENT_BACKEND_ORIGIN`** | HTTPS origin of the Express API (e.g. `https://api.example.com`). No trailing path. Required for proxied agent chat and config. |
 
 **VPS / Express (`backend`)**
 
@@ -69,11 +69,11 @@ Configure these on the **VPS** (and on **Vercel** where noted). Use your own val
 | **`X402_RESOURCE_BASE_URL`** | Public site origin used to build stable resource URLs (often your Vercel canonical domain). |
 | **`X402_FACILITATOR_URL`** | Facilitator base URL (default PayAI if unset). |
 | **`X402_PAYAI_API_KEY_ID`** / **`X402_PAYAI_API_KEY_SECRET`** | Optional; required if your facilitator account uses signed requests. |
-| **`X402_SOLANA_RPC_URL`** | Optional dedicated RPC for x402; if unset, **`SOLANA_RPC_URL`** is used. **Do not** set this to a placeholder string — either omit it or set a valid mainnet RPC. |
+| **`X402_SOLANA_RPC_URL`** | Optional dedicated RPC for x402. If unset, **`SOLANA_RPC_URL`** is used. **Do not** set this to a placeholder string. Either omit it or set a valid mainnet RPC. |
 | **`SOLANA_RPC_URL`** | General RPC (also x402 fallback). |
 | **`CORS_ORIGIN`** | Comma-separated allowed browser origins. |
 
-Optional: **`DISABLE_AGENT_CHAT_X402`** — set to `1` to disable paid gating for debugging.
+Optional: **`DISABLE_AGENT_CHAT_X402`**. Set to `1` to disable paid gating for debugging.
 
 ---
 
@@ -90,17 +90,17 @@ Optional: **`DISABLE_AGENT_CHAT_X402`** — set to `1` to disable paid gating fo
 
 ## Code map (for contributors)
 
-- **Backend:** `backend/src/usage/x402-blocks.ts` — quota, cache for payment requirements, 402 responses.  
-- **Backend:** `backend/src/routes/agent.ts` — chat route, `x402PaymentHeaderB64` injection, usage gate.  
-- **Vercel:** `api/agent/[segment].ts` — proxy chat + **config** to **`AGENT_BACKEND_ORIGIN`**, forward 402 headers.  
-- **Frontend:** `frontend/src/lib/agent-chat-fetch.ts` — x402 client, `customFetch`, body duplication.  
-- **Frontend:** `frontend/src/lib/x402-usage.ts` — signed usage helpers for quota APIs.
+- **Backend:** `backend/src/usage/x402-blocks.ts`. Quota, cache for payment requirements, 402 responses.
+- **Backend:** `backend/src/routes/agent.ts`. Chat route, `x402PaymentHeaderB64` injection, usage gate.
+- **Vercel:** `api/agent/[segment].ts`. Proxy chat plus **config** to **`AGENT_BACKEND_ORIGIN`**, forward 402 headers.
+- **Frontend:** `frontend/src/lib/agent-chat-fetch.ts`. x402 client, `customFetch`, body duplication.
+- **Frontend:** `frontend/src/lib/x402-usage.ts`. Signed usage helpers for quota APIs.
 
 ---
 
 ## Related documentation
 
-- [Configuration](./CONFIGURATION.md) — full environment matrix.  
-- [Deployment](./DEPLOYMENT.md) — Vercel + VPS patterns.  
-- [Integrations](./INTEGRATIONS.md) — external services overview.  
-- [Security](../SECURITY.md) — secret handling and rotation.
+- [Configuration](./CONFIGURATION.md): full environment matrix.
+- [Deployment](./DEPLOYMENT.md): Vercel plus VPS patterns.
+- [Integrations](./INTEGRATIONS.md): external services overview.
+- [Security](../SECURITY.md): secret handling and rotation.

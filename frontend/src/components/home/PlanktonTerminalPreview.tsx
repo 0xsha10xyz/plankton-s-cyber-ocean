@@ -3,7 +3,7 @@ import { TrendingUp, Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PAP_TOKEN_MINT } from "@/lib/papToken";
 
-/** Decorative SYRA-style terminal mock — not wired to live data. */
+/** Decorative terminal mock. Not wired to live data. */
 export function PlanktonTerminalPreview({ className }: { className?: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -30,7 +30,7 @@ export function PlanktonTerminalPreview({ className }: { className?: string }) {
             </span>
           </div>
           <p className="text-[11px] font-mono text-muted-foreground tracking-wide">
-            Plankton Terminal <span className="text-signal/90">v2</span>
+            Plankton Console <span className="text-signal/90">preview</span>
           </p>
         </div>
 
@@ -55,17 +55,17 @@ export function PlanktonTerminalPreview({ className }: { className?: string }) {
           {/* Sentiment panel */}
           <div className="rounded-xl border border-border/45 bg-black/25 px-3 py-3">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-foreground">Flow sentiment</p>
+              <p className="text-xs font-semibold text-foreground">Market posture</p>
               <span className="rounded-full border border-signal/35 bg-signal/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-signal">
-                Live
+                Snapshot
               </span>
             </div>
             <div className="mt-3 grid grid-cols-4 gap-2 text-center">
               {[
-                { l: "Risk-off", v: "22%", c: "text-destructive" },
-                { l: "Neutral", v: "41%", c: "text-muted-foreground" },
-                { l: "Risk-on", v: "37%", c: "text-signal" },
-                { l: "Score", v: "64", c: "text-intel" },
+                { l: "Caution", v: "22%", c: "text-destructive" },
+                { l: "Base", v: "41%", c: "text-muted-foreground" },
+                { l: "Momentum", v: "37%", c: "text-signal" },
+                { l: "Index", v: "64", c: "text-intel" },
               ].map((x) => (
                 <div key={x.l} className="rounded-lg bg-secondary/25 py-2">
                   <p className={cn("font-mono text-sm font-bold tabular-nums", x.c)}>{x.v}</p>
@@ -84,13 +84,13 @@ export function PlanktonTerminalPreview({ className }: { className?: string }) {
                 d="M0 24 L12 20 L24 22 L36 14 L48 18 L60 10 L72 14 L84 8 L96 12 L108 6 L120 4"
               />
               <path
-                fill="url(#syraSpark)"
+                fill="url(#planktonSpark)"
                 stroke="none"
                 className="opacity-25"
                 d="M0 24 L12 20 L24 22 L36 14 L48 18 L60 10 L72 14 L84 8 L96 12 L108 6 L120 4 V32 H0 Z"
               />
               <defs>
-                <linearGradient id="syraSpark" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="planktonSpark" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="currentColor" />
                   <stop offset="100%" stopColor="transparent" />
                 </linearGradient>
@@ -105,7 +105,7 @@ export function PlanktonTerminalPreview({ className }: { className?: string }) {
               <div className="flex gap-2 rounded-lg bg-secondary/20 px-2 py-2">
                 <span className="shrink-0 rounded bg-intel/15 px-1.5 py-0.5 font-mono text-[10px] text-intel">News</span>
                 <span className="text-muted-foreground leading-snug">
-                  Polymarket volume clustering on macro outcomes — dashboard refreshed.
+                  Event markets are clustering around macro outcomes. Watchlist refreshed.
                 </span>
               </div>
               <div className="flex gap-2 rounded-lg bg-secondary/20 px-2 py-2">
@@ -113,7 +113,7 @@ export function PlanktonTerminalPreview({ className }: { className?: string }) {
                   Signal
                 </span>
                 <span className="text-muted-foreground leading-snug">
-                  Agent suggests breadth check before size — confidence medium.
+                  Agent suggests a breadth check before sizing. Confidence medium.
                 </span>
               </div>
               <div className="flex items-center gap-2 rounded-lg bg-secondary/20 px-2 py-2">

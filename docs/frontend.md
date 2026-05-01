@@ -4,15 +4,15 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 ## Tech stack
 
-- **Vite** — Build and dev server  
-- **React 18** — UI  
-- **TypeScript** — Typing  
-- **Tailwind CSS** — Styling  
-- **shadcn/ui** — Components (Sheet, Button, Input, Avatar, etc.)  
-- **Framer Motion** — Animations  
-- **React Router** — Routing  
-- **Solana wallet adapter** — Phantom, Solflare (connect/disconnect, balance)  
-- **TanStack Query** — Optional for server state (not required for current mock data)
+- **Vite**: build and dev server
+- **React 18**: UI
+- **TypeScript**: typing
+- **Tailwind CSS**: styling
+- **shadcn/ui**: components (Sheet, Button, Input, Avatar, etc.)
+- **Framer Motion**: animations
+- **React Router**: routing
+- **Solana wallet adapter**: Phantom, Solflare (connect/disconnect, balance)
+- **TanStack Query**: optional for server state (not required for current mock data)
 
 ## Main features
 
@@ -39,11 +39,11 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 
 - **Account** in the header or dropdown opens the **Account sidebar** (sheet from the left).
 - **Account sidebar** includes:
-  - **Avatar** — Upload image (stored per wallet in `localStorage`).
-  - **Username** — Edit and save (stored per wallet).
-  - **Assets** — SOL and all SPL token balances for the connected wallet. Amounts use full decimal precision (smallest unit visible) so even tiny balances are readable. Known symbols (SOL, USDC, USDT) are shown by name; other mints show a truncated address.
-  - **Connected wallet** — Full address.
-  - **Disconnect** — Disconnects and closes the sidebar.
+  - **Avatar**: upload image (stored per wallet in `localStorage`).
+  - **Username**: edit and save (stored per wallet).
+  - **Assets**: SOL and all SPL token balances for the connected wallet. Amounts use full decimal precision (smallest unit visible) so even tiny balances are readable. Known symbols (SOL, USDC, USDT) are shown by name; other mints show a truncated address.
+  - **Connected wallet**: full address.
+  - **Disconnect**: disconnects and closes the sidebar.
 - Profile is keyed by wallet address (`plankton_account_<address>` in `localStorage`).
 
 ### 5. Autonomous Agent Protocol
@@ -70,14 +70,14 @@ The Plankton frontend is a single-page app (Vite + React + TypeScript) with wall
 ### 7. Swap
 
 - **Swap** link in the header opens the **Swap** page (`/swap`).
-- **Trading chart** — Time ranges 1H, 4H, 1D, 1W for the selected pair (e.g. SOL/USDC).
-- **Manual swap form** — From/To token select (SOL, USDC, USDT), amount input, **Get quote** (Jupiter API), then **Swap** to execute. Success link to Solscan.
+- **Trading chart**: time ranges 1H, 4H, 1D, 1W for the selected pair (e.g. SOL/USDC).
+- **Manual swap form**: From/To token select (SOL, USDC, USDT), amount input, **Get quote** (Jupiter API), then **Swap** to execute. Success link to Solscan.
 - Requires wallet connection. Provides manual trading until the autonomous agent is fully live.
 
 ### 8. Other sections
 
-- **Dashboard** — Hero, Total Users card, stats strip, Research & Screening (feeds, screener), PAP (Plankton Autonomous Protocol) Tokenomics, Subscription Tiers, **Roadmap** (Phase 0–8: Narrative, Foundation, Development LIVE; Pre Launch, Security, Token Launch, Expansion, Governance, Full Launch SOON), Docs.
-- **Footer** — Total Users, social links (X: Planktonomous), copyright.
+- **Dashboard**: hero, Total Users card, stats strip, Research & Screening (feeds, screener), PAP (Plankton Autonomous Protocol) Tokenomics, Subscription Tiers, **Roadmap** (Phase 0–8: Narrative, Foundation, Development LIVE; Pre Launch, Security, Token Launch, Expansion, Governance, Full Launch SOON), Docs.
+- **Footer**: Total Users, social links (X: Planktonomous), copyright.
 
 ## Key files
 

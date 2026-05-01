@@ -1,7 +1,7 @@
 /**
- * GET /api/health — liveness check.
- * GET /api/health?mode=config — same JSON as legacy GET /api/config (Bitquery + Shyft for browser).
- * Vercel rewrites `/api/config` → `/api/health?mode=config` so Hobby stays within the 12-function limit.
+ * GET /api/health: liveness check.
+ * GET /api/health?mode=config: same JSON as legacy GET /api/config (Bitquery + Shyft for browser).
+ * Vercel rewrites `/api/config` to `/api/health?mode=config` so Hobby stays within the 12 function limit.
  */
 import type { IncomingMessage, ServerResponse } from "http";
 

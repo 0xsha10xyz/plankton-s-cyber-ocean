@@ -47,7 +47,7 @@ export function getAgentApiBase(): string {
 
 /**
  * Shared API base URL for all `/api/*` requests (market, Jupiter, wallet, agent, RPC proxy, …).
- * - **Vercel (recommended):** same-origin — do **not** set `VITE_API_URL`, or set `VITE_API_MODE` to anything other than `external`.
+ * - **Vercel (recommended):** same-origin. Do **not** set `VITE_API_URL`, or set `VITE_API_MODE` to anything other than `external`.
  * - **API on another host (VPS):** set `VITE_API_URL` **and** `VITE_API_MODE=external`.
  * - **Local dev:** leave unset; Vite proxies `/api` to port 3000.
  */

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Wallet, LogOut, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
@@ -10,12 +10,21 @@ import { useWalletModal } from "@/contexts/WalletModalContext";
 const NAV_CONFIG: { label: string; sectionId?: string; path?: string }[] = [
   { label: "Dashboard", path: "/dashboard" },
   { label: "Swap", path: "/swap" },
-  { label: "Research", path: "/dashboard#insights" },
-  { label: "Screener", path: "/dashboard#screener" },
   { label: "Governance", sectionId: "tokenomics" },
   { label: "Subscription", sectionId: "pricing" },
   { label: "Roadmap", sectionId: "roadmap" },
   { label: "Docs", path: "/docs" },
+];
+
+const DASHBOARD_NAV: { label: string; path: string }[] = [
+  { label: "Dashboard", path: "/dashboard" },
+  { label: "Swap", path: "/swap" },
+];
+
+const LANDING_NAV: { label: string; sectionId: string }[] = [
+  { label: "Governance", sectionId: "tokenomics" },
+  { label: "Subscription", sectionId: "pricing" },
+  { label: "Roadmap", sectionId: "roadmap" },
 ];
 
 const scrollToSection = (sectionId: string) => {
@@ -35,11 +44,21 @@ const Header = () => {
   const { pathname, hash } = useLocation();
   const { connected, publicKey, disconnect } = useWallet();
   const { openWalletModal } = useWalletModal();
+  const isLanding = pathname === "/";
+  const isDashboard = pathname === "/dashboard";
+
+  const navItems = useMemo(() => {
+    // On landing we avoid duplicating primary actions (Dashboard/Swap/Docs/etc)
+    // that already exist as CTAs below the header.
+    if (isLanding) return LANDING_NAV;
+    if (isDashboard) return DASHBOARD_NAV;
+    return NAV_CONFIG;
+  }, [isLanding, isDashboard]);
 
   const updateActiveSection = useCallback(() => {
-    if (pathname !== "/home") return;
+    if (pathname !== "/") return;
     const headerOffset = 100;
-    const sectionItems = NAV_CONFIG.filter((c): c is { label: string; sectionId: string } => !!c.sectionId);
+    const sectionItems = LANDING_NAV;
     let current = sectionItems[0]?.sectionId ?? "dashboard";
     for (let i = sectionItems.length - 1; i >= 0; i--) {
       const el = document.getElementById(sectionItems[i].sectionId);
@@ -77,7 +96,7 @@ const Header = () => {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const handleNavClick = (item: (typeof NAV_CONFIG)[number]) => {
+  const handleNavClick = (item: { label: string; sectionId?: string; path?: string }) => {
     if (item.path) {
       // Route link handled by Link
       setMobileOpen(false);
@@ -89,14 +108,14 @@ const Header = () => {
     }
   };
 
-  const isActive = (item: (typeof NAV_CONFIG)[number]) => {
+  const isActive = (item: { label: string; sectionId?: string; path?: string }) => {
     if (item.path) {
       if (item.path === "/docs") return pathname === "/docs" || pathname.startsWith("/docs/");
       const full = `${pathname}${hash ?? ""}`;
       if (item.path.includes("#")) return full === item.path;
       return pathname === item.path;
     }
-    return pathname === "/home" && activeSection === item.sectionId;
+    return pathname === "/" && activeSection === item.sectionId;
   };
 
   const handleDisconnect = useCallback(() => {
@@ -113,10 +132,10 @@ const Header = () => {
         <div className="mx-auto flex w-full max-w-[1680px] items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link
-              to="/home"
+              to="/"
               onClick={() => {
                 setMobileOpen(false);
-                if (pathname === "/home") {
+                if (pathname === "/") {
                   window.scrollTo({ top: 0, behavior: "auto" });
                 }
               }}
@@ -142,9 +161,9 @@ const Header = () => {
             </Link>
           </div>
 
-          {/* Desktop nav — Arkham density + Nansen active accent */}
+          {/* Desktop nav */}
           <nav className="hidden lg:flex items-center flex-nowrap gap-0 rounded-xl border border-border/55 bg-black/22 px-1 py-1 shadow-inner backdrop-blur-sm">
-            {NAV_CONFIG.map((item) => {
+            {navItems.map((item) => {
               const sectionId = "sectionId" in item ? item.sectionId : undefined;
               const path = "path" in item ? item.path : undefined;
               const active = isActive(item);
@@ -182,11 +201,11 @@ const Header = () => {
                   </Link>
                 );
               }
-              if (pathname !== "/home") {
+              if (!isLanding) {
                 return (
                   <Link
                     key={sectionId}
-                    to={`/home#${sectionId}`}
+                    to={`/#${sectionId}`}
                     onClick={() => setMobileOpen(false)}
                     className={linkClass}
                   >
@@ -310,7 +329,7 @@ const Header = () => {
               aria-label="Main navigation"
             >
               <div className="px-4 py-3 flex flex-col gap-0.5">
-                {NAV_CONFIG.map((item) => {
+                {navItems.map((item) => {
                   const sectionId = "sectionId" in item ? item.sectionId : undefined;
                   const path = "path" in item ? item.path : undefined;
                   const active = isActive(item);
@@ -349,7 +368,7 @@ const Header = () => {
                   return (
                     <Link
                       key={sectionId}
-                      to={`/home#${sectionId}`}
+                      to={`/#${sectionId}`}
                       onClick={() => setMobileOpen(false)}
                       className={mobileItemClass}
                     >

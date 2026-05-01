@@ -2,7 +2,7 @@
 node_modules
 dist
 
-# Environment and secrets (never commit — keep .env.example only)
+# Environment and secrets (never commit. Keep .env.example only)
 .env
 .env.*
 !.env.example

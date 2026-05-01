@@ -1,4 +1,4 @@
-# Plankton — API Recommendations
+# Plankton: API Recommendations
 
 Recommendations for external and internal APIs to support autonomous AI agent trading, research, AI chat, the Command Center, and supporting features. Use this as a roadmap when integrating real-time and production services.
 
@@ -75,7 +75,7 @@ The in-app chat should answer questions about portfolio, risk, research, and age
 | **Together / OpenRouter** | Open models | Not wired in code; could be added similarly to Groq. |
 | **Ollama (self-hosted)** | Local LLM | Not wired; add an OpenAI-compatible proxy if needed. |
 
-**Recommendation:** Set **`GROQ_API_KEY`** on the backend (and optionally Anthropic/OpenAI). For **function/tool calling** so the model can call your backend (e.g. “get portfolio”, “get agent status”), extend `backend/src/routes/agent.ts` or add a tool layer — the current integration returns structured JSON (`insight`, `actions`) without external tool calls.
+**Recommendation:** Set **`GROQ_API_KEY`** on the backend (and optionally Anthropic/OpenAI). For **function/tool calling** so the model can call your backend (e.g. “get portfolio”, “get agent status”), extend `backend/src/routes/agent.ts` or add a tool layer. The current integration returns structured JSON (`insight`, `actions`) without external tool calls.
 
 ### 2.2 Chat Backend Design
 

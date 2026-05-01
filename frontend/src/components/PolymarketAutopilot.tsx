@@ -433,7 +433,7 @@ export default function PolymarketAutopilot({
                   {dash.agentDecisionsLog.map((d, i) => (
                     <li key={`${d.timestamp}-${i}`} className="border-b border-border/30 pb-2">
                       <span className="text-primary/90">{d.timestamp}</span> · {d.action} · mkt {d.marketId} ·{" "}
-                      {d.confidence ?? "—"}% — {(d.reasoning || "").slice(0, 120)}
+                      {d.confidence ?? "N/A"}% · {(d.reasoning || "").slice(0, 120)}
                     </li>
                   ))}
                 </ul>

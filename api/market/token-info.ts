@@ -15,7 +15,7 @@ export const config = {
   maxDuration: 60,
 };
 
-/** Align with `frontend/src/lib/jupiter.ts` COMMON_MINTS — swap UI works even if external APIs time out. */
+/** Align with `frontend/src/lib/jupiter.ts` COMMON_MINTS. Swap UI works even if external APIs time out. */
 const KNOWN_MINTS: Record<string, { symbol: string; name?: string; decimals: number }> = {
   So11111111111111111111111111111111111111112: { symbol: "SOL", name: "Wrapped SOL", decimals: 9 },
   EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: { symbol: "USDC", name: "USD Coin", decimals: 6 },
@@ -208,7 +208,7 @@ async function getMetaplexMetadata(
   }
 }
 
-/** Jupiter tokens v2 search — holder index (same source as former `/api/market/pap-holders`). */
+/** Jupiter tokens v2 search: holder index (same source as former `/api/market/pap-holders`). */
 async function fetchJupiterHolderCount(mint: string): Promise<number | null> {
   const jupiterSearchUrls = [
     `https://lite-api.jup.ag/tokens/v2/search?query=${encodeURIComponent(mint)}`,
@@ -257,7 +257,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return;
   }
 
-  /** `holders=1` — only return Jupiter-indexed holder count (keeps Hobby plan ≤12 serverless functions). */
+  /** `holders=1`: only return Jupiter indexed holder count (keeps Hobby plan ≤12 serverless functions). */
   if (searchParams.get("holders") === "1") {
     const holderCount = await fetchJupiterHolderCount(mint);
     if (holderCount !== null) {

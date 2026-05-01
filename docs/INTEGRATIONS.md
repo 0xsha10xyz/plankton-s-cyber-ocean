@@ -70,7 +70,7 @@ See **`api/stats/`** and backend stats routes.
 
 | Integration | Purpose | Configuration |
 |-------------|---------|----------------|
-| **x402-solana** + **PayAI facilitator** | USDC payment per agent message on Solana | `X402_TREASURY_ADDRESS`, optional `X402_RESOURCE_BASE_URL`, facilitator keys — see **[Configuration — x402](./CONFIGURATION.md#agent-chat--x402-optional-usdc-on-solana)** |
+| **x402-solana** + **PayAI facilitator** | USDC payment per agent message on Solana | `X402_TREASURY_ADDRESS`, optional `X402_RESOURCE_BASE_URL`, facilitator keys. See **[Configuration: x402](./CONFIGURATION.md#agent-chat--x402-optional-usdc-on-solana)** |
 
 ---
 
@@ -90,7 +90,7 @@ Configuration is documented in **[Syraa Signal Agent](./syraa-signal-agent.md)**
 
 | Platform | What it hosts |
 |----------|----------------|
-| **Vercel** | Static `dist/`, root `api/` serverless (12-function cap on Hobby — routes are consolidated where needed) |
+| **Vercel** | Static `dist/`, root `api/` serverless (12 function cap on Hobby. Routes are consolidated where needed.) |
 | **VPS (Node/PM2)** | Express `backend/` for agent + optional full API |
 
 Environment files: **`frontend/.env.example`**, **`backend/.env.example`**, **`api/.env.example`** (Vercel dashboard for production secrets).

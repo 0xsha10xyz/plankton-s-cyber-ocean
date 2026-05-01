@@ -1,14 +1,14 @@
-# Command Center — Redis & Helius setup (LIVE / real-time)
+# Command Center: Redis & Helius setup (LIVE / real time)
 
 Quick setup so the Command Center shows **LIVE** and receives **real on-chain data**.
 
-**Bitquery, DexScreener, and `BITQUERY_TOKEN` on Vercel** (feeds for transfers, trades, launches) are documented in **[Configuration — Command Center feeds](./CONFIGURATION.md#command-center-feeds--bitquery-dexscreener-and-rpc-vercel)**.
+**Bitquery, DexScreener, and `BITQUERY_TOKEN` on Vercel** (feeds for transfers, trades, launches) are documented in **[Configuration: Command Center feeds](./CONFIGURATION.md#command-center-feeds--bitquery-dexscreener-and-rpc-vercel)**.
 
 ---
 
 ## API configuration (required)
 
-To make Command Center work correctly, set these in **Vercel → Settings → Environment Variables**:
+To make Command Center work correctly, set these in **Vercel / Settings / Environment Variables**:
 
 | Variable | Required | Example / Notes |
 |----------|--------|----------------------|
@@ -21,7 +21,7 @@ After changing env vars, **redeploy** the project.
 
 Helius webhook URL must be exactly **`https://planktonomous.dev/api/webhooks/helius`** (note the **s** in `webhooks`).
 
-**Important — env values without quotes:** In Vercel, do not wrap values in quotes. Wrong: `"https://finer-dogfish-69017.upstash.io"`. Correct: `https://finer-dogfish-69017.upstash.io`. Quoted values can break Redis/Helius connections. (We now strip quotes in code, but setting them correctly is still best.)
+**Important. Env values without quotes:** In Vercel, do not wrap values in quotes. Wrong: `"https://finer-dogfish-69017.upstash.io"`. Correct: `https://finer-dogfish-69017.upstash.io`. Quoted values can break Redis/Helius connections. (We now strip quotes in code, but setting them correctly is still best.)
 
 ---
 
@@ -31,9 +31,9 @@ Command Center needs **Redis** to persist logs and show **LIVE**.
 
 ### Steps
 
-1. Open **Vercel** → project **planktonomous** → **Settings** → **Environment Variables**.
+1. Open **Vercel**. Project **planktonomous**. **Settings**. **Environment Variables**.
 2. Ensure you have either:
-   - **REDIS_URL** — e.g. `redis://default:xxxxx@xxx.upstash.io:6379` or `rediss://...` (TLS), or
+   - **REDIS_URL**: e.g. `redis://default:xxxxx@xxx.upstash.io:6379` or `rediss://...` (TLS), or
    - **Upstash REST**:
      - **KV_REST_API_URL**
      - **KV_REST_API_TOKEN** (or **UPSTASH_REDIS_REST_URL** + **UPSTASH_REDIS_REST_TOKEN**).
@@ -53,9 +53,9 @@ Command Center needs **Redis** to persist logs and show **LIVE**.
 
 ### After setting vars
 
-- **Redeploy** (Deployments → … → Redeploy).
-- Open **planktonomous.dev** → scroll to **Command Center**.
-- You should see **LIVE** (green dot) and the footer: **"Real-time on-chain events"**. If it still shows **SIMULATED**, Redis isn’t being detected (check variable names and redeploy again).
+- **Redeploy** (Deployments. Redeploy).
+- Open **planktonomous.dev**. Scroll to **Command Center**.
+- You should see **LIVE** (green dot) and the footer: **"Real time on chain events"**. If it still shows **SIMULATED**, Redis isn’t being detected (check variable names and redeploy again).
 
 ---
 
@@ -66,7 +66,7 @@ To receive on-chain events (large transfers, swaps, etc.) in Command Center:
 ### Steps
 
 1. Open [Helius Dashboard](https://dashboard.helius.dev) and sign in.
-2. Go to **Webhooks** → open your webhook (or create a new one).
+2. Go to **Webhooks** and open your webhook (or create a new one).
 3. Make sure:
    - **Webhook URL:** `https://planktonomous.dev/api/webhooks/helius`  
      (note **webhooks** with **s** and the **/helius** path).
@@ -78,8 +78,8 @@ To receive on-chain events (large transfers, swaps, etc.) in Command Center:
 
 ### Test the webhook
 
-- After deploy + Redis are working, wait for matching transactions (or use Helius’ test feature if available).
-- Open Command Center → within a few seconds you should see new log lines labeled **NEW_MINT**, **WHALE_TRANSFER**, **SNIPER_BUY**, **SWAP**, or **BIG_SALE**.
+- After deploy plus Redis are working, wait for matching transactions (or use Helius’ test feature if available).
+- Open Command Center. Within a few seconds you should see new log lines labeled **NEW_MINT**, **WHALE_TRANSFER**, **SNIPER_BUY**, **SWAP**, or **BIG_SALE**.
 
 ---
 
@@ -87,10 +87,10 @@ To receive on-chain events (large transfers, swaps, etc.) in Command Center:
 
 | Check | Where | Requirement |
 |-----|--------|------------|
-| Redis | Vercel → Settings → Environment Variables | **REDIS_URL** or **KV_REST_API_URL** + **KV_REST_API_TOKEN** |
+| Redis | Vercel / Settings / Environment Variables | **REDIS_URL** or **KV_REST_API_URL** + **KV_REST_API_TOKEN** |
 | CORS (optional) | Vercel → Environment Variables | **CORS_ORIGIN** = `https://planktonomous.dev,https://planktonomous.vercel.app` |
 | Helius webhook | dashboard.helius.dev → Webhooks | URL = `https://planktonomous.dev/api/webhooks/helius`, mainnet, Enhanced, types TRANSFER, SWAP, TOKEN_MINT, BUY, etc. |
-| Redeploy | Vercel → Deployments | After changing env vars, **redeploy** |
+| Redeploy | Vercel / Deployments | After changing env vars, **redeploy** |
 
 **Automatic mint/swap feed (no webhook):** If **HELIUS_API_KEY** is set in Vercel, the server can periodically call Helius APIs for **TOKEN_MINT** (Token Program + pump.fun) and **SWAP** (Raydium) and push them into the log. This helps when webhooks aren’t configured or aren’t receiving matches.
 

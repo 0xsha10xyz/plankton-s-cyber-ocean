@@ -8,7 +8,7 @@ function parseMs(envName: string, fallback: number): number {
 }
 
 /**
- * Background refresh for Polymarket markets (5 min) and wallet scores (4 h) — VPS / PM2 only.
+ * Background refresh for Polymarket markets (5 min) and wallet scores (4 h). VPS / PM2 only.
  * Disable with AUTOPILOT_DATA_CRON=0.
  */
 export function startAutopilotDataJobs(): void {

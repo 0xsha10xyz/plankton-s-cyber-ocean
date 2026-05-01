@@ -1,6 +1,6 @@
 /**
  * Bitquery Streaming GraphQL subscriptions (Solana).
- * Validate queries in the Bitquery IDE — field names may differ by API version.
+ * Validate queries in the Bitquery IDE. Field names may differ by API version.
  */
 export const TRANSFER_SUB = `subscription {
   Solana {

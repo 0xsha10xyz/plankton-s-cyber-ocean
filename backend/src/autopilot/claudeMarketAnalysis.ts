@@ -18,7 +18,7 @@ Output ONLY one JSON object, no markdown, keys:
 action: "BUY" or "SKIP"
 side: "YES" or "NO" or null (null if SKIP)
 confidence: integer 0-100
-stake_size_usd: number (0 if SKIP — dollars, conservative sizing hint only)
+stake_size_usd: number (0 if SKIP. Dollars, conservative sizing hint only)
 reasoning: string (max 800 chars, concise)`;
 
 function parseDecision(raw: string): ClaudeDecision | null {

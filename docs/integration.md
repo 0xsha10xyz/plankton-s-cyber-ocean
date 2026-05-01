@@ -14,8 +14,8 @@ VITE_API_URL=http://localhost:3000
 
 In application code, prefer the shared helpers in **`frontend/src/lib/api.ts`** instead of raw `import.meta.env` everywhere:
 
-- **`getApiBase()`** — market, Jupiter, RPC, wallet, stats, etc.
-- **`getAgentApiBase()`** — **`/api/agent/*`** (chat, config, logs); uses **`VITE_AGENT_API_URL`** when set so agent traffic can target a VPS while the rest of the app stays on Vercel.
+- **`getApiBase()`**: market, Jupiter, RPC, wallet, stats, etc.
+- **`getAgentApiBase()`**: **`/api/agent/*`** (chat, config, logs). Uses **`VITE_AGENT_API_URL`** when set so agent traffic can target a VPS while the rest of the app stays on Vercel.
 
 ```ts
 import { getApiBase, getAgentApiBase } from "@/lib/api";

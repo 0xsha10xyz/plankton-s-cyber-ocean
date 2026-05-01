@@ -63,7 +63,7 @@ async function creatorFromEarliestTx(c: Connection, mint: PublicKey): Promise<st
 
 /**
  * Best-effort creator wallet for feed links (Solscan account). Uses same-origin `/api/rpc` when configured.
- * Returns undefined when unknown — callers may fall back to pump.fun for `…pump` mints.
+ * Returns undefined when unknown. Callers may fall back to pump.fun for `…pump` mints.
  */
 export async function resolveTokenCreatorAddress(mintStr: string): Promise<string | undefined> {
   try {

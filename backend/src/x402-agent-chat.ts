@@ -4,7 +4,7 @@ import { resolveX402UsdcMint } from "./lib/x402UsdcMint.js";
 
 const DEFAULT_FACILITATOR = "https://facilitator.payai.network";
 
-/** Default per-request amount (6 decimals) — keep in sync with `usage/x402-blocks` block price. */
+/** Default per request amount (6 decimals). Keep in sync with `usage/x402-blocks` block price. */
 const DEFAULT_CHAT_AMOUNT_ATOMIC = "100000";
 
 function parseNetwork(): "solana" | "solana-devnet" {

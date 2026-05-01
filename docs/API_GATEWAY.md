@@ -29,9 +29,9 @@ The **Vercel** `api/` serverless layer is unchanged; a full gateway with Redis-b
 
 ### HTTP status semantics
 
-- **401** — Missing/invalid Bearer token, malformed key format.
-- **403** — Valid format but unknown hash, revoked, expired, or insufficient **scope**.
-- **429** — Rate limit exceeded (`retry_after` in body).
+- **401**: missing or invalid Bearer token, malformed key format.
+- **403**: valid format but unknown hash, revoked, expired, or insufficient **scope**.
+- **429**: rate limit exceeded (`retry_after` in body).
 
 ---
 
@@ -54,7 +54,7 @@ Set **`GATEWAY_ADMIN_SECRET`** in `backend/.env` (long random string). **Never c
 
 In-memory **per minute** limits (aligned with spec intent; Redis upgrade for distributed limits):
 
-| Tier | Req/min | Burst (token bucket capacity — future) |
+| Tier | Req/min | Burst (token bucket capacity, future) |
 |------|---------|----------------------------------------|
 | free | 20 | 30 |
 | basic | 100 | 150 |
@@ -83,10 +83,10 @@ Key store file: **`backend/data/api-keys.json`** (gitignored). Create keys via a
 
 ## Security checklist for operators
 
-1. **CORS** — Browser calls to your API still obey `CORS_ORIGIN`; third-party **browser** apps need your domain allowed or use a **backend proxy** on their side.
-2. **TLS** — Terminate HTTPS at nginx / load balancer; do not expose admin secret over plain HTTP in production.
-3. **Secrets** — Rotate `GATEWAY_ADMIN_SECRET` and API keys if leaked; keys are one-way hashed — recovery of plaintext is impossible.
-4. **Observability** — Enable structured logging (see rule in `.cursor/rules/api-gateway.mdc`) and forward to your log stack; add Redis before high traffic.
+1. **CORS**: browser calls to your API still obey `CORS_ORIGIN`; third party **browser** apps need your domain allowed or use a **backend proxy** on their side.
+2. **TLS**: terminate HTTPS at nginx / load balancer; do not expose admin secret over plain HTTP in production.
+3. **Secrets**: rotate `GATEWAY_ADMIN_SECRET` and API keys if leaked; keys are one way hashed, recovery of plaintext is impossible.
+4. **Observability**: enable structured logging (see rule in `.cursor/rules/api-gateway.mdc`) and forward to your log stack; add Redis before high traffic.
 
 ---
 
@@ -109,5 +109,5 @@ Common codes: `invalid_token`, `key_expired`, `key_revoked`, `insufficient_scope
 
 ## Related
 
-- **[SECURITY.md](../SECURITY.md)** — repo-wide secret handling.
-- **[CONFIGURATION.md](./CONFIGURATION.md)** — general backend env.
+- **[SECURITY.md](../SECURITY.md)**: repo wide secret handling.
+- **[CONFIGURATION.md](./CONFIGURATION.md)**: general backend env.

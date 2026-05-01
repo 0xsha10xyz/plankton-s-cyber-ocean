@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import ParticleBackground from "@/components/ParticleBackground";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, User, ArrowLeft, Wallet } from "lucide-react";
+import { Send, User, ArrowLeft, Wallet, Plus, Search, Trash2, X } from "lucide-react";
 import { PlanktonomousAssistantLogo } from "@/components/PlanktonomousAssistantLogo";
 import { cn } from "@/lib/utils";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
@@ -31,6 +31,15 @@ type ChatMessage = {
   role: "user" | "agent";
   content: string;
   timestamp: Date;
+};
+
+type ChatThread = {
+  id: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messages: ChatMessage[];
+  context: ChatContext;
 };
 
 type AgentJsonResponse = {
@@ -110,7 +119,7 @@ function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonRes
   if (lower.includes("portfolio") || lower.includes("balance") || lower.includes("holdings") || lower.includes("pnl")) {
     return {
       insight: walletLabel
-        ? `Portfolio read for ${walletLabel} — focus on flow-supported moves in ${tf}.`
+        ? `Portfolio read for ${walletLabel}. Focus on flow supported moves in ${tf}.`
         : "Open Command Center after connecting your wallet to view SOL balance and PnL.",
       additional_insight:
         "Smart-money alpha usually arrives faster than manual checks. After you enable the Agent, validate whale flow alignment before sizing trades.",
@@ -122,7 +131,7 @@ function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonRes
     return {
       insight: `Risk profiles: Conservative, Mid, Aggressive. Default is Mid for ${tf}.`,
       additional_insight:
-        "If price action is choppy, switch down a tier first—whales often distribute during volatility spikes.",
+        "If price action is choppy, switch down a tier first. Whales often distribute during volatility spikes.",
       actions: ["Set risk to Mid", "Review stop-loss", "Lower on volatility"],
     };
   }
@@ -146,7 +155,7 @@ function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonRes
   if (lower.includes("agent") || lower.includes("autonomous") || lower.includes("auto-pilot") || lower.includes("autopilot")) {
     return {
       insight: "Enable the Autonomous Agent in Command Center and set your risk level. It’s built for 24/7 rebalancing.",
-      additional_insight: "Monitor AI terminal logs for execution timing—tighten risk if it triggers during sideways markets.",
+      additional_insight: "Monitor terminal logs for execution timing. Tighten risk if it triggers during sideways markets.",
       actions: ["Toggle Agent ON", "Set risk level", "Monitor terminal logs"],
     };
   }
@@ -163,7 +172,7 @@ function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonRes
 
   if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) {
     return {
-      insight: "Hi—paste a token mint or wallet address and I’ll generate a Solana smart-money read.",
+      insight: "Hi, paste a token mint or wallet address and I’ll generate a Solana smart money read.",
       additional_insight: "If you include timeframe (1h/24h/7d), I’ll prioritize anomalies and flow shifts from the most relevant window.",
       actions: ["Send token mint", "Paste wallet address", `Set timeframe ${tf}`],
     };
@@ -172,7 +181,7 @@ function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonRes
   if (lower.includes("help") || lower.includes("what can you") || lower.includes("commands")) {
     return {
       insight: "I can analyze: portfolio/balance, risk settings, research signals, autonomous agent behavior, and PAP tokenomics.",
-      additional_insight: "For actionable alpha, share a mint and a timeframe—then I’ll focus on whale accumulation/distribution and liquidity/volume anomalies.",
+      additional_insight: "For actionable alpha, share a mint and a timeframe. Then I’ll focus on whale accumulation, distribution, and liquidity or volume anomalies.",
       actions: ["Ask about portfolio", "Ask about risk", "Ask about whales"],
     };
   }
@@ -200,6 +209,79 @@ const WELCOME_MESSAGE: ChatMessage = {
   content: JSON.stringify(buildWelcomeJson({ username: undefined, walletLabel: undefined, connected: false })),
   timestamp: new Date(),
 };
+
+const THREADS_STORAGE_KEY = "plankton:assistant_threads:v1";
+
+function safeParseThreads(raw: string | null): ChatThread[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((t) => {
+        const o = t as Partial<ChatThread>;
+        const msgsRaw = Array.isArray(o.messages) ? (o.messages as unknown[]) : [];
+        const messages: ChatMessage[] = msgsRaw
+          .map((m) => {
+            const mm = m as Partial<ChatMessage>;
+            if (!mm.id || !mm.role) return null;
+            return {
+              id: String(mm.id),
+              role: mm.role === "user" ? "user" : "agent",
+              content: String(mm.content ?? ""),
+              timestamp: new Date((mm.timestamp as unknown as string) ?? Date.now()),
+            } satisfies ChatMessage;
+          })
+          .filter(Boolean) as ChatMessage[];
+
+        const ctx = (o.context && typeof o.context === "object" ? (o.context as ChatContext) : {}) satisfies ChatContext;
+        const now = Date.now();
+        return {
+          id: String(o.id ?? ""),
+          title: String(o.title ?? "New chat"),
+          createdAt: Number(o.createdAt ?? now),
+          updatedAt: Number(o.updatedAt ?? now),
+          messages: messages.length ? messages : [WELCOME_MESSAGE],
+          context: ctx,
+        } satisfies ChatThread;
+      })
+      .filter((t) => t.id);
+  } catch {
+    return [];
+  }
+}
+
+function makeThreadTitle(messages: ChatMessage[]): string {
+  const firstUser = messages.find((m) => m.role === "user")?.content?.trim();
+  if (!firstUser) return "New chat";
+  const oneLine = firstUser.replace(/\s+/g, " ").trim();
+  return oneLine.length > 42 ? `${oneLine.slice(0, 42)}...` : oneLine;
+}
+
+function formatRelativeTime(ts: number): string {
+  const diffMs = Date.now() - ts;
+  const s = Math.max(0, Math.floor(diffMs / 1000));
+  if (s < 60) return "now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `${h}h`;
+  const d = Math.floor(h / 24);
+  return `${d}d`;
+}
+
+function threadPreview(messages: ChatMessage[]): string {
+  const last = [...messages].reverse().find((m) => m.id !== "welcome");
+  if (!last) return "Start a new chat";
+  if (last.role === "user") return last.content.replace(/\s+/g, " ").trim().slice(0, 72);
+  try {
+    const p = JSON.parse(last.content) as AgentJsonResponse;
+    const txt = (p.insight || p.additional_insight || "").replace(/\s+/g, " ").trim();
+    return txt.slice(0, 72);
+  } catch {
+    return last.content.replace(/\s+/g, " ").trim().slice(0, 72);
+  }
+}
 
 /** Prior turns for POST /api/agent/chat (assistant content = insight summary only). */
 function chatMessagesToHistory(msgs: ChatMessage[]): { role: "user" | "assistant"; content: string }[] {
@@ -286,6 +368,11 @@ export default function AgentChatPage() {
   const [searchParams] = useSearchParams();
   const prefill = searchParams.get("prefill") ?? "";
 
+  const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string>("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [threadSearch, setThreadSearch] = useState("");
+
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [context, setContext] = useState<ChatContext>({});
   const [input, setInput] = useState("");
@@ -301,6 +388,53 @@ export default function AgentChatPage() {
   const lastUserTextRef = useRef<string>("");
 
   const walletLabel = connected && publicKey ? shortenAddress(publicKey.toBase58()) : undefined;
+
+  useEffect(() => {
+    const loaded = safeParseThreads(localStorage.getItem(THREADS_STORAGE_KEY));
+    if (loaded.length) {
+      const sorted = [...loaded].sort((a, b) => b.updatedAt - a.updatedAt);
+      setThreads(sorted);
+      setActiveThreadId(sorted[0].id);
+      setMessages(sorted[0].messages);
+      setContext(sorted[0].context ?? {});
+      return;
+    }
+    const now = Date.now();
+    const first: ChatThread = {
+      id: `thread-${now}`,
+      title: "New chat",
+      createdAt: now,
+      updatedAt: now,
+      messages: [WELCOME_MESSAGE],
+      context: {},
+    };
+    setThreads([first]);
+    setActiveThreadId(first.id);
+    setMessages(first.messages);
+    setContext(first.context);
+  }, []);
+
+  useEffect(() => {
+    if (!activeThreadId) return;
+    setThreads((prev) =>
+      prev.map((t) => {
+        if (t.id !== activeThreadId) return t;
+        const nextTitle = makeThreadTitle(messages);
+        return {
+          ...t,
+          title: t.title === "New chat" ? nextTitle : t.title,
+          messages,
+          context,
+          updatedAt: Date.now(),
+        };
+      })
+    );
+  }, [activeThreadId, context, messages]);
+
+  useEffect(() => {
+    if (!threads.length) return;
+    localStorage.setItem(THREADS_STORAGE_KEY, JSON.stringify(threads));
+  }, [threads]);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -334,6 +468,61 @@ export default function AgentChatPage() {
     if (!prefill) return;
     setInput(prefill);
   }, [prefill]);
+
+  const createNewChat = () => {
+    const now = Date.now();
+    const t: ChatThread = {
+      id: `thread-${now}`,
+      title: "New chat",
+      createdAt: now,
+      updatedAt: now,
+      messages: [WELCOME_MESSAGE],
+      context: {},
+    };
+    setThreads((prev) => [t, ...prev]);
+    setActiveThreadId(t.id);
+    setMessages(t.messages);
+    setContext(t.context);
+    setInput(prefill || "");
+    setSidebarOpen(false);
+    usageSigRef.current = null;
+    lastUserTextRef.current = "";
+  };
+
+  const switchThread = (id: string) => {
+    const t = threads.find((x) => x.id === id);
+    if (!t) return;
+    setActiveThreadId(id);
+    setMessages(t.messages?.length ? t.messages : [WELCOME_MESSAGE]);
+    setContext(t.context ?? {});
+    setInput("");
+    setSidebarOpen(false);
+    usageSigRef.current = null;
+    lastUserTextRef.current = "";
+  };
+
+  const deleteThread = (id: string) => {
+    setThreads((prev) => prev.filter((t) => t.id !== id));
+    if (activeThreadId !== id) return;
+    const remaining = threads.filter((t) => t.id !== id).sort((a, b) => b.updatedAt - a.updatedAt);
+    const next = remaining[0];
+    if (next) {
+      setActiveThreadId(next.id);
+      setMessages(next.messages);
+      setContext(next.context ?? {});
+      return;
+    }
+    createNewChat();
+  };
+
+  const filteredThreads = useMemo(() => {
+    const q = threadSearch.trim().toLowerCase();
+    const sorted = [...threads].sort((a, b) => b.updatedAt - a.updatedAt);
+    if (!q) return sorted;
+    return sorted.filter((t) => (t.title || "").toLowerCase().includes(q));
+  }, [threadSearch, threads]);
+
+  const isWelcomeOnly = messages.length === 1 && messages[0]?.id === "welcome";
 
   useEffect(() => {
     let cancelled = false;
@@ -1096,7 +1285,7 @@ export default function AgentChatPage() {
 
       const mintPk = new PublicKey(tokenEntry.mint);
       // Avoid RPC reads (some RPC keys block reads). Default to the standard SPL Token program.
-      // If the mint is Token-2022 and this fails, the wallet popup will still show and you'll get the program error.
+      // If the mint is Token 2022 and this fails, the wallet popup will still show and you'll get the program error.
       const tokenProgramId = TOKEN_PROGRAM_ID;
 
       const sourceAta = (() => {
@@ -1170,17 +1359,43 @@ export default function AgentChatPage() {
         <Button
           type="button"
           variant="secondary"
-          className="h-10 w-10 p-0 rounded-xl border-border/50 bg-secondary/45 shadow-surface-sm shrink-0"
-          onClick={() => navigate("/launch-agent")}
+          className="h-10 w-10 p-0 rounded-xl border-border/50 bg-secondary/45 shadow-surface-sm shrink-0 md:hidden"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Open chats"
         >
-          <ArrowLeft size={18} />
+          <Search size={18} />
         </Button>
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="shrink-0 inline-flex" aria-hidden>
-            <PlanktonomousAssistantLogo size={18} />
-          </span>
-          <div className="font-semibold tracking-tight truncate">Planktonomous Intelligent Assistant</div>
-        </div>
+
+        <nav
+          aria-label="Primary"
+          className="flex items-center gap-3 min-w-0"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="shrink-0 inline-flex" aria-hidden>
+              <PlanktonomousAssistantLogo size={18} />
+            </span>
+            <div className="hidden sm:block font-semibold tracking-tight truncate">
+              Planktonomous Intelligent Assistant
+            </div>
+          </div>
+
+          <div className="inline-flex items-center rounded-xl border border-border/50 bg-black/18 p-1">
+            <button
+              type="button"
+              className="rounded-lg px-3 py-2 text-xs font-semibold text-foreground bg-signal/12 shadow-none"
+              aria-current="page"
+            >
+              Agent
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard#autopilot")}
+              className="rounded-lg px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors"
+            >
+              Dashboard
+            </button>
+          </div>
+        </nav>
         <div className="ml-auto flex items-center gap-2 shrink-0">
           {connected ? (
             <span className="text-xs text-muted-foreground flex items-center gap-2">
@@ -1200,42 +1415,206 @@ export default function AgentChatPage() {
         </div>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4 min-h-0">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={cn(
-              "flex gap-3",
-              msg.role === "user" ? "justify-end flex-row-reverse" : "justify-start"
-            )}
-          >
-            {msg.role === "agent" && (
-              <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shadow-surface-sm">
-                <PlanktonomousAssistantLogo size={15} />
-              </div>
-            )}
-            <AgentBubble msg={msg} onAction={onAction} />
-            {msg.role === "user" && (
-              <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shadow-surface-sm">
-                <User size={15} className="text-primary" />
-              </div>
-            )}
-          </div>
-        ))}
+      <div className="flex flex-1 min-h-0">
+        {sidebarOpen ? (
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-black/35 backdrop-blur-sm md:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close chats overlay"
+          />
+        ) : null}
 
-        {sending && (
-          <div className="flex gap-3 justify-start">
-            <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center">
-              <PlanktonomousAssistantLogo size={15} />
+        <aside
+          className={cn(
+            "z-50 md:z-auto",
+            "fixed md:sticky top-[3.75rem] left-0 h-[calc(100dvh-3.75rem)] w-[18.5rem] md:w-[19rem]",
+            "border-r border-border/40 bg-background/92 backdrop-blur-md",
+            "p-3 overflow-y-auto",
+            sidebarOpen ? "block" : "hidden md:block"
+          )}
+        >
+          <div className="rounded-2xl border border-border/45 bg-black/18 px-3 py-3">
+            <div className="flex items-center gap-2">
+              <div className="h-9 w-9 rounded-xl border border-border/55 bg-black/25 flex items-center justify-center">
+                <PlanktonomousAssistantLogo size={16} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-mono uppercase tracking-[0.26em] text-muted-foreground/70">
+                  Assistant
+                </p>
+                <p className="text-sm font-semibold tracking-tight text-foreground truncate">
+                  Planktonomous
+                </p>
+              </div>
+              <span className="ml-auto inline-flex items-center rounded-full border border-signal/25 bg-signal/10 px-2 py-1 text-[10px] font-mono uppercase tracking-[0.22em] text-signal">
+                Live
+              </span>
             </div>
-            <div className="chat-bubble-agent px-4 py-2.5">
-              <span className="text-xs text-muted-foreground">Typing…</span>
-            </div>
+
+            <Button
+              type="button"
+              variant="secondary"
+              className="mt-3 h-9 w-full justify-center rounded-xl border-border/50 bg-secondary/45"
+              onClick={createNewChat}
+            >
+              <Plus size={16} className="mr-2" />
+              New chat
+            </Button>
           </div>
-        )}
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-9 w-9 p-0 rounded-xl border-border/50 bg-secondary/45 md:hidden"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close sidebar"
+            >
+              <X size={16} />
+            </Button>
+          </div>
+
+          <div className="mt-3 relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/70" />
+            <input
+              value={threadSearch}
+              onChange={(e) => setThreadSearch(e.target.value)}
+              placeholder="Search chats"
+              className="h-10 w-full rounded-xl border border-border/55 bg-black/18 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-signal/35"
+            />
+          </div>
+
+          <div className="mt-3 space-y-1">
+            {filteredThreads.map((t) => {
+              const activeT = t.id === activeThreadId;
+              return (
+                <div
+                  key={t.id}
+                  className={cn(
+                    "group flex items-center gap-2 rounded-xl border px-3 py-2.5",
+                    activeT
+                      ? "bg-signal/[0.10] border-signal/25"
+                      : "bg-transparent border-transparent hover:bg-secondary/30 hover:border-border/40"
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => switchThread(t.id)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      <p className={cn("text-sm font-semibold tracking-tight truncate", activeT ? "text-foreground" : "text-muted-foreground")}>
+                        {t.title || "New chat"}
+                      </p>
+                      <span className="ml-auto text-[10px] font-mono text-muted-foreground/60">
+                        {formatRelativeTime(t.updatedAt)}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground/70 truncate">
+                      {threadPreview(t.messages)}
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteThread(t.id)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity rounded-lg p-2 text-muted-foreground hover:text-foreground hover:bg-secondary/35"
+                    aria-label="Delete chat"
+                    title="Delete chat"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </aside>
+
+        <section className="flex-1 min-w-0 flex flex-col">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-5 space-y-4 min-h-0">
+            {isWelcomeOnly ? (
+              <div className="mx-auto max-w-3xl pt-7 md:pt-10">
+                <div className="rounded-3xl border border-border/45 bg-black/18 p-6 md:p-7 shadow-[0_28px_120px_-82px_rgba(0,0,0,0.92)]">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-2xl border border-border/55 bg-black/25 flex items-center justify-center">
+                      <PlanktonomousAssistantLogo size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground">How can I help you today?</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Ask about portfolio, swaps, risk, and on chain activity. Connect a wallet when you want execution.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      { t: "Portfolio and risk", p: "Summarize my balances and flag risk in 24h." },
+                      { t: "Market scan", p: "Scan SOL and majors. What is moving today?" },
+                      { t: "Swap plan", p: "Plan a SOL to USDC swap with slippage guidance." },
+                      { t: "Wallet check", p: "Explain recent activity for this wallet: <paste>" },
+                    ].map((c) => (
+                      <button
+                        key={c.t}
+                        type="button"
+                        onClick={() => setInput(c.p)}
+                        className="rounded-2xl border border-border/55 bg-black/18 p-4 text-left hover:border-signal/25 hover:bg-secondary/25 transition-colors"
+                      >
+                        <p className="text-sm font-semibold text-foreground">{c.t}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{c.p}</p>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground/80">
+                    <span className="rounded-full border border-border/50 bg-black/18 px-3 py-1.5 font-mono">
+                      Tip: paste a mint or wallet
+                    </span>
+                    <span className="rounded-full border border-border/50 bg-black/18 px-3 py-1.5 font-mono">
+                      Shortcuts: 1h, 24h, 7d
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {messages.filter((m) => !isWelcomeOnly || m.id !== "welcome").map((msg) => (
+              <div
+                key={msg.id}
+                className={cn(
+                  "flex gap-3",
+                  msg.role === "user" ? "justify-end flex-row-reverse" : "justify-start"
+                )}
+              >
+                {msg.role === "agent" && (
+                  <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shadow-surface-sm">
+                    <PlanktonomousAssistantLogo size={15} />
+                  </div>
+                )}
+                <AgentBubble msg={msg} onAction={onAction} />
+                {msg.role === "user" && (
+                  <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center shadow-surface-sm">
+                    <User size={15} className="text-primary" />
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {sending && (
+              <div className="flex gap-3 justify-start">
+                <div className="shrink-0 w-9 h-9 rounded-full bg-primary/15 border border-primary/25 flex items-center justify-center">
+                  <PlanktonomousAssistantLogo size={15} />
+                </div>
+                <div className="chat-bubble-agent px-4 py-2.5">
+                  <span className="text-xs text-muted-foreground">Typing...</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
 
-      <div className="p-4 md:px-5 border-t border-border/45 bg-gradient-to-b from-transparent to-secondary/20 backdrop-blur-sm">
+      <div className="sticky bottom-0 z-30 p-3 md:p-4 md:px-5 border-t border-border/45 bg-background/92 backdrop-blur-md">
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
             {quickActions.map((a) => (

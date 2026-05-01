@@ -1,6 +1,6 @@
 /**
  * Parse Agent Chat "Send balance" paste: TOKEN (may be multiple words) amount recipient.
- * Supports amount glued to the start of a base58 address (e.g. "20000GJRT...") — common paste mistake.
+ * Supports amount glued to the start of a base58 address (e.g. "20000GJRT..."). Common paste mistake.
  */
 export function parseSendBalanceTransferInput(
   raw: string,

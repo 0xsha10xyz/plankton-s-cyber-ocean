@@ -20,9 +20,7 @@ import DocsLayout from "@/components/docs/DocsLayout";
 import DocsHome from "@/components/docs/DocsHome";
 import DocArticle from "@/components/docs/DocArticle";
 import AgentChatPage from "./pages/AgentChatPage";
-import LaunchAgentPage from "./pages/LaunchAgentPage";
 import Dashboard from "./pages/Dashboard";
-import { EvmWalletProviders } from "@/contexts/EvmWalletProviders";
 import { AppConfigProvider } from "@/hooks/useAppConfig";
 
 const queryClient = new QueryClient();
@@ -48,10 +46,10 @@ const App = () => (
                 <ScrollToTop />
                 <StatsWalletTracker />
                 <Routes>
-                  {/* Default: open on the professional dashboard experience */}
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                  {/* Marketing / landing content stays available */}
-                  <Route path="/home" element={<Index />} />
+                  {/* Default: open on the landing page */}
+                  <Route path="/" element={<Index />} />
+                  {/* Backwards-compatible alias */}
+                  <Route path="/home" element={<Navigate to="/" replace />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/swap" element={<Swap />} />
                   <Route path="/docs" element={<DocsLayout />}>
@@ -59,14 +57,7 @@ const App = () => (
                     <Route path=":slug" element={<DocArticle />} />
                   </Route>
                   <Route path="/agent-chat" element={<AgentChatPage />} />
-                  <Route
-                    path="/launch-agent"
-                    element={
-                      <EvmWalletProviders>
-                        <LaunchAgentPage />
-                      </EvmWalletProviders>
-                    }
-                  />
+                  <Route path="/launch-agent" element={<Navigate to="/agent-chat" replace />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>

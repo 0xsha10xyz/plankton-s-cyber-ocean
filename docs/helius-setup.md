@@ -1,4 +1,4 @@
-# Helius & Agent APIs — Setup and Manual Steps
+# Helius & Agent APIs: Setup and Manual Steps
 
 This doc covers what was integrated and what you need to do manually after deployment.
 
@@ -7,17 +7,17 @@ This doc covers what was integrated and what you need to do manually after deplo
 ## What’s integrated
 
 1. **Helius webhook receiver**  
-   - **POST /api/webhooks/helius** — Accepts Helius Enhanced Transaction webhooks.  
+   - **POST /api/webhooks/helius**: accepts Helius Enhanced Transaction webhooks.  
    - Parses each transaction for **whale activity** (large SOL transfers ≥ 5 SOL), **big sales** (NFT_SALE, SELL), **big purchases** (BUY, NFT_SALE), **new tokens** (TOKEN_MINT, NFT_MINT, CREATE_POOL), and **swaps**; pushes `[DETECTED]`, `[BIG_SALE]`, `[BIG_BUY]`, `[NEW_TOKEN]`, and `[RESEARCH]` lines into the agent log.  
    - Logs are stored in Redis (same as Total Users) when `REDIS_URL` or Upstash vars are set; otherwise the webhook still returns 200 but logs are not persisted.
 
 2. **Agent status and logs APIs**  
-   - **GET /api/agent/status?wallet=...** — Returns `{ active, riskLevel, profit24h, totalPnL }`. Currently stub values; later can be driven by an agent worker writing to Redis/DB.  
-   - **GET /api/agent/logs?limit=100** — Returns `{ lines: [{ id, time, message, type }] }`. Lines come from Redis when configured, or stub lines when not.
+   - **GET /api/agent/status?wallet=...**: returns `{ active, riskLevel, profit24h, totalPnL }`. Currently stub values; later can be driven by an agent worker writing to Redis/DB.  
+   - **GET /api/agent/logs?limit=100**: returns `{ lines: [{ id, time, message, type }] }`. Lines come from Redis when configured, or stub lines when not.
 
 3. **Frontend**  
-   - **Command Center (AITerminal)** — Fetches `/api/agent/logs` on load and every 5s; shows live agent log lines (including Helius whale alerts when webhook is configured).  
-   - **Auto Pilot** — When wallet is connected, fetches `/api/agent/status?wallet=<pubkey>` and displays Profit (24h) and Total P/L (stub 0 until you add an agent worker).
+   - **Command Center (AITerminal)**: fetches `/api/agent/logs` on load and every 5s; shows live agent log lines (including Helius whale alerts when webhook is configured).  
+   - **Auto Pilot**: when wallet is connected, fetches `/api/agent/status?wallet=<pubkey>` and displays Profit (24h) and Total P/L (stub 0 until you add an agent worker).
 
 ---
 
@@ -50,7 +50,7 @@ Redeploy after changing env vars.
 7. **Transaction types:** Enable the types you want (e.g. SOL transfers, token transfers, NFT sales). For “whale” alerts, transfers are enough.  
 8. Save. Helius will send POST requests to your URL; our handler will push `[DETECTED]` / `[RESEARCH]` lines to the agent log (when Redis is set).
 
-**Optional:** Verify webhook: send a test from Helius dashboard; then open your app’s Command Center and poll `/api/agent/logs` — you should see new lines after a few seconds.
+**Optional:** Verify webhook: send a test from Helius dashboard; then open your app’s Command Center and poll `/api/agent/logs`. You should see new lines after a few seconds.
 
 ---
 

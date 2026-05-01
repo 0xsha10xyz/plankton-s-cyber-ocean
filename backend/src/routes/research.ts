@@ -8,8 +8,8 @@ const MOCK_FEEDS = {
     { text: "12,000 USDC deposited to Orca", change: "", positive: true, time: "8m ago" },
   ],
   newLaunches: [
-    { text: "$KRILL — SPL Token", change: "NEW", positive: true, time: "12m ago" },
-    { text: "$DEEPSEA — SPL Token", change: "NEW", positive: true, time: "34m ago" },
+    { text: "$KRILL (SPL token)", change: "NEW", positive: true, time: "12m ago" },
+    { text: "$DEEPSEA (SPL token)", change: "NEW", positive: true, time: "34m ago" },
   ],
   volumeSpikes: [
     { text: "PAP/SOL", change: "+580%", positive: true, time: "1m ago" },

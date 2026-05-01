@@ -14,7 +14,7 @@ function s(text: string, href?: string, label?: string): FeedSegment {
   return href ? { text, href, label: label ?? text } : { text };
 }
 
-/** DexScreener uses "twitter" for X links — show the current product name in the terminal. */
+/** DexScreener uses "twitter" for X links. Show the current product name in the terminal. */
 function dexLinkDisplayName(rawKey: string): string {
   return rawKey.toLowerCase() === "twitter" ? "X" : rawKey;
 }
@@ -34,7 +34,7 @@ function appendDexLinks(links: Record<string, string> | undefined, out: FeedSegm
 }
 
 /**
- * Build linkable segments for the terminal. All URLs are public explorers — no backend calls.
+ * Build linkable segments for the terminal. All URLs are public explorers. No backend calls.
  */
 export function feedEventToSegments(ev: FeedEvent): FeedSegment[] {
   switch (ev.type) {
@@ -82,9 +82,9 @@ export function feedEventToSegments(ev: FeedEvent): FeedSegment[] {
       ];
     }
     case "LARGE_BUY": {
-      const usd = ev.amountUSD ? `$${ev.amountUSD}` : "—";
+      const usd = ev.amountUSD ? `$${ev.amountUSD}` : "N/A";
       const dex = ev.dex ?? "?";
-      const tok = ev.token ?? (ev.mint ? shortAddr(ev.mint) : "—");
+      const tok = ev.token ?? (ev.mint ? shortAddr(ev.mint) : "N/A");
       const head: FeedSegment[] = [s("[BIG_BUY] ")];
       if (ev.mint) {
         head.push(s(tok, SOLSCAN_TOKEN(ev.mint), `Token ${ev.mint}`));
@@ -100,9 +100,9 @@ export function feedEventToSegments(ev: FeedEvent): FeedSegment[] {
       ];
     }
     case "LARGE_SELL": {
-      const usd = ev.amountUSD ? `$${ev.amountUSD}` : "—";
+      const usd = ev.amountUSD ? `$${ev.amountUSD}` : "N/A";
       const dex = ev.dex ?? "?";
-      const tok = ev.token ?? (ev.mint ? shortAddr(ev.mint) : "—");
+      const tok = ev.token ?? (ev.mint ? shortAddr(ev.mint) : "N/A");
       const head: FeedSegment[] = [s("[BIG_SELL] ")];
       if (ev.mint) {
         head.push(s(tok, SOLSCAN_TOKEN(ev.mint), `Token ${ev.mint}`));

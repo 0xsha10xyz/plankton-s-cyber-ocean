@@ -17,7 +17,7 @@ function parseFloatQ(v: unknown): number | null {
 
 /**
  * GET /api/wallets
- * Scored wallets from Polymarket PNL subgraph sample (Phase 1 — indexer proxy for “smart money”).
+ * Scored wallets from Polymarket PNL subgraph sample (Phase 1. Indexer proxy for “smart money”).
  */
 polymarketWalletsRouter.get("/", async (req: Request, res: Response) => {
   try {

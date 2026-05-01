@@ -118,10 +118,10 @@ function formatSyraaSummary(payloadUnknown: unknown): { title: string; lines: st
   const ti = s.technicalIndicators ?? {};
 
   const instrument = safeString(md.instrument) || safeString(md.market) || "Signal";
-  const action = safeString(getField(rec, "action") ?? getField(md, "TRADING_SIGNAL")) || "—";
+  const action = safeString(getField(rec, "action") ?? getField(md, "TRADING_SIGNAL")) || "N/A";
   const strength = safeString(getField(md, "SIGNAL_STRENGTH")) || "";
   const confidence = safeString(getField(rec, "confidence")) || "";
-  const price = safeString(mo.currentPrice) || "—";
+  const price = safeString(mo.currentPrice) || "N/A";
   const change = safeString(mo.priceChange24h) || "";
   const support = safeString(getField(pt, "support")) || "";
   const resistance = safeString(getField(pt, "resistance")) || "";
@@ -339,7 +339,7 @@ function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonRes
       ? `For ${mintLabel}: I’ll surface whale signals + liquidity shifts (default ${tf}).`
       : "Send a token mint or wallet address. I’ll surface whale signals, liquidity shifts, and market anomalies.",
     additional_insight:
-      "If you’re unsure what to paste, start with the token you’re watching in Swap and I’ll map it to the on-chain analysis flow.",
+      "If you’re unsure what to paste, start with the token you’re watching in Swap and I’ll map it to the on chain analysis flow.",
     actions: ["Send token mint", "Paste wallet address", `Set timeframe ${tf}`],
   };
 }
@@ -361,7 +361,7 @@ const WELCOME_MESSAGE: ChatMessage = {
   timestamp: new Date(),
 };
 
-/** Same as AgentChatPage — history for POST /api/agent/chat. */
+/** Same as AgentChatPage. History for POST /api/agent/chat. */
 function chatMessagesToHistory(msgs: ChatMessage[]): { role: "user" | "assistant"; content: string }[] {
   const out: { role: "user" | "assistant"; content: string }[] = [];
   for (const m of msgs) {
@@ -1475,7 +1475,7 @@ export function AgentChatInlinePreview({
 
       const mintPk = new PublicKey(tokenEntry.mint);
       // Avoid RPC reads (some RPC keys block reads). Default to the standard SPL Token program.
-      // If the mint is Token-2022 and this fails, the wallet popup will still show and you'll get the program error.
+      // If the mint is Token 2022 and this fails, the wallet popup will still show and you'll get the program error.
       const tokenProgramId = TOKEN_PROGRAM_ID;
 
     const sourceAta = deriveAssociatedTokenAddress(sender, mintPk, tokenProgramId, ASSOCIATED_TOKEN_PROGRAM_ID);

@@ -17,7 +17,7 @@ gatewayRouter.use((req, res, next) => {
   next();
 });
 
-/** Authenticated status — proves key + scope + rate limit path. */
+/** Authenticated status: proves key + scope + rate limit path. */
 gatewayRouter.get("/status", requireGatewayAuth(["read"]), (req, res) => {
   const k = (req as RequestWithGatewayKey).gatewayKey!;
   res.json({

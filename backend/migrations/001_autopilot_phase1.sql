@@ -1,4 +1,4 @@
--- Planktonomous Autopilot — Phase 1 (non-destructive additive schema)
+-- Planktonomous Autopilot: Phase 1 (non destructive additive schema)
 -- schema_migrations is created by the migration runner before applying files.
 
 CREATE TABLE IF NOT EXISTS autopilot_snapshots (

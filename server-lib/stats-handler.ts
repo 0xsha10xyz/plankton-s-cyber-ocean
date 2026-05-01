@@ -1,6 +1,6 @@
 /**
  * Total users = unique wallets that have ever connected.
- * Mirror: backend/src/lib/stats-handler.ts (Express on VPS) — keep in sync.
+ * Mirror: backend/src/lib/stats-handler.ts (Express on VPS). Keep in sync.
  * Supports:
  * - REDIS_URL (Vercel Redis / node-redis TCP)
  * - KV_REST_API_URL + KV_REST_API_TOKEN or UPSTASH_REDIS_REST_* (REST, @upstash/redis)

@@ -8,7 +8,7 @@ export const SOLANA_DEVNET_USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJD
 
 /**
  * Common copy-paste typo: `...SSqm...` instead of `...SSqe...` breaks `getMint` / x402 client.
- * @see https://spl-token-faucet.solana.com/ — mainnet USDC mint is fixed.
+ * @see https://spl-token-faucet.solana.com/. Mainnet USDC mint is fixed.
  */
 const KNOWN_MAINNET_USDC_MINT_TYPO = "EPjFWdd5AufqSSqmM2qN1xzybapC8G4wEGGkZwyTDt1v";
 

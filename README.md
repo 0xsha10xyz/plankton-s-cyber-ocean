@@ -4,8 +4,8 @@ Monorepo: **frontend** (Vite + React) and **backend** (Express + TypeScript API)
 
 ## Structure
 
-- **`frontend/`** – Vite + React + TypeScript + shadcn/ui + Tailwind
-- **`backend/`** – Express API (health, research, subscription, agent, Planktonomous Polymarket `GET /api/markets` + `GET /api/wallets`)
+- **`frontend/`**: Vite + React + TypeScript + shadcn/ui + Tailwind
+- **`backend/`**: Express API (health, research, subscription, agent, Planktonomous Polymarket `GET /api/markets` + `GET /api/wallets`)
 
 ## Quick start
 
@@ -51,8 +51,8 @@ See `backend/README.md` for setup and env vars. **External services** (Claude, G
 
 ## Deploy
 
-- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — **Vercel** hosts the SPA + repo-root **`api/`** serverless. **Root Directory must be `.`**, not `frontend`.  
-- **[docs/deploy-vercel.md](docs/deploy-vercel.md)** — Env vars; same-origin Swap (**omit `VITE_API_URL`**).
+- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**: **Vercel** hosts the SPA plus repo root **`api/`** serverless. **Root Directory must be `.`**, not `frontend`.  
+- **[docs/deploy-vercel.md](docs/deploy-vercel.md)**: Env vars. Same origin Swap (**omit `VITE_API_URL`**).
 
 ## Tech
 
@@ -77,9 +77,9 @@ See **[SECURITY.md](SECURITY.md)** for details and what must never be pushed to 
 | **In-app users** | **Docs** route in the app + **[plankton-documentation.html](frontend/public/plankton-documentation.html)** (`/plankton-documentation.html`) | Printable PDF-friendly HTML; no secrets |
 | **Maintainer source** | **[docs/plankton-documentation.md](docs/plankton-documentation.md)** | Same content as the HTML; keep secrets out |
 
-- **Integrations:** **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)** — Claude, Groq, OpenAI, Jupiter, Birdeye, Solana RPC, Redis/KV, x402, Vercel vs VPS.
-- **Deployment:** **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — Root Directory `.`, Hobby serverless limits, hybrid setups.
-- **API gateway (optional):** **[docs/API_GATEWAY.md](docs/API_GATEWAY.md)** — hashed API keys and `/api/v1` on the Express backend for external integrations.
+- **Integrations:** **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**: Claude, Groq, OpenAI, Jupiter, Birdeye, Solana RPC, Redis/KV, x402, Vercel vs VPS.
+- **Deployment:** **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**: Root Directory `.`, Hobby serverless limits, hybrid setups.
+- **API gateway (optional):** **[docs/API_GATEWAY.md](docs/API_GATEWAY.md)**: hashed API keys and `/api/v1` on the Express backend for external integrations.
 - **Language:** UI and maintainer docs are **English**. The Plankton Agent replies in the **same language as the user’s latest message** when possible. See **[docs/language-and-localization.md](docs/language-and-localization.md)**.
 
 ## Demo video

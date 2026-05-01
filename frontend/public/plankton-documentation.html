@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Plankton's Cyber Ocean — Documentation</title>
+  <title>Plankton's Cyber Ocean: Documentation</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 720px; margin: 0 auto; padding: 24px; }
@@ -30,7 +30,7 @@
 <body>
   <div class="print-note">You can save this page as a PDF: use <strong>Print</strong> (Ctrl+P or Cmd+P) and choose <strong>Save as PDF</strong> or <strong>Print to PDF</strong>.</div>
 
-  <h1>Plankton's Cyber Ocean — Documentation</h1>
+  <h1>Plankton's Cyber Ocean: Documentation</h1>
   <p>This document describes the Plankton app: how to run it, what the frontend and backend do, and how to use the API. For source code and future updates, see the project repository (link at the end). <span class="security-note">Configuration uses environment files; never share or commit these files to protect security.</span></p>
 
   <hr />
@@ -48,11 +48,11 @@
     <tr><td><code>npm run dev:all</code></td><td>Starts both frontend and backend</td></tr>
   </table>
   <h3>Project structure</h3>
-  <p><strong>frontend/</strong> — Vite + React app (UI, wallet, Swap, Docs).</p>
-  <p><strong>api/</strong> — Vercel serverless routes at the repo root (same-origin <code>/api/*</code> in production when Root Directory is the repository root).</p>
-  <p><strong>backend/</strong> — Express + TypeScript API (local dev or VPS).</p>
-  <p><strong>docs/</strong> — Maintainer documentation (configuration, deployment, integrations).</p>
-  <p>Configuration uses environment files and hosting dashboards — never commit real keys. See <strong>docs/CONFIGURATION.md</strong> and <strong>SECURITY.md</strong> in the repository.</p>
+  <p><strong>frontend/</strong>: Vite + React app (UI, wallet, Swap, Docs).</p>
+  <p><strong>api/</strong>: Vercel serverless routes at the repo root (same origin <code>/api/*</code> in production when Root Directory is the repository root).</p>
+  <p><strong>backend/</strong>: Express + TypeScript API (local dev or VPS).</p>
+  <p><strong>docs/</strong>: Maintainer documentation (configuration, deployment, integrations).</p>
+  <p>Configuration uses environment files and hosting dashboards. Never commit real keys. See <strong>docs/CONFIGURATION.md</strong> and <strong>SECURITY.md</strong> in the repository.</p>
   <h3>Build</h3>
   <p><strong>Frontend:</strong> <code>npm run build</code> (from root). <strong>Backend:</strong> <code>npm run build:backend</code>. Output: <code>frontend/dist/</code> and <code>backend/dist/</code>.</p>
 
@@ -62,14 +62,14 @@
   <h3>Tech stack</h3>
   <p>Vite, React 18, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion, React Router, Solana wallet adapter (Phantom, Solflare).</p>
   <h3>Main features</h3>
-  <p><strong>Navigation</strong> — Fixed header with logo; links to Dashboard, <strong>Swap</strong>, Research, Screener, PAP Governance, Subscription, Roadmap, Docs; Connect Wallet / connected state; Account (when connected); mobile menu. Swap opens the dedicated swap page; other links scroll to sections.</p>
-  <p><strong>Total Users</strong> — The app shows a <strong>Total Users</strong> count (unique wallets that have connected), in the hero card, stats strip, footer, and on the Swap page. The count updates when you connect and refreshes periodically.</p>
-  <p><strong>Connect wallet</strong> — "Connect Wallet" opens a modal with supported wallets. After a successful connection, the modal closes automatically. When connected, the header shows a truncated address and a dropdown with Account and Disconnect.</p>
-  <p><strong>Account (when connected)</strong> — "Account" opens a sidebar with: avatar (upload, stored per wallet); username (edit and save); SOL balance; connected wallet address; Disconnect.</p>
-  <p><strong>Autonomous Agent Protocol</strong> — Command Center: AITerminal (scrolling logs) and AutoPilot card ("Autonomous Agent Protocol", "Auto Pilot - Your Agent Partner"). When connected: toggle, P/L, risk slider, and SOON.</p>
-  <p><strong>AI Agent Chat (when connected)</strong> — Floating button (bot icon) at bottom-right opens the chat. Topics: portfolio, risk, market research, autonomous agent, PAP. Replies use the backend <code>POST /api/agent/chat</code>; the server can use LLM providers such as <strong>Groq</strong> (OpenAI-compatible), Anthropic, or OpenAI — keys are never in the app bundle.</p>
-  <p><strong>Swap</strong> — The Swap link opens the Swap page: trading chart (1H, 4H, 1D, 1W) and manual swap form. Connect wallet, choose From/To tokens (SOL, USDC, USDT), enter amount, click Get quote (Jupiter), then Swap. Success links to Solscan.</p>
-  <p><strong>Other sections</strong> — Dashboard (hero, Total Users card, stats strip), Research &amp; Screening, PAP Tokenomics (supply, holders, contract link), Subscription Tiers, Roadmap, in-app Docs. Footer: Total Users and social links (X: Planktonomous).</p>
+  <p><strong>Navigation</strong>: Fixed header with logo; links to Dashboard, <strong>Swap</strong>, Research, Screener, PAP Governance, Subscription, Roadmap, Docs; Connect Wallet / connected state; Account (when connected); mobile menu. Swap opens the dedicated swap page. Other links scroll to sections.</p>
+  <p><strong>Total Users</strong>: The app shows a <strong>Total Users</strong> count (unique wallets that have connected), in the hero card, stats strip, footer, and on the Swap page. The count updates when you connect and refreshes periodically.</p>
+  <p><strong>Connect wallet</strong>: "Connect Wallet" opens a modal with supported wallets. After a successful connection, the modal closes automatically. When connected, the header shows a truncated address and a dropdown with Account and Disconnect.</p>
+  <p><strong>Account (when connected)</strong>: "Account" opens a sidebar with: avatar (upload, stored per wallet); username (edit and save); SOL balance; connected wallet address; Disconnect.</p>
+  <p><strong>Autonomous Agent Protocol</strong>: Command Center: AITerminal (scrolling logs) and AutoPilot card ("Autonomous Agent Protocol", "Auto Pilot - Your Agent Partner"). When connected: toggle, P/L, risk slider, and SOON.</p>
+  <p><strong>AI Agent Chat (when connected)</strong>: Floating button (bot icon) at bottom-right opens the chat. Topics: portfolio, risk, market research, autonomous agent, PAP. Replies use the backend <code>POST /api/agent/chat</code>; the server can use LLM providers such as <strong>Groq</strong> (OpenAI compatible), Anthropic, or OpenAI. Keys are never in the app bundle.</p>
+  <p><strong>Swap</strong>: The Swap link opens the Swap page: trading chart (1H, 4H, 1D, 1W) and manual swap form. Connect wallet, choose From/To tokens (SOL, USDC, USDT), enter amount, click Get quote (Jupiter), then Swap. Success links to Solscan.</p>
+  <p><strong>Other sections</strong>: Dashboard (hero, Total Users card, stats strip), Research &amp; Screening, PAP Tokenomics (supply, holders, contract link), Subscription Tiers, Roadmap, in app Docs. Footer: Total Users and social links (X: Planktonomous).</p>
 
   <hr />
   <h2>3. Backend API</h2>
@@ -79,7 +79,7 @@
   <p><strong>Research:</strong> <code>GET /api/research/feeds</code>, <code>/api/research/screener</code>.</p>
   <p><strong>Subscription:</strong> <code>GET /api/subscription/tiers</code>, <code>/api/subscription/tiers/:id</code>.</p>
   <p><strong>Agent:</strong> <code>GET /api/agent/status</code>, <code>GET /api/agent/config</code>, <code>POST /api/agent/chat</code> (Plankton Agent; requires server LLM keys, e.g. Groq).</p>
-  <p><strong>Stats (user count):</strong> <code>GET /api/stats/users</code> — returns <code>{ count }</code> (unique wallets connected). <code>POST /api/stats/connect</code> — body <code>{ wallet: "&lt;address&gt;" }</code> — registers a wallet (idempotent), returns <code>{ count, isNew }</code>.</p>
+  <p><strong>Stats (user count):</strong> <code>GET /api/stats/users</code> returns <code>{ count }</code> (unique wallets connected). <code>POST /api/stats/connect</code> body <code>{ wallet: "&lt;address&gt;" }</code> registers a wallet (idempotent), returns <code>{ count, isNew }</code>.</p>
   <p><strong>Market:</strong> <code>GET /api/market/token-info?mint=...</code> for token metadata; <code>GET /api/market/token-info?mint=...&amp;holders=1</code> returns <code>{ mint, holderCount }</code> (Jupiter index) for holder counts without adding an extra serverless route.</p>
   <p>All responses are JSON except live health (plain text). Server port and environment-specific settings are configured via environment files; not documented here for security.</p>
 
@@ -93,13 +93,13 @@
 
   <hr />
   <h2>6. Source code and updates</h2>
-  <p>For operators: full setup is in the repo under <strong>docs/CONFIGURATION.md</strong>, <strong>docs/DEPLOYMENT.md</strong>, and <strong>SECURITY.md</strong> — never commit <code>.env</code> files.</p>
+  <p>For operators: full setup is in the repo under <strong>docs/CONFIGURATION.md</strong>, <strong>docs/DEPLOYMENT.md</strong>, and <strong>SECURITY.md</strong>. Never commit <code>.env</code> files.</p>
   <p>For source code, issue tracking, and updates (without exposing secrets), visit the project repository:</p>
   <p><strong>GitHub:</strong> <a href="https://github.com/0xsha10xyz/plankton-s-cyber-ocean">https://github.com/0xsha10xyz/plankton-s-cyber-ocean</a></p>
-  <p><strong>Social — X (Twitter):</strong> <a href="https://x.com/Planktonomous" target="_blank" rel="noopener noreferrer">https://x.com/Planktonomous</a></p>
+  <p><strong>Social: X (Twitter):</strong> <a href="https://x.com/Planktonomous" target="_blank" rel="noopener noreferrer">https://x.com/Planktonomous</a></p>
   <p>Use the repository only for development and updates. Do not store or share environment files or secrets there. Keep all environment configuration private for user and project security.</p>
 
   <hr />
-  <p><em>Plankton's Cyber Ocean — Documentation. Environment files and secrets are excluded for security.</em></p>
+  <p><em>Plankton's Cyber Ocean. Documentation. Environment files and secrets are excluded for security.</em></p>
 </body>
 </html>

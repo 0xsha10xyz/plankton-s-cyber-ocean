@@ -14,7 +14,7 @@ function pickNumberString(v: unknown): string | undefined {
   return undefined;
 }
 
-/** Best-effort parse of Bitquery ExecutionResult — schema may evolve; keep defensive. */
+/** Best-effort parse of Bitquery ExecutionResult. Schema may evolve, keep defensive. */
 export function parseTransferResult(data: unknown): FeedEvent | null {
   if (!data || typeof data !== "object") return null;
   const root = data as Record<string, unknown>;

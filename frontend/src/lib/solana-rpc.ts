@@ -28,7 +28,7 @@ function getAgentRpcUrl(): string | null {
 
 /**
  * Primary RPC URL for `ConnectionProvider` / `useConnection` and x402-solana.
- * - **Browser (dev + production):** same-origin `POST /api/rpc` first — keys stay on the server (Vercel
+ * - **Browser (dev + production):** same-origin `POST /api/rpc` first. Keys stay on the server (Vercel
  *   `SOLANA_RPC_URL` / `HELIUS_API_KEY`), avoids browser-direct Helius keys that return 403 “not allowed
  *   to access blockchain”.
  * - **Override:** `VITE_SOLANA_RPC_URL` only when you need a provider that explicitly allows your web
@@ -61,8 +61,8 @@ const SOLANA_PUBLIC_MAINNET_HTTP = "https://api.mainnet-beta.solana.com";
  * JSON-RPC for **x402-solana** `createX402Client` (mint reads + payment tx simulation).
  * Defaults to **same-origin** `/api/rpc` (Vercel) so the browser does not depend on `api.*` nginx/CORS.
  * Override when needed:
- * - `VITE_X402_RPC_URL` — explicit JSON-RPC URL
- * - `VITE_X402_USE_AGENT_RPC=1` — use `VITE_AGENT_API_URL` origin + `/api/rpc` (VPS)
+ * - `VITE_X402_RPC_URL`. Explicit JSON-RPC URL
+ * - `VITE_X402_USE_AGENT_RPC=1`. Use `VITE_AGENT_API_URL` origin + `/api/rpc` (VPS)
  */
 export function getX402RpcEndpoint(): string {
   if (typeof window === "undefined" || typeof import.meta === "undefined") {
@@ -174,7 +174,7 @@ function sanitizeWsEndpoint(raw: string): string | null {
 }
 
 /**
- * WebSocket URL for account/slot subscriptions. Must NOT be `wss://…/api/rpc` — Vercel serverless has no WS upgrade.
+ * WebSocket URL for account/slot subscriptions. Must NOT be `wss://…/api/rpc`. Vercel serverless has no WS upgrade.
  * HTTP JSON-RPC still uses `getPrimaryRpcEndpoint()` (same-origin `/api/rpc`).
  */
 export function getConnectionConfig(): ConnectionConfig {
@@ -297,7 +297,7 @@ export async function fetchTokenAccountBalance(
 const TOKEN_PROGRAM_ID = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
 const TOKEN_2022_PROGRAM_ID = new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
 
-/** Fetch all SPL token balances (Token + Token-2022) via fallback RPCs. Returns mint -> UI amount. */
+/** Fetch all SPL token balances (Token + Token 2022) via fallback RPCs. Returns mint -> UI amount. */
 export async function fetchAllTokenBalances(
   connection: Connection,
   publicKey: PublicKey

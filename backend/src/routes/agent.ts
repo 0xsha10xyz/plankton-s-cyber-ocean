@@ -110,7 +110,7 @@ agentRouter.get("/status", (_req, res) => {
   });
 });
 
-/** GET /api/agent/logs — UI (AITerminal) expects { lines, source }. */
+/** GET /api/agent/logs: UI (AITerminal) expects { lines, source }. */
 agentRouter.get("/logs", async (req, res) => {
   res.setHeader("Cache-Control", "public, max-age=2");
   const raw = typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : 20;
@@ -352,7 +352,7 @@ function isTruthyEnv(name: string): boolean {
   return v === "1" || v === "true" || v === "yes";
 }
 
-/** POST /api/agent/chat — Anthropic → Groq → OpenAI (first success wins), unless AGENT_ANTHROPIC_ONLY is set. */
+/** POST /api/agent/chat: Anthropic, then Groq, then OpenAI (first success wins), unless AGENT_ANTHROPIC_ONLY is set. */
 agentRouter.post("/chat", async (req, res) => {
   const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
   const groqKey = process.env.GROQ_API_KEY?.trim();
@@ -502,7 +502,7 @@ agentRouter.post("/chat", async (req, res) => {
 });
 
 /**
- * POST /api/agent/signal — fetch a Syraa trading signal via the VPS (server pays x402 upstream).
+ * POST /api/agent/signal: fetch a Syraa trading signal via the VPS (server pays x402 upstream).
  *
  * Body:
  * - token/source/instId/bar/limit: forwarded as query params to https://api.syraa.fun/signal

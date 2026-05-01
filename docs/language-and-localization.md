@@ -8,7 +8,7 @@ This document explains how **language** works in Plankton’s Cyber Ocean: **Eng
 - **Maintainer documentation** under `docs/` and the root `README.md` are **English** for a single global audience.
 - **User-facing HTML doc** (`frontend/public/plankton-documentation.html`) stays **English** and must not embed secrets (same rule as all docs).
 
-Changing “everything to English” for shipped UI means editing React components and static assets—not environment variables. No extra build flag is required for the default English UI.
+Changing “everything to English” for shipped UI means editing React components and static assets, not environment variables. No extra build flag is required for the default English UI.
 
 ## Plankton Agent (chat) language
 
@@ -16,7 +16,7 @@ The in-app **Plankton Agent** matches the **user’s latest message**: `insight`
 
 **Implementation detail:** `LANGUAGE_LOCK` instructions appended to the model input are written in **English** (maintainer-facing). Optional JSON files under `backend/src/data/` are copied to **`dist/data/`** during `npm run build` (`backend/scripts/copy-agent-data.cjs`) if present.
 
-**LLM providers:** Chat completions use whichever provider succeeds first: **Anthropic (Claude)**, then **[Groq](https://groq.com)** (OpenAI-compatible API, default model `llama-3.3-70b-versatile`), then **OpenAI**. Configure keys in `backend/.env` — see **[Configuration — Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)** and **[Integrations](./INTEGRATIONS.md)**.
+**LLM providers:** Chat completions use whichever provider succeeds first: **Anthropic (Claude)**, then **[Groq](https://groq.com)** (OpenAI compatible API, default model `llama-3.3-70b-versatile`), then **OpenAI**. Configure keys in `backend/.env`. See **[Configuration: Agent chat](./CONFIGURATION.md#agent-chat--groq-and-other-llms)** and **[Integrations](./INTEGRATIONS.md)**.
 
 ## Secrets vs. language
 

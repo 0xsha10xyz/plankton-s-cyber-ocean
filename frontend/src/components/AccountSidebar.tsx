@@ -176,7 +176,7 @@ export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
                       </Button>
                     </div>
                   ) : (
-                    <span className="text-sm font-mono text-muted-foreground">—</span>
+                    <span className="text-sm font-mono text-muted-foreground">N/A</span>
                   )}
                 </div>
                 {/* SPL tokens */}

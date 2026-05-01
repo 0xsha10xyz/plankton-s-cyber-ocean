@@ -17,7 +17,7 @@ export type FeedEvent =
       id: string;
       time: Date;
       mintAddress: string;
-      /** Resolved for UI: on-chain name > DexScreener > symbol (set in useDexScreenerPoll). */
+      /** Resolved for UI: on chain name > DexScreener > symbol (set in useDexScreenerPoll). */
       tokenDisplayName?: string;
       symbol?: string;
       dex?: string;

@@ -155,7 +155,7 @@ export default function ScreenerTools() {
                 <label className="text-xs text-muted-foreground block mb-0.5">24h % min</label>
                 <Input
                   type="number"
-                  placeholder="—"
+                  placeholder="N/A"
                   value={minChange24h}
                   onChange={(e) => setMinChange24h(e.target.value)}
                   className="w-20 h-8 text-sm bg-secondary/50 border-border"
@@ -165,7 +165,7 @@ export default function ScreenerTools() {
                 <label className="text-xs text-muted-foreground block mb-0.5">24h % max</label>
                 <Input
                   type="number"
-                  placeholder="—"
+                  placeholder="N/A"
                   value={maxChange24h}
                   onChange={(e) => setMaxChange24h(e.target.value)}
                   className="w-20 h-8 text-sm bg-secondary/50 border-border"

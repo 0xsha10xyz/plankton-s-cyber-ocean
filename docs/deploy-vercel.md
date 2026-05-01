@@ -6,7 +6,7 @@ Keep **Swap, Jupiter, charts, and `POST /api/rpc`** on the **same origin** as th
 
 ## 1. Root Directory (required)
 
-In **Vercel → Project → Settings → General → Root Directory**, leave the field **empty** (repository root). **Do not** set it to `frontend` — otherwise **`api/`** is not deployed and `/api/market/token-info`, `/api/rpc`, etc. return **404**.
+In **Vercel / Project / Settings / General / Root Directory**, leave the field **empty** (repository root). **Do not** set it to `frontend`. Otherwise **`api/`** is not deployed and `/api/market/token-info`, `/api/rpc`, etc. return **404**.
 
 ---
 
@@ -19,7 +19,7 @@ In **Vercel → Project → Settings → General → Root Directory**, leave the
 
 ## 3. Environment variables (Vercel)
 
-### Same-origin API (recommended for Swap — **do not set `VITE_API_URL`**)
+### Same origin API (recommended for Swap. **Do not set `VITE_API_URL`**)
 
 | Variable | Notes |
 |----------|--------|
@@ -39,8 +39,8 @@ Leave **`VITE_API_URL` unset** and set **`VITE_AGENT_API_URL`**. Configure **`CO
 
 ## 4. After deploy
 
-- Test **`/api/health`** or **`POST /api/rpc`** from the browser **Network** tab — **`rpc`** must be **200**, not **404** or **500**.  
-- Paste-token flow uses **`GET /api/market/token-info?mint=`** — must hit your **Vercel** domain if `VITE_API_URL` is unset.
+- Test **`/api/health`** or **`POST /api/rpc`** from the browser **Network** tab. **`rpc`** must be **200**, not **404** or **500**.
+- Paste token flow uses **`GET /api/market/token-info?mint=`**. It must hit your **Vercel** domain if `VITE_API_URL` is unset.
 
 ---
 

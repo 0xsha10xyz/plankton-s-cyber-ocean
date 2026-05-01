@@ -8,7 +8,7 @@ export function SolanaWalletProviders({ children }: { children: ReactNode }) {
   const connectionConfig = useMemo(() => getConnectionConfig(), []);
 
   // Phantom (and other Wallet Standard extensions) are injected by WalletProvider via
-  // useStandardWalletAdapters — do not add PhantomWalletAdapter or you get a duplicate + console warning.
+  // useStandardWalletAdapters. Do not add PhantomWalletAdapter or you get a duplicate + console warning.
   const wallets = useMemo(() => [new SolflareWalletAdapter()], []);
 
   return (

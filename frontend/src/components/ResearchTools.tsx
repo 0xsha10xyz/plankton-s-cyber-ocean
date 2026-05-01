@@ -119,7 +119,7 @@ export default function ResearchTools() {
 
   const feedCategories = feeds ?? [
     { category: "Whale Movement", items: [{ text: "5,000 SOL moved to Raydium", change: "+340%", positive: true, time: "2m ago" }, { text: "12,000 USDC deposited to Orca", change: "", positive: true, time: "8m ago" }] },
-    { category: "New Token Launches", items: [{ text: "$KRILL — SPL Token", change: "NEW", positive: true, time: "12m ago" }, { text: "$DEEPSEA — SPL Token", change: "NEW", positive: true, time: "34m ago" }] },
+    { category: "New Token Launches", items: [{ text: "$KRILL (SPL token)", change: "NEW", positive: true, time: "12m ago" }, { text: "$DEEPSEA (SPL token)", change: "NEW", positive: true, time: "34m ago" }] },
     { category: "Volume Spikes", items: [{ text: "PAP/SOL", change: "+580%", positive: true, time: "1m ago" }, { text: "$CORAL/USDC", change: "-12%", positive: false, time: "15m ago" }] },
   ];
   const icons: Record<string, typeof Fish> = { "Whale Movement": Fish, "New Token Launches": Rocket, "Volume Spikes": BarChart3 };

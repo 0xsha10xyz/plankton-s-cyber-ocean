@@ -1,4 +1,4 @@
-/** Fallback name/symbol when on-chain metadata is unavailable (DexScreener pairs API, no key). */
+/** Fallback name/symbol when on chain metadata is unavailable (DexScreener pairs API, no key). */
 export async function fetchDexScreenerTokenMeta(
   mint: string
 ): Promise<{ name?: string; symbol?: string }> {

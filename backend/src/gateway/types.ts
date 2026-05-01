@@ -1,7 +1,7 @@
 export type GatewayEnvironment = "prod" | "dev" | "test";
 export type GatewayTier = "free" | "basic" | "pro" | "enterprise";
 
-/** Persisted record — only SHA-256 hash of the full key string, never plaintext. */
+/** Persisted record: only SHA-256 hash of the full key string, never plaintext. */
 export type GatewayKeyRecord = {
   id: string;
   hash: string;

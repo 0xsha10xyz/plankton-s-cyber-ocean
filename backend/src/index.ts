@@ -34,7 +34,7 @@ const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:8080,http://127.
 const corsOrigins = corsOrigin.split(",").map((o) => o.trim()).filter(Boolean);
 const isVercel = process.env.VERCEL === "1";
 
-/** Must match manual `OPTIONS` handler below — x402-solana v2 retry uses `x-payment` (see usage/x402-blocks.ts). */
+/** Must match manual `OPTIONS` handler below. x402-solana v2 retry uses `x-payment` (see usage/x402-blocks.ts). */
 const CORS_ALLOW_HEADERS = [
   "Content-Type",
   "Accept",
@@ -72,7 +72,7 @@ app.use(
 );
 app.use(express.json({ limit: "512kb" }));
 
-/** Malformed JSON bodies must not take down the process — return 400 instead of 502 from nginx. */
+/** Malformed JSON bodies must not take down the process. Return 400 instead of 502 from nginx. */
 app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (err instanceof SyntaxError && "body" in err) {
     res.status(400).json({ error: "Invalid JSON body" });
@@ -85,7 +85,7 @@ app.use((err: unknown, _req: express.Request, res: express.Response, next: expre
   next(err);
 });
 
-// CORS preflight for `/api/*` (Express `*` is not a glob — match every /api path)
+// CORS preflight for `/api/*` (Express `*` is not a glob. Match every /api path)
 app.options(/^\/api\//, (_req, res) => {
   const origin = _req.headers.origin;
   const allow =
@@ -119,7 +119,7 @@ if (process.env.API_GATEWAY_ENABLED !== "0") {
   app.use("/api/v1", gatewayRouter);
 }
 
-/** Same JSON as Vercel `GET /api/health?mode=config` (and rewrite `/api/config` → that) — local dev when Vite proxies `/api` here. */
+/** Same JSON as Vercel `GET /api/health?mode=config` (and rewrite `/api/config` to that). Local dev when Vite proxies `/api` here. */
 app.get("/api/config", (_req, res) => {
   res.setHeader("Cache-Control", "private, max-age=60");
   res.json({

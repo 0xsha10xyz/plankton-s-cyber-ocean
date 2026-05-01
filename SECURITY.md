@@ -2,11 +2,11 @@
 
 ## What **must not** be committed or pushed to GitHub
 
-- **`.env` files** (backend, frontend, root, `api/`) — contain API keys (Birdeye, Groq, Anthropic, OpenAI, Bitquery, Shyft, Helius, RPC URLs with keys) and CORS settings. They are listed in `.gitignore`.
-- **`.env.*` variants** — e.g. `.env.local`, `.env.production`, `.env.backup` — ignored; use hosting dashboards or server-only files for real values.
-- **`backend/data/`** — stores the list of connected wallets (Total Users). This folder is ignored; data stays on the server or in memory (Vercel).
-- **Other secret/key files:** `*.pem`, `*.key`, `*secret*`, `*credentials*`, `wallet.json`, `keystore*`, `mnemonic*` — patterns are in `.gitignore`.
-- **Cloud key dumps:** e.g. `*-firebase-adminsdk-*.json`, `serviceAccount*.json` — do not add to the repo (patterns like these are listed in `.gitignore`).
+- **`.env` files** (backend, frontend, root, `api/`): contain API keys (Birdeye, Groq, Anthropic, OpenAI, Bitquery, Shyft, Helius, RPC URLs with keys) and CORS settings. They are listed in `.gitignore`.
+- **`.env.*` variants**: e.g. `.env.local`, `.env.production`, `.env.backup`. Ignored. Use hosting dashboards or server only files for real values.
+- **`backend/data/`**: stores the list of connected wallets (Total Users). This folder is ignored. Data stays on the server or in memory (Vercel).
+- **Other secret/key files:** `*.pem`, `*.key`, `*secret*`, `*credentials*`, `wallet.json`, `keystore*`, `mnemonic*`. Patterns are in `.gitignore`.
+- **Cloud key dumps:** e.g. `*-firebase-adminsdk-*.json`, `serviceAccount*.json`. Do not add to the repo. Patterns like these are listed in `.gitignore`.
 
 ## User & wallet data
 
@@ -16,11 +16,11 @@
 
 ## What **may** be in the repo
 
-- **`.env.example`** files (`frontend/`, `backend/`, `api/`) — templates with **empty or placeholder** values only. Safe to commit. Never paste real keys into examples.
+- **`.env.example`** files (`frontend/`, `backend/`, `api/`): templates with **empty or placeholder** values only. Safe to commit. Never paste real keys into examples.
 
 ## Hosting & rotation
 
-- Set production secrets only in **Vercel → Environment Variables**, **VPS `/backend/.env`** (not in git), or your CI’s secret store.
+- Set production secrets only in **Vercel Environment Variables**, **VPS `/backend/.env`** (not in git), or your CI’s secret store.
 - If a key is ever exposed in git history, a ticket, or a screenshot: **revoke it** at the provider (Groq, Anthropic, OpenAI, Birdeye, Helius, etc.) and issue a new key; update hosting env vars only.
 
 ## GitHub

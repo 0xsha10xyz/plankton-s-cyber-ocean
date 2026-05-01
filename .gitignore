@@ -13,7 +13,7 @@ dist-ssr
 *.local
 backend/data
 
-# Environment and secrets (never commit — wallet and API safety)
+# Environment and secrets (never commit. Wallet and API safety)
 .env
 .env.local
 .env.development
@@ -46,7 +46,7 @@ backend/data/*
 # Legacy Vercel Express bundle (no longer produced by copy-dist; safe to delete locally)
 vercel-express-bundle
 
-# Cursor IDE — local workspace state (do not commit)
+# Cursor IDE. Local workspace state (do not commit)
 .cursor/
 
 # Editor directories and files

@@ -1,5 +1,5 @@
 /**
- * GET /api/jupiter/quote — POST /api/jupiter/swap (Jupiter proxy).
+ * GET /api/jupiter/quote and POST /api/jupiter/swap (Jupiter proxy).
  */
 import type { IncomingMessage, ServerResponse } from "http";
 

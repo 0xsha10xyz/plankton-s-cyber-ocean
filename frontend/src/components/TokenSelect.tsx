@@ -76,7 +76,7 @@ export function TokenSelect({
       <PopoverContent className="w-80 p-0" align="start">
         <div className="p-2 border-b border-border/50">
           <p className="text-xs text-muted-foreground mb-1.5">
-            Paste the full Solana mint (32–44 characters) — the name resolves automatically.
+            Paste the full Solana mint (32–44 characters). The name resolves automatically.
           </p>
           <div className="flex gap-1.5">
             <Input

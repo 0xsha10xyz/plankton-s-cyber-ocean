@@ -3,7 +3,7 @@ import { getStatsUsers, statsConnect } from "../lib/stats-handler.js";
 
 export const statsRouter = Router();
 
-/** GET /api/stats/users — unique wallets ever connected (global Redis / same as Vercel). */
+/** GET /api/stats/users: unique wallets ever connected (global Redis / same as Vercel). */
 statsRouter.get("/users", async (_req: Request, res: Response) => {
   try {
     const { count } = await getStatsUsers();
@@ -14,7 +14,7 @@ statsRouter.get("/users", async (_req: Request, res: Response) => {
   }
 });
 
-/** POST /api/stats/connect — register a wallet (idempotent). Updates global Redis set. */
+/** POST /api/stats/connect: register a wallet (idempotent). Updates global Redis set. */
 statsRouter.post("/connect", async (req: Request, res: Response) => {
   try {
     const wallet = typeof req.body?.wallet === "string" ? req.body.wallet.trim() : "";

@@ -1,4 +1,4 @@
-# LLM providers (Claude / Groq / OpenAI) — operator guide
+# LLM providers (Claude / Groq / OpenAI): operator guide
 
 This document explains how **Plankton Agent chat** selects and calls LLM providers on the **backend**.
 
@@ -8,7 +8,7 @@ This document explains how **Plankton Agent chat** selects and calls LLM provide
 
 ## Where LLM calls run
 
-LLM calls should run **server-side** (Express on a VPS or an equivalent private backend). Do **not** ship LLM keys to the browser bundle.
+LLM calls should run **server side** (Express on a VPS or an equivalent private backend). Do **not** ship LLM keys to the browser bundle.
 
 - **Backend route:** `POST /api/agent/chat`
 - **Backend implementation:** `backend/src/routes/agent.ts`
@@ -24,9 +24,9 @@ When the frontend is on Vercel, you can keep the browser same-origin and still r
 
 For `POST /api/agent/chat`, the backend tries providers in this order (first success wins):
 
-1. **Anthropic (Claude)** — if `ANTHROPIC_API_KEY` is set
-2. **Groq** — if `GROQ_API_KEY` is set (OpenAI-compatible API)
-3. **OpenAI** — if `OPENAI_API_KEY` is set
+1. **Anthropic (Claude)**: if `ANTHROPIC_API_KEY` is set
+2. **Groq**: if `GROQ_API_KEY` is set (OpenAI compatible API)
+3. **OpenAI**: if `OPENAI_API_KEY` is set
 
 ### Claude-only mode
 
@@ -124,8 +124,8 @@ Restart your backend process after updating env vars.
 
 ## Related docs
 
-- [`docs/CONFIGURATION.md`](./CONFIGURATION.md) — full environment variable setup (Vercel vs VPS)
-- [`docs/INTEGRATIONS.md`](./INTEGRATIONS.md) — external services overview
-- [`docs/x402-payments.md`](./x402-payments.md) — paid chat via HTTP 402 + x402 (PayAI facilitator)
-- [`SECURITY.md`](../SECURITY.md) — non-negotiable security rules
+- [`docs/CONFIGURATION.md`](./CONFIGURATION.md): full environment variable setup (Vercel vs VPS)
+- [`docs/INTEGRATIONS.md`](./INTEGRATIONS.md): external services overview
+- [`docs/x402-payments.md`](./x402-payments.md): paid chat via HTTP 402 plus x402 (PayAI facilitator)
+- [`SECURITY.md`](../SECURITY.md): non negotiable security rules
 

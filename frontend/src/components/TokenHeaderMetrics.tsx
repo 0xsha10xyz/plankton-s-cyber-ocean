@@ -11,7 +11,7 @@ function formatCompact(n: number): string {
 
 function formatPrice(v: number): string {
   const n = Number(v);
-  if (!Number.isFinite(n) || n <= 0) return "—";
+  if (!Number.isFinite(n) || n <= 0) return "N/A";
   if (n >= 1) return `$${n.toFixed(2)}`;
   if (n >= 0.01) return `$${n.toFixed(4)}`;
   return `$${n.toFixed(6)}`;

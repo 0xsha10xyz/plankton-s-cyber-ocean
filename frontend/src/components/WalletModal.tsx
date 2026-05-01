@@ -50,7 +50,7 @@ const WalletModal = ({
       if (isInstalled) {
         try {
           // select() updates WalletProvider state; connect() looks up an internal `wallet` that can
-          // lag one frame behind the new adapter — that throws WalletNotSelectedError. flushSync + wait
+          // lag one frame behind the new adapter. That throws WalletNotSelectedError. flushSync + wait
           // for paint lets WalletProviderBase sync before connect().
           flushSync(() => {
             select(wallet.adapter.name);

@@ -1,5 +1,5 @@
 /**
- * POST /api/stats/connect — GET /api/stats/users
+ * POST /api/stats/connect and GET /api/stats/users
  */
 import type { IncomingMessage, ServerResponse } from "http";
 import { statsConnect, getStatsUsers } from "../../server-lib/stats-handler.js";

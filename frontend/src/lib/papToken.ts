@@ -1,5 +1,5 @@
 /**
- * PAP (Plankton Autonomous Protocol) — on-chain facts for UI (Solscan-aligned).
+ * PAP (Plankton Autonomous Protocol). On chain facts for UI (Solscan aligned).
  * Mint: https://solscan.io/token/65Fp9stRoiF9AY4FqmpLTGGaeTkiv7duwiRCZrUGpump
  */
 export const PAP_TOKEN_MINT =
@@ -10,7 +10,7 @@ export const PAP_SOLSCAN_TOKEN_URL = `https://solscan.io/token/${PAP_TOKEN_MINT}
 export const PUMP_FUN_COIN_URL = `https://pump.fun/coin/${PAP_TOKEN_MINT}` as const;
 
 /**
- * Total supply in UI units (6 decimals), from SPL mint / Jupiter token API — April 2026.
+ * Total supply in UI units (6 decimals), from SPL mint / Jupiter token API. April 2026.
  * Updates if you need to resync after large burns.
  */
 export const PAP_TOTAL_SUPPLY_UI = 999_999_913.089872;

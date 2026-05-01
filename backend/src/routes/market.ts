@@ -31,7 +31,7 @@ const JUPITER_QUOTE_BASES = [
   "https://quote-api.jup.ag/v6",
 ];
 
-/** Same fallback order as wallet route — avoids single-RPC failures on VPS. */
+/** Same fallback order as wallet route. Avoids single RPC failures on VPS. */
 const MAINNET_RPC_URLS = [
   process.env.SOLANA_RPC_URL,
   "https://rpc.ankr.com/solana",
@@ -39,7 +39,7 @@ const MAINNET_RPC_URLS = [
   "https://api.mainnet-beta.solana.com",
 ].filter((u): u is string => typeof u === "string" && u.trim().length > 0);
 
-/** Avoid RPC entirely for majors — fixes price-pair + Jupiter fallback when RPC is flaky. */
+/** Avoid RPC entirely for majors. Fixes price pair + Jupiter fallback when RPC is flaky. */
 const KNOWN_MINT_DECIMALS: Record<string, number> = {
   [SOL_MINT]: 9,
   [USDC_MINT]: 6,

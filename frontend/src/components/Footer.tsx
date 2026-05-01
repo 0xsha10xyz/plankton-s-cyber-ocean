@@ -31,7 +31,7 @@ const Footer = () => {
       <div className="mx-auto w-full max-w-[1680px] px-4 sm:px-6 py-12 md:py-14">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 min-w-0">
-            <Link to="/home" className="flex items-center gap-3 shrink-0 outline-none rounded-md focus-visible:ring-2 focus-visible:ring-ring/60">
+            <Link to="/" className="flex items-center gap-3 shrink-0 outline-none rounded-md focus-visible:ring-2 focus-visible:ring-ring/60">
             <img
               src="/brand/plankton-token-logo.png"
               alt="Plankton logo"
@@ -50,7 +50,7 @@ const Footer = () => {
               <Link to="/swap" className="hover:text-signal transition-colors">
                 Swap
               </Link>
-              <Link to="/launch-agent" className="hover:text-signal transition-colors">
+              <Link to="/agent-chat" className="hover:text-signal transition-colors">
                 Launch agent
               </Link>
               <a href="/docs" target="_blank" rel="noopener noreferrer" className="hover:text-intel transition-colors">
@@ -77,7 +77,7 @@ const Footer = () => {
 
         <div className="text-center mt-10 pt-8 border-t border-border/40">
           <p className="text-[11px] font-mono text-muted-foreground/80 tracking-wide">
-            © 2026 Plankton · Autonomous Web4 trading protocol
+            © 2026 Plankton · Market intelligence & execution tools
           </p>
         </div>
       </div>

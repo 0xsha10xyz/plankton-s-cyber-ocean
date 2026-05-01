@@ -107,7 +107,7 @@ function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonRes
   if (lower.includes("portfolio") || lower.includes("balance") || lower.includes("holdings") || lower.includes("pnl")) {
     return {
       insight: walletLabel
-        ? `Portfolio read for ${walletLabel} — focus on flow-supported moves in ${tf}.`
+        ? `Portfolio read for ${walletLabel}. Focus on flow supported moves in ${tf}.`
         : "Open Command Center after connecting your wallet to view SOL balance and PnL. I can also guide how to enable autonomous execution.",
       additional_insight:
         "Smart-money alpha usually arrives faster than manual checks. Once the Agent is enabled, use the Research screen to confirm whale flow alignment before you size trades.",
@@ -119,7 +119,7 @@ function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonRes
     return {
       insight: `Risk profiles: Conservative, Mid, Aggressive. Default is Mid for ${tf}.`,
       additional_insight:
-        "If you’re seeing choppy price action, switch down a tier first—whales often distribute during volatility spikes, and aggressive settings can chase noise.",
+        "If you’re seeing choppy price action, switch down a tier first. Whales often distribute during volatility spikes, and aggressive settings can chase noise.",
       actions: ["Set risk to Mid", "Review stop-loss", "Lower on volatility"],
     };
   }
@@ -162,7 +162,7 @@ function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonRes
 
   if (lower.includes("hello") || lower.includes("hi") || lower.includes("hey")) {
     return {
-      insight: "Hi—paste a token mint or wallet address and I’ll generate a Solana smart-money read.",
+      insight: "Hi, paste a token mint or wallet address and I’ll generate a Solana smart money read.",
       additional_insight:
         "If you include timeframe (1h/24h/7d), I’ll prioritize anomalies and flow shifts from the most relevant window.",
       actions: ["Send token mint", "Paste wallet address", `Set timeframe ${tf}`],
@@ -173,7 +173,7 @@ function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonRes
     return {
       insight: "I can analyze: portfolio/balance, risk settings, research signals, autonomous agent behavior, and PAP tokenomics.",
       additional_insight:
-        "For actionable alpha, share a mint and a timeframe—then I’ll focus on whale accumulation/distribution and liquidity/volume anomalies.",
+        "For actionable alpha, share a mint and a timeframe. Then I’ll focus on whale accumulation, distribution, and liquidity or volume anomalies.",
       actions: ["Ask about portfolio", "Ask about risk", "Ask about whales"],
     };
   }
@@ -183,7 +183,7 @@ function buildAgentResponse(userMessage: string, ctx: ChatContext): AgentJsonRes
       ? `For ${mintLabel}: I’ll surface whale signals + liquidity shifts (default ${tf}).`
       : "Send a token mint or wallet address. I’ll surface whale signals, liquidity shifts, and market anomalies.",
     additional_insight:
-      "If you’re unsure what to paste, start with the token you’re watching in Swap and I’ll map it to the on-chain analysis flow.",
+      "If you’re unsure what to paste, start with the token you’re watching in Swap and I’ll map it to the on chain analysis flow.",
     actions: ctx.timeframe
       ? ["Track whale wallets", "Analyze liquidity flow", "Check volume spikes"]
       : ["Set timeframe 24h", "Set timeframe 7d", "Set timeframe 1h"],
