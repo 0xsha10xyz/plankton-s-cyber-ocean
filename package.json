@@ -21,11 +21,10 @@
   "overrides": {
     "rimraf": "^5.0.5",
     "@solana/kit": "^6.8.0",
-    "@base-org/account": "^2.5.5",
-    "ox": "0.14.20"
+    "@base-org/account": "^2.5.5"
   },
   "dependencies": {
     "@privy-io/node": "^0.16.0",
-    "ox": "^0.14.20"
+    "ox": "0.14.20"
   }
 }
