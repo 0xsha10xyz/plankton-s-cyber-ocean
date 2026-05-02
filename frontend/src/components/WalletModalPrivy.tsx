@@ -1,6 +1,6 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 type Props = {
   onDismiss: () => void;
@@ -47,7 +47,15 @@ function WalletModalPrivyInner({ onDismiss }: Props): JSX.Element {
         className="w-full gap-2 min-h-11 border-intel/45 text-intel hover:bg-intel/10 font-medium"
         onClick={handlePrivy}
       >
-        <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
+        <img
+          src="/logos/privy.svg"
+          alt=""
+          width={18}
+          height={18}
+          className="h-4 w-4 shrink-0 object-contain opacity-95"
+          draggable={false}
+          aria-hidden
+        />
         Sign in with Privy
       </Button>
       <p className="text-[11px] text-muted-foreground text-center mt-2.5 leading-snug">

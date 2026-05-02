@@ -1,6 +1,18 @@
 import { usePrivy, getAccessToken } from "@privy-io/react-auth";
 import { Button } from "@/components/ui/button";
-import { Loader2, LogIn, LogOut } from "lucide-react";
+import { Loader2, LogOut } from "lucide-react";
+
+const privyLogo = (
+  <img
+    src="/logos/privy.svg"
+    alt=""
+    width={14}
+    height={14}
+    className="h-3.5 w-3.5 shrink-0 object-contain opacity-95"
+    draggable={false}
+    aria-hidden
+  />
+);
 
 function truncateId(id: string, chars = 6): string {
   if (id.length <= chars * 2) return id;
@@ -55,7 +67,7 @@ function PrivyAuthControlsInner(): JSX.Element {
       onClick={() => void login()}
       aria-label="Sign in with Privy"
     >
-      <LogIn className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      {privyLogo}
       <span className="font-medium">Sign in</span>
     </Button>
   );
