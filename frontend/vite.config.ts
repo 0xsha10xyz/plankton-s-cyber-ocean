@@ -66,6 +66,6 @@ export default defineConfig({
     dedupe: ["react", "react-dom", "react/jsx-runtime", "ox", "@base-org/account"],
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "react/jsx-runtime", "buffer"],
+    include: ["react", "react-dom", "react/jsx-runtime", "buffer", "ox"],
   },
 });
