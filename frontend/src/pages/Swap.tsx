@@ -559,8 +559,7 @@ export default function Swap() {
     <div className="relative min-h-screen">
       <ParticleBackground />
       <Header />
-      <main className="relative z-10 pt-28 pb-16 container mx-auto px-4 sm:px-6">
-        <div>
+      <main className="relative z-10 mx-auto w-full max-w-[1400px] px-4 pb-16 pt-28 sm:px-6">
         <div className="mb-10 md:mb-12">
           <p className="text-[11px] font-semibold tracking-[0.22em] text-primary/75 uppercase mb-2">Trading</p>
           <motion.h1
@@ -573,9 +572,10 @@ export default function Swap() {
           </motion.h1>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 lg:items-stretch">
-          <div className="flex min-h-0 h-full lg:col-span-8">
-            <div className="workspace-card flex h-full min-h-0 flex-col p-6 md:p-7">
+        {/* Explicit 2-column template (~2:1) + minmax(0) avoids odd stretching / empty middle gaps */}
+        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-8 lg:items-stretch">
+          <div className="min-h-0 min-w-0">
+            <div className="workspace-card flex h-full min-h-0 w-full flex-col p-6 md:p-7">
               <TradingChart
                 pairLabel={pairLabel}
                 inputMint={chartBaseMint}
@@ -587,8 +587,8 @@ export default function Swap() {
             </div>
           </div>
 
-          <div className="flex min-h-0 h-full lg:col-span-4">
-            <div className="workspace-card flex h-full min-h-0 flex-1 flex-col overflow-hidden p-0">
+          <div className="min-h-0 min-w-0">
+            <div className="workspace-card flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden p-0">
               <div className="workspace-toolbar shrink-0">
                 <ArrowDownLeft size={18} className="text-primary shrink-0" />
                 <h2 className="text-base font-semibold text-foreground tracking-tight">Execute trade</h2>
@@ -737,7 +737,6 @@ export default function Swap() {
               </div>
             </div>
           </div>
-        </div>
         </div>
       </main>
       <Footer />
