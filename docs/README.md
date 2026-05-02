@@ -18,6 +18,7 @@ Documentation for **Plankton's Cyber Ocean**: frontend app, backend API, wallet 
 | [API gateway](./API_GATEWAY.md) | Optional API keys, Bearer auth, rate limits (`/api/v1` on Express) |
 | [Deployment](./DEPLOYMENT.md) | Vercel SPA plus root `api/` (Root Directory **`.`**) vs optional VPS |
 | [Integrations](./INTEGRATIONS.md) | External APIs (Claude, Groq, Jupiter, Birdeye, Solana RPC, Redis, x402) |
+| [Privy integration](./privy-integration.md) | Privy auth, embedded wallets, server token verification, secure env usage |
 | [LLM providers](./llm-providers.md) | Claude, Groq, OpenAI setup, provider order, and security first deployment notes |
 | [x402 payments (Solana)](./x402-payments.md) | HTTP 402 + USDC on Solana: Agent Chat, Vercel proxy, VPS verification, env reference |
 | [Syraa Signal Agent](./syraa-signal-agent.md) | “signal …” agent choice (Plankton vs Syraa), Vercel to VPS proxy, Solana first x402, security checklist |

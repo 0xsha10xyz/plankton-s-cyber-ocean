@@ -45,6 +45,14 @@ Frontend optional: **`VITE_SOLANA_RPC_URL`**, **`VITE_SOLANA_WS_URL`** (WebSocke
 
 ---
 
+## Privy (authentication & embedded wallets)
+
+**Privy** handles optional **sign-in**, **embedded Solana/EVM wallets**, and bridges those wallets into the same flows as Phantom/Solflare via `useUnifiedSolanaWallet`. Client IDs use **`VITE_PRIVY_*`**; server verification uses **`PRIVY_APP_ID`**, **`PRIVY_APP_SECRET`**, and optionally **`PRIVY_JWT_VERIFICATION_KEY`**—only on the host (e.g. Vercel), never in client bundles.
+
+Full setup, env separation, verify endpoint, and security checklist: **[Privy integration](./privy-integration.md)**.
+
+---
+
 ## Trading & market data
 
 | Integration | Purpose | Configuration |
@@ -106,3 +114,4 @@ Environment files: **`frontend/.env.example`**, **`backend/.env.example`**, **`a
 | [Deployment](./DEPLOYMENT.md) | Vercel root directory, hybrid VPS agent |
 | [Language & localization](./language-and-localization.md) | UI English vs agent reply language |
 | [API recommendations](./api-recommendations.md) | Broader ecosystem suggestions for future features |
+| [Privy integration](./privy-integration.md) | Auth, embedded wallets, unified Solana wallet, verify route, secret handling |

@@ -1,6 +1,6 @@
 # Configuration: Swap with real data
 
-These steps are **manual**: create or edit `.env` files and fill in the required values. For a concise list of **third-party integrations** (LLM, Jupiter, Birdeye, RPC, Redis, x402), see **[Integrations](./INTEGRATIONS.md)**.
+These steps are **manual**: create or edit `.env` files and fill in the required values. For a concise list of **third-party integrations** (LLM, Jupiter, Birdeye, RPC, Redis, x402), see **[Integrations](./INTEGRATIONS.md)**. For **Privy** (sign-in, embedded wallets, server-only secrets), see **[Privy integration](./privy-integration.md)**—never put `PRIVY_APP_SECRET` or JWT keys in `VITE_*` variables.
 
 ## Who this is for
 
