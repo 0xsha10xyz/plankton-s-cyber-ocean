@@ -36,6 +36,11 @@ const INTEGRATIONS: Integration[] = [
     logoUrl: "/logos/helius.png",
   },
   {
+    name: "Privy",
+    role: "Embedded wallets and authentication for secure onboarding and signing.",
+    logoUrl: "/logos/privy.svg",
+  },
+  {
     name: "Phantom",
     role: "Primary wallet integration for connecting users to Plankton.",
     logoUrl: "/logos/phantom.png",
