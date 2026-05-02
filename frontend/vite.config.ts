@@ -63,7 +63,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       buffer: "buffer/",
     },
-    dedupe: ["react", "react-dom", "react/jsx-runtime"],
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "ox", "@base-org/account"],
   },
   optimizeDeps: {
     include: ["react", "react-dom", "react/jsx-runtime", "buffer"],

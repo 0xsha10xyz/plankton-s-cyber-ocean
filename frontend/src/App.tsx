@@ -22,11 +22,13 @@ import DocArticle from "@/components/docs/DocArticle";
 import AgentChatPage from "./pages/AgentChatPage";
 import Dashboard from "./pages/Dashboard";
 import { AppConfigProvider } from "@/hooks/useAppConfig";
+import { PrivyProviders } from "@/contexts/PrivyProviders";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <ErrorBoundary>
+    <PrivyProviders>
     <QueryClientProvider client={queryClient}>
       <AppConfigProvider>
       <SolanaWalletProviders>
@@ -72,6 +74,7 @@ const App = () => (
       </SolanaWalletProviders>
       </AppConfigProvider>
     </QueryClientProvider>
+    </PrivyProviders>
   </ErrorBoundary>
 );
 

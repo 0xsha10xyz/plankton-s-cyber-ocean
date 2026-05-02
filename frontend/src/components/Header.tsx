@@ -6,6 +6,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { cn } from "@/lib/utils";
 import { AccountSidebar } from "./AccountSidebar";
 import { useWalletModal } from "@/contexts/WalletModalContext";
+import { PrivyAuthControls } from "@/components/PrivyAuthControls";
 
 const NAV_CONFIG: { label: string; sectionId?: string; path?: string }[] = [
   { label: "Dashboard", path: "/dashboard" },
@@ -248,6 +249,7 @@ const Header = () => {
           </nav>
 
           <div className="flex items-center gap-3">
+            <PrivyAuthControls />
             <div className="relative">
               {connected && truncated ? (
                 <>

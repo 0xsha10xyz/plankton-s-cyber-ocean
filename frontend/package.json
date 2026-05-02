@@ -17,7 +17,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@base-org/account": "^2.5.5",
     "@hookform/resolvers": "^3.10.0",
+    "@privy-io/react-auth": "^3.23.1",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -60,10 +62,12 @@
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.35.0",
+    "graphql": "^16.13.2",
     "graphql-ws": "^6.0.8",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
+    "ox": "^0.14.17",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",

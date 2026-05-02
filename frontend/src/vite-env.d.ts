@@ -22,4 +22,8 @@ interface ImportMetaEnv {
   readonly VITE_DEV_API_PROXY?: string;
   /** Optional CI build: full git SHA for docs “trust” row */
   readonly VITE_GIT_SHA?: string;
+  /** Privy App ID from https://dashboard.privy.io — enables Privy auth + wallet UI */
+  readonly VITE_PRIVY_APP_ID?: string;
+  /** Optional Privy app client ID for multi-environment clients */
+  readonly VITE_PRIVY_CLIENT_ID?: string;
 }

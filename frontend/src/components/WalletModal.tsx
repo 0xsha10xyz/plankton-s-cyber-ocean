@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Wallet, ExternalLink } from "lucide-react";
 import { useWallet, WalletNotSelectedError } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@/contexts/WalletModalContext";
+import { WalletModalPrivyBlock } from "@/components/WalletModalPrivy";
 
 function nextPaint(): Promise<void> {
   return new Promise((resolve) => {
@@ -169,9 +170,18 @@ const WalletModal = ({
               })}
             </div>
 
+            <WalletModalPrivyBlock
+              onDismiss={() => {
+                closeWalletModal();
+                onClose();
+              }}
+            />
+
             {(Array.isArray(wallets) ? wallets : []).length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                No wallets detected. Install Phantom or Solflare to continue.
+                {import.meta.env.VITE_PRIVY_APP_ID?.trim()
+                  ? "No Solana extension detected. Install Phantom or Solflare, or use Sign in with Privy above."
+                  : "No wallets detected. Install Phantom or Solflare to continue."}
               </p>
             )}
           </motion.div>
