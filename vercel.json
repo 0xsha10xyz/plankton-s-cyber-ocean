@@ -5,6 +5,7 @@
   "routes": [
     { "handle": "filesystem" },
     { "src": "/api/config", "dest": "/api/health?mode=config" },
+    { "src": "/api/privy/verify", "dest": "/api/health?mode=privy-verify" },
     { "src": "/api/agent/?$", "dest": "/api/agent/index" },
     { "src": "/api/agent/(.*)", "dest": "/api/agent/index?segment=$1" },
     { "src": "/(.*)", "dest": "/index.html" }

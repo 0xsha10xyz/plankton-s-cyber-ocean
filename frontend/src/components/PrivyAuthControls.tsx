@@ -8,7 +8,7 @@ function truncateId(id: string, chars = 6): string {
 }
 
 /**
- * Shown in the header when `VITE_PRIVY_APP_ID` is set. Uses Privy login/logout; optional server check via `POST /api/privy/verify`.
+ * Shown in the header when `VITE_PRIVY_APP_ID` is set. Uses Privy login/logout; optional server check via `POST /api/health?mode=privy-verify`.
  */
 function PrivyAuthControlsInner(): JSX.Element {
   const { ready, authenticated, login, logout, user } = usePrivy();
@@ -61,11 +61,11 @@ function PrivyAuthControlsInner(): JSX.Element {
   );
 }
 
-/** Dev-only: verify access token against Vercel `api/privy/verify` (requires server env). */
+/** Verify access token against same-origin health handler (Vercel Hobby: shares `/api/health`, no extra function). */
 export async function verifyPrivyAccessTokenOnServer(): Promise<{ ok: boolean; userId?: string }> {
   const token = await getAccessToken();
   if (!token) return { ok: false };
-  const res = await fetch("/api/privy/verify", {
+  const res = await fetch("/api/health?mode=privy-verify", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
   });
