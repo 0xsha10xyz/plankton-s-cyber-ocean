@@ -10,7 +10,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { PublicKey } from "@solana/web3.js";
 import { getApiBase } from "@/lib/api";
 import {
@@ -64,7 +65,7 @@ async function fetchBalances(
 
 export function WalletBalancesProvider({ children }: { children: ReactNode }) {
   const { connection } = useConnection();
-  const { publicKey } = useWallet();
+  const { publicKey } = useUnifiedSolanaWallet();
   const [solLamports, setSolLamports] = useState<number | null>(null);
   const [tokens, setTokens] = useState<WalletBalanceToken[]>([]);
   const [loading, setLoading] = useState(false);

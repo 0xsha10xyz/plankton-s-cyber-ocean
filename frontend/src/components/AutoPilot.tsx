@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Maximize2, Minimize2, Power, TrendingUp, TrendingDown, Gauge, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { getAgentApiBase } from "@/lib/api";
 
@@ -19,7 +19,7 @@ const AutoPilot = ({
   workspaceExpanded,
   onWorkspaceExpandToggle,
 }: AutoPilotProps = {}) => {
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey } = useUnifiedSolanaWallet();
   const { openWalletModal } = useWalletModal();
   const [active, setActive] = useState(false);
   const [risk, setRisk] = useState(1); // 0=Low, 1=Mid, 2=High

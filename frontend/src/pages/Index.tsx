@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
@@ -60,7 +60,7 @@ const featureCards = [
 ] as const;
 
 const Index = () => {
-  const { connected } = useWallet();
+  const { connected } = useUnifiedSolanaWallet();
   const { openWalletModal } = useWalletModal();
   const navigate = useNavigate();
   const { userCount } = useStats();

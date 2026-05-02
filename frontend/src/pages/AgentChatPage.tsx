@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, User, ArrowLeft, Wallet, Plus, Search, Trash2, X } from "lucide-react";
 import { PlanktonomousAssistantLogo } from "@/components/PlanktonomousAssistantLogo";
 import { cn } from "@/lib/utils";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { getAgentApiBase, getApiBase } from "@/lib/api";
@@ -358,7 +359,7 @@ function AgentBubble({ msg, onAction }: { msg: ChatMessage; onAction: (action: s
 
 export default function AgentChatPage() {
   const { connection } = useConnection();
-  const wallet = useWallet();
+  const wallet = useUnifiedSolanaWallet();
   const { connected, publicKey, signTransaction } = wallet;
   const { openWalletModal } = useWalletModal();
   const { getSymbol, ensureTokenInfo } = useTokenSymbol();

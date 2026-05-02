@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { cn } from "@/lib/utils";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
@@ -102,7 +102,7 @@ function LaunchAgentWorkspaceGrid({
  * Dedicated workspace: Command Center (Solana) + Planktonomous Autopilot (EVM/Polygon) + Agent Chat.
  */
 export default function LaunchAgentPage(): JSX.Element {
-  const { connected } = useWallet();
+  const { connected } = useUnifiedSolanaWallet();
   const [workspaceExpanded, setWorkspaceExpanded] = useState<WorkspacePanel>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 

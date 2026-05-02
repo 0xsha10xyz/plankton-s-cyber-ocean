@@ -4,7 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Maximize2, Minimize2, Send, User, ArrowRight } from "lucide-react";
 import { PlanktonomousAssistantLogo } from "@/components/PlanktonomousAssistantLogo";
 import { cn } from "@/lib/utils";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { getAgentApiBase, getApiBase } from "@/lib/api";
 import {
@@ -496,7 +497,7 @@ export function AgentChatInlinePreview({
   workspaceExpanded,
   onWorkspaceExpandToggle,
 }: AgentChatInlinePreviewProps = {}) {
-  const wallet = useWallet();
+  const wallet = useUnifiedSolanaWallet();
   const { connected, publicKey, signTransaction } = wallet;
   const { connection } = useConnection();
   const { openWalletModal } = useWalletModal();

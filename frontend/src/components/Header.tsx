@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Wallet, LogOut, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { cn } from "@/lib/utils";
 import { AccountSidebar } from "./AccountSidebar";
 import { useWalletModal } from "@/contexts/WalletModalContext";
@@ -48,7 +48,7 @@ const Header = () => {
   const [activeSection, setActiveSection] = useState<string>("dashboard");
   const [showDisconnect, setShowDisconnect] = useState(false);
   const { pathname, hash } = useLocation();
-  const { connected, publicKey, disconnect } = useWallet();
+  const { connected, publicKey, disconnect } = useUnifiedSolanaWallet();
   const { openWalletModal } = useWalletModal();
   const isLanding = pathname === "/";
   const isDashboard = pathname === "/dashboard";

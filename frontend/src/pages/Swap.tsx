@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { VersionedTransaction } from "@solana/web3.js";
 import { ArrowDownLeft, Loader2, Wallet } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
@@ -86,7 +87,7 @@ function chooseTokenLabel(mint: string, symbolRaw: unknown, nameRaw: unknown): s
 
 export default function Swap() {
   const { connection } = useConnection();
-  const { publicKey, connected, signTransaction } = useWallet();
+  const { publicKey, connected, signTransaction } = useUnifiedSolanaWallet();
   const { openWalletModal } = useWalletModal();
   const [searchParams] = useSearchParams();
   const walletAddress = publicKey?.toBase58() ?? "";

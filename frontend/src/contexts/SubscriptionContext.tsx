@@ -7,7 +7,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import type { TierId } from "@/lib/tierLimits";
 import { getTierLimit } from "@/lib/tierLimits";
 import { getApiBase } from "@/lib/api";
@@ -75,7 +75,7 @@ type SubscriptionContextValue = {
 const SubscriptionContext = createContext<SubscriptionContextValue | null>(null);
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  const { publicKey, connected } = useWallet();
+  const { publicKey, connected } = useUnifiedSolanaWallet();
   const [tierOverride, setTierOverrideState] = useState<TierId | null>(null);
   const [apiTier, setApiTier] = useState<TierId | null>(null);
   const [researchUsed, setResearchUsed] = useState(0);

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
+import { PrivySolanaWalletBridge } from "@/contexts/PrivySolanaWalletContext";
 
 const appId = import.meta.env.VITE_PRIVY_APP_ID as string | undefined;
 const clientId = import.meta.env.VITE_PRIVY_CLIENT_ID as string | undefined;
@@ -32,7 +33,7 @@ export function PrivyProviders({ children }: { children: ReactNode }): JSX.Eleme
         },
       }}
     >
-      {children}
+      <PrivySolanaWalletBridge>{children}</PrivySolanaWalletBridge>
     </PrivyProvider>
   );
 }

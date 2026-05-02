@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, Wallet, ArrowUpRight, ArrowDownRight, RefreshCw, Fish, Rocket, BarChart3 } from "lucide-react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { getApiBase } from "@/lib/api";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 type FeedItem = { category: string; items: Array<{ text: string; change: string; positive: boolean; time: string }> };
 
 export default function ResearchTools() {
-  const { connected } = useWallet();
+  const { connected } = useUnifiedSolanaWallet();
   const { openWalletModal } = useWalletModal();
   const {
     tierName,

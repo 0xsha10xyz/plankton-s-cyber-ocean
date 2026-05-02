@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ type AccountSidebarProps = {
 };
 
 export function AccountSidebar({ open, onOpenChange }: AccountSidebarProps) {
-  const { publicKey, disconnect } = useWallet();
+  const { publicKey, disconnect } = useUnifiedSolanaWallet();
   const { profile, setUsername, setAvatarUrl, loadProfileForWallet } = useAccount();
   const {
     solLamports,

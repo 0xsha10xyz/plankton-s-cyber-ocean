@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { getApiBase } from "@/lib/api";
 
 type StatsContextValue = {
@@ -131,7 +131,7 @@ export function useStats(): StatsContextValue {
 /** Registers the current wallet with the stats API when connected. Render once inside StatsProvider + WalletProvider. */
 export function StatsWalletTracker() {
   const { registerWallet } = useStats();
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey } = useUnifiedSolanaWallet();
   const registered = useRef<string | null>(null);
 
   useEffect(() => {

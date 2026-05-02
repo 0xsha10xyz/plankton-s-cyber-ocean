@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Zap, Crown, Bot } from "lucide-react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 
 const tiers = [
@@ -28,7 +28,7 @@ const tiers = [
 ];
 
 const PricingSection = () => {
-  const { connected } = useWallet();
+  const { connected } = useUnifiedSolanaWallet();
   const { tier, setTierOverride } = useSubscription();
 
   return (

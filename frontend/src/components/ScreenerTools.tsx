@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Wallet, BarChart3, ArrowUpRight, ArrowDownRight, Filter, Download } from "lucide-react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { getApiBase } from "@/lib/api";
@@ -19,7 +19,7 @@ import {
 type PairRow = { symbol: string; price: number; change24h: number; volume: string; marketCap: string };
 
 export default function ScreenerTools() {
-  const { connected } = useWallet();
+  const { connected } = useUnifiedSolanaWallet();
   const { openWalletModal } = useWalletModal();
   const { tierName, limits } = useSubscription();
 
