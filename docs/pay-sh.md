@@ -87,6 +87,17 @@ https://<your-vps-domain>/api/paysh/api/v1/status
 
 This route forwards to Corbits and injects `WWW-Authenticate: x402` when the upstream response contains an x402 challenge.
 
+**Sanity check:** `curl -sI https://api.<your-domain>/api/paysh/api/v1/status` must include **`X-Paysh-Proxy`**.  
+**`plankton-backend`** = Express on your VPS; **`plankton-vercel`** = this repo’s Vercel serverless handler.  
+If **`X-Paysh-Proxy` is missing**, traffic never hits our code (nginx proxies straight to Corbits, or DNS points elsewhere).
+
+If **`curl`** still shows **`solana-mainnet-beta`** and a **Corbits `resource` URL**, the adapter is **not** running:
+
+1. **`api.<domain>` on Vercel:** Set **`PAYSH_CORBITS_BASE_URL`** (same as VPS) in **Vercel → Environment Variables**, redeploy. This repo ships **`api/paysh/[...slug].ts`** so `/api/paysh/*` is normalized on Vercel (without it, `/api/paysh/*` may fall through to the SPA).
+2. **`api.<domain>` on a VPS behind nginx:** Ensure **`location /api/paysh/`** proxies to **Node** (`proxy_pass http://127.0.0.1:3000;`), not directly to Corbits. See **`deploy/nginx-paysh-to-node.example.conf`**.
+
+After a correct deploy, **`curl -I`** should include **`X-Paysh-Normalized: 1`** on the 402 response when the body was rewritten.
+
 ### “Forbidden” / blank page in browser
 
 pay.sh is primarily a CLI / agent tool. For browser-based payments, use the in-app demo:

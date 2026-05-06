@@ -1,4 +1,5 @@
 import express from "express";
+import { looksLikeX402, normalizePayX402Body } from "../lib/payshX402.js";
 
 type ProxyEnv = {
   baseUrl: string;
@@ -14,11 +15,6 @@ function getProxyEnv(): ProxyEnv {
   const authHeader = (process.env.PAYSH_UPSTREAM_AUTH_HEADER ?? "").trim() || undefined;
   const authValue = (process.env.PAYSH_UPSTREAM_AUTH_VALUE ?? "").trim() || undefined;
   return { baseUrl, authHeader, authValue };
-}
-
-function looksLikeX402(bodyText: string): boolean {
-  // Lightweight heuristic; do not fully parse / trust external responses.
-  return /"x402Version"\s*:\s*\d+/.test(bodyText) && /"accepts"\s*:\s*\[/.test(bodyText);
 }
 
 function copyHeadersToResponse(opts: { upstream: Response; res: express.Response; overrideContentType?: string }): void {
@@ -91,16 +87,37 @@ payshRouter.all("/*", async (req, res) => {
 
   const text = await upstream.text().catch(() => "");
 
+  const xfProto = req.get("x-forwarded-proto");
+  const proto = xfProto?.split(",")[0]?.trim() || req.protocol;
+  // Behind nginx: prefer public Host from X-Forwarded-Host over internal Host.
+  const xfHost = req.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const host = xfHost || req.get("host") || "";
+  const pathOnly = req.originalUrl.split("?")[0] || "";
+  const clientResourceUrl = host ? `${proto}://${host}${pathOnly}` : pathOnly;
+
+  let outgoingBody = text;
+  let didNormalize = false;
+  if (upstream.status === 402 && looksLikeX402(text)) {
+    const n = normalizePayX402Body(text, clientResourceUrl);
+    outgoingBody = n.text;
+    didNormalize = n.normalized;
+  }
+
   // Copy headers first (then apply compatibility headers if needed).
   copyHeadersToResponse({ upstream, res, overrideContentType: upstream.headers.get("content-type") ?? "text/plain" });
+
+  // Always set — if missing from curl -I, this URL is not hitting Express (nginx→Corbits or wrong host).
+  res.setHeader("X-Paysh-Proxy", "plankton-backend");
 
   // pay.sh expects protocol detection hints. Some gateways return x402 requirements in the JSON body only.
   // Emit the same hint headers used by the pay debugger/gateway examples.
   if (upstream.status === 402 && looksLikeX402(text)) {
     if (!res.getHeader("WWW-Authenticate")) res.setHeader("WWW-Authenticate", "x402");
     if (!res.getHeader("X-Payment-Required")) res.setHeader("X-Payment-Required", "x402");
+    // Some clients scan alternate spellings; harmless if ignored.
+    if (!res.getHeader("Payment-Required")) res.setHeader("Payment-Required", "x402");
+    if (didNormalize) res.setHeader("X-Paysh-Normalized", "1");
   }
 
-  res.status(upstream.status).send(text);
+  res.status(upstream.status).send(outgoingBody);
 });
-
