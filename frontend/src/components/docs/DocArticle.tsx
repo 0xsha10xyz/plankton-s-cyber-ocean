@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -28,27 +28,8 @@ function titleizeSlug(slug: string): string {
 
 export default function DocArticle() {
   const { slug = "" } = useParams<{ slug: string }>();
+  const markdown = getDocMarkdown(slug);
   const validSlugs = useMemo(() => new Set(listDocSlugs()), []);
-  const [markdown, setMarkdown] = useState<string | undefined>(undefined);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setMarkdown(undefined);
-    getDocMarkdown(slug)
-      .then((md) => {
-        if (cancelled) return;
-        setMarkdown(md);
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
 
   const components = useMemo<Components>(
     () => ({
@@ -107,7 +88,7 @@ export default function DocArticle() {
     return <Navigate to="/docs" replace />;
   }
 
-  if (!loading && markdown === undefined) {
+  if (markdown === undefined) {
     return <Navigate to="/docs" replace />;
   }
 
@@ -120,13 +101,9 @@ export default function DocArticle() {
         {titleizeSlug(slug)}
       </h1>
       <div className="prose prose-invert prose-headings:font-bold prose-headings:tracking-tight max-w-none prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:text-foreground/95 docs-article-prose">
-        {loading ? (
-          <p className="docs-body-muted">Loading…</p>
-        ) : (
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-            {markdown ?? ""}
-          </ReactMarkdown>
-        )}
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+          {markdown}
+        </ReactMarkdown>
       </div>
       <p className="mt-10 text-sm">
         <Link to="/docs" className="text-primary hover:underline font-medium">

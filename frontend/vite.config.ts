@@ -54,7 +54,8 @@ export default defineConfig({
   },
   build: {
     target: "es2022",
-    chunkSizeWarningLimit: 1500,
+    // Keep build output clean (large vendor chunks are expected for this app).
+    chunkSizeWarningLimit: 6000,
     rollupOptions: {
       output: {
         manualChunks: {
