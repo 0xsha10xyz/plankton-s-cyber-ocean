@@ -2,7 +2,7 @@
 
 Documentation for **Plankton's Cyber Ocean**: frontend app, backend API, wallet integration, Command Center, and AI agent. This folder is for **operators and contributors** who fork or deploy the project.
 
-**Language:** **UI** and **maintainer documentation** are in **English**. The **Plankton Agent** matches the user’s latest message language when possible. See **[Language & localization](./language-and-localization.md)**.
+The **Plankton Agent** matches the user’s latest message language when possible. See **[Language & localization](./language-and-localization.md)** for how UI copy and docs relate to chat replies.
 
 ## Security (read first)
 
@@ -19,11 +19,12 @@ Documentation for **Plankton's Cyber Ocean**: frontend app, backend API, wallet 
 | [Deployment](./DEPLOYMENT.md) | Vercel SPA plus root `api/` (Root Directory **`.`**) vs optional VPS |
 | [Integrations](./INTEGRATIONS.md) | External APIs (Claude, Groq, Jupiter, Birdeye, Solana RPC, Redis, x402) |
 | [Corbits integration](./corbits-integration.md) | Monetize endpoints via Corbits (x402), proxy setup, and testing |
+| [pay.sh CLI integration](./pay-sh.md) | `pay` CLI + `/api/paysh` adapter, security, OS setup (Windows/macOS/Linux), operator verification |
 | [Privy integration](./privy-integration.md) | Privy auth, embedded wallets, server token verification, secure env usage |
 | [LLM providers](./llm-providers.md) | Claude, Groq, OpenAI setup, provider order, and security first deployment notes |
 | [x402 payments (Solana)](./x402-payments.md) | HTTP 402 + USDC on Solana: Agent Chat, Vercel proxy, VPS verification, env reference |
 | [Syraa Signal Agent](./syraa-signal-agent.md) | “signal …” agent choice (Plankton vs Syraa), Vercel to VPS proxy, Solana first x402, security checklist |
-| [Language & localization](./language-and-localization.md) | English UI/docs; agent reply language |
+| [Language & localization](./language-and-localization.md) | UI copy & maintainer docs vs agent reply language |
 | [Frontend](./frontend.md) | App features, wallet, Account, AI chat, navigation |
 | [Backend API](./backend-api.md) | API reference, endpoints, and environment variables |
 | [Integration](./integration.md) | Using the API from the frontend |

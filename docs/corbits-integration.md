@@ -152,10 +152,16 @@ Development proxy (CORS): `frontend/vite.config.ts` defines `"/__corbits"` to fo
 
 ### Test 4 (CLI): pay.sh (HTTP 402 payer)
 
-If you want an agent/CLI-native way to pay `HTTP 402` challenges (MPP / x402), you can use **pay.sh** as the client:
+For an agent/CLI-native payer, use **[pay.sh](https://pay.sh/docs)** (`pay` binary).
 
-- Guide in this repo: `docs/pay-sh.md`
-- Upstream docs: https://pay.sh/docs
+- **Recommended URL for `pay`:** Plankton’s compatibility adapter so challenges match what `pay` expects:
+
+  `https://<your-public-api-host>/api/paysh/api/v1/status`
+
+  Calling Corbits **directly** may still work in browsers/SDKs but often triggers **`no recognized payment protocol`** in older strict parsers unless upstream shapes match exactly.
+
+- **Full guide (security, OS setup, nginx/Vercel, verification):** [`docs/pay-sh.md`](./pay-sh.md)
+- **Upstream docs:** https://pay.sh/docs
 
 ---
 

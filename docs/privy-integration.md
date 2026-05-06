@@ -1,6 +1,6 @@
 # Privy integration
 
-This document describes how **Plankton Cyber Ocean** integrates [**Privy**](https://privy.io/) for user authentication and **Solana embedded / linked wallets**, how it connects to the existing `@solana/wallet-adapter` flows, and **how to keep credentials safe**. Product-facing docs stay in English.
+This document describes how **Plankton Cyber Ocean** integrates [**Privy**](https://privy.io/) for user authentication and **Solana embedded / linked wallets**, how it connects to the existing `@solana/wallet-adapter` flows, and **how to keep credentials safe**.
 
 ---
 

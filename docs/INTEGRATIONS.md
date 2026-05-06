@@ -1,6 +1,6 @@
 # External integrations
 
-This document lists **third-party services and APIs** used by Plankton’s Cyber Ocean, where they run (Vercel serverless, Express on a VPS, or browser), and how they are configured. All product documentation is in **English**.
+This document lists **third-party services and APIs** used by Plankton’s Cyber Ocean, where they run (Vercel serverless, Express on a VPS, or browser), and how they are configured.
 
 ---
 
@@ -94,6 +94,8 @@ Recommended when you want **per-request monetization** without building billing/
 
 Setup and test guide: **[Corbits integration](./corbits-integration.md)**.
 
+For the **[pay.sh](https://pay.sh/docs) CLI**, use the **`/api/paysh/*` adapter** on your public API host so x402 bodies and hint headers align with `pay`—see **[pay.sh CLI integration](./pay-sh.md)** (security and deployment checklist).
+
 ---
 
 ## Syraa Signal (x402 paid upstream)
@@ -112,7 +114,7 @@ Configuration is documented in **[Syraa Signal Agent](./syraa-signal-agent.md)**
 
 | Platform | What it hosts |
 |----------|----------------|
-| **Vercel** | Static `dist/`, root `api/` serverless (12 function cap on Hobby. Routes are consolidated where needed.) |
+| **Vercel** | Static `dist/`, root `api/` serverless (12 function cap on Hobby; `/api/paysh/*` runs on Express/VPS only—see **pay-sh.md**.) |
 | **VPS (Node/PM2)** | Express `backend/` for agent + optional full API |
 
 Environment files: **`frontend/.env.example`**, **`backend/.env.example`**, **`api/.env.example`** (Vercel dashboard for production secrets).
@@ -126,6 +128,6 @@ Environment files: **`frontend/.env.example`**, **`backend/.env.example`**, **`a
 | [Configuration](./CONFIGURATION.md) | Step-by-step env setup, Birdeye, agent chat, Vercel + VPS |
 | [Backend API](./backend-api.md) | REST endpoints and request/response shapes |
 | [Deployment](./DEPLOYMENT.md) | Vercel root directory, hybrid VPS agent |
-| [Language & localization](./language-and-localization.md) | UI English vs agent reply language |
+| [Language & localization](./language-and-localization.md) | Default UI/docs copy vs agent reply language |
 | [API recommendations](./api-recommendations.md) | Broader ecosystem suggestions for future features |
 | [Privy integration](./privy-integration.md) | Auth, embedded wallets, unified Solana wallet, verify route, secret handling |

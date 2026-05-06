@@ -1,6 +1,6 @@
 /**
  * x402 challenge normalization for Corbits → Solana Foundation `pay` CLI.
- * Mirror: ../../server-lib/paysh-x402.ts (Vercel serverless). Keep both files identical.
+ * Mirror: ../../server-lib/paysh-x402.ts (duplicate path outside backend workspace). Keep both identical.
  */
 
 /** Solana mainnet genesis hash — canonical network id used by x402 v2 clients (incl. `pay`). */

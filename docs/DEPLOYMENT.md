@@ -55,7 +55,7 @@ The **`api/`** folder must live at the **repository root** relative to your Verc
 
 ## Hobby plan (Vercel)
 
-Each file under `api/**/*.ts` is a separate serverless function. Stay within your plan’s function limit (e.g. 12 on Hobby). Avoid duplicating routes.
+Each file under `api/**/*.ts` is a separate serverless function. Stay within your plan’s function limit (e.g. 12 on Hobby). Avoid duplicating routes. **`/api/paysh/*` is Express-only** (see **`docs/pay-sh.md`**): it does not ship under `api/` so Hobby deployments stay at twelve functions.
 
 ---
 
