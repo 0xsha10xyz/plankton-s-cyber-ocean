@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -21,11 +22,12 @@ import DocsHome from "@/components/docs/DocsHome";
 import DocArticle from "@/components/docs/DocArticle";
 import AgentChatPage from "./pages/AgentChatPage";
 import Dashboard from "./pages/Dashboard";
-import CorbitsTest from "./pages/CorbitsTest";
 import { AppConfigProvider } from "@/hooks/useAppConfig";
 import { PrivyProviders } from "@/contexts/PrivyProviders";
 
 const queryClient = new QueryClient();
+
+const CorbitsTest = lazy(() => import("./pages/CorbitsTest"));
 
 const App = () => (
   <ErrorBoundary>
@@ -60,7 +62,14 @@ const App = () => (
                     <Route path=":slug" element={<DocArticle />} />
                   </Route>
                   <Route path="/agent-chat" element={<AgentChatPage />} />
-                  <Route path="/corbits-test" element={<CorbitsTest />} />
+                  <Route
+                    path="/corbits-test"
+                    element={
+                      <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading…</div>}>
+                        <CorbitsTest />
+                      </Suspense>
+                    }
+                  />
                   <Route path="/launch-agent" element={<Navigate to="/agent-chat" replace />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
