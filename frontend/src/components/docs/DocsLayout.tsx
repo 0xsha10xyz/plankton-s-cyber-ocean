@@ -31,6 +31,7 @@ const sidebarSections = [
   { id: "privy-integration", label: "Privy integration", icon: KeyRound, path: "/docs/privy-integration" as const },
   { id: "llm-providers", label: "LLM providers", icon: Cpu, path: "/docs/llm-providers" as const },
   { id: "corbits-integration", label: "Corbits integration", icon: Zap, path: "/docs/corbits-integration" as const },
+  { id: "pay-sh", label: "pay.sh", icon: Zap, path: "/docs/pay-sh" as const },
   { id: "x402-payments", label: "x402 payments", icon: Landmark, path: "/docs/x402-payments" as const },
   { id: "syraa-signal-agent", label: "Syraa signal agent", icon: Signal, path: "/docs/syraa-signal-agent" as const },
 ] as const;

@@ -150,6 +150,13 @@ Implementation: `frontend/src/pages/CorbitsTest.tsx`
 
 Development proxy (CORS): `frontend/vite.config.ts` defines `"/__corbits"` to forward requests during local dev.
 
+### Test 4 (CLI): pay.sh (HTTP 402 payer)
+
+If you want an agent/CLI-native way to pay `HTTP 402` challenges (MPP / x402), you can use **pay.sh** as the client:
+
+- Guide in this repo: `docs/pay-sh.md`
+- Upstream docs: https://pay.sh/docs
+
 ---
 
 ## Operational notes
