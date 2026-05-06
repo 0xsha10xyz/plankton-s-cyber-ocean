@@ -6,6 +6,11 @@ type Integration = {
 
 const INTEGRATIONS: Integration[] = [
   {
+    name: "Corbits",
+    role: "x402 paid API proxy for per-request monetization and settlement.",
+    logoUrl: "/logos/corbits.svg",
+  },
+  {
     name: "Solana",
     role: "Base layer for all protocol activity, swaps, and agent execution.",
     logoUrl: "/logos/solana.png",
