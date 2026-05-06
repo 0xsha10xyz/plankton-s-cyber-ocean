@@ -1,5 +1,3 @@
-type RawMod = string;
-
 function pathToSlug(fsPath: string): string {
   const norm = fsPath.replace(/\\/g, "/");
   if (/\/SECURITY\.md$/i.test(norm)) return "security";
@@ -13,45 +11,58 @@ function pathToSlug(fsPath: string): string {
     .replace(/\//g, "-");
 }
 
-let cached: Map<string, string> | null = null;
+type RawLoader = () => Promise<unknown>;
+type RawGlob = Record<string, RawLoader>;
 
-function buildMap(): Map<string, string> {
-  const out = new Map<string, string>();
+let cached: Map<string, string> | null = null;
+let slugToLoader: Map<string, RawLoader> | null = null;
+
+function getSlugToLoader(): Map<string, RawLoader> {
+  if (slugToLoader) return slugToLoader;
+
+  const out = new Map<string, RawLoader>();
 
   const underDocs = import.meta.glob("../../../docs/**/*.md", {
-    eager: true,
     query: "?raw",
     import: "default",
-  }) as Record<string, RawMod>;
+  }) as RawGlob;
 
-  for (const [path, mod] of Object.entries(underDocs)) {
-    const content = typeof mod === "string" ? mod : String(mod);
-    out.set(pathToSlug(path), content);
+  for (const [path, loader] of Object.entries(underDocs)) {
+    out.set(pathToSlug(path), loader);
   }
 
   const security = import.meta.glob("../../../SECURITY.md", {
-    eager: true,
     query: "?raw",
     import: "default",
-  }) as Record<string, RawMod>;
+  }) as RawGlob;
 
-  for (const [, mod] of Object.entries(security)) {
-    const content = typeof mod === "string" ? mod : String(mod);
-    out.set("security", content);
+  for (const [, loader] of Object.entries(security)) {
+    out.set("security", loader);
   }
 
+  slugToLoader = out;
   return out;
 }
 
 export function getDocContentMap(): Map<string, string> {
-  if (!cached) cached = buildMap();
+  if (!cached) cached = new Map<string, string>();
   return cached;
 }
 
-export function getDocMarkdown(slug: string): string | undefined {
-  return getDocContentMap().get(slug);
+export async function getDocMarkdown(slug: string): Promise<string | undefined> {
+  const cache = getDocContentMap();
+  const hit = cache.get(slug);
+  if (hit !== undefined) return hit;
+
+  const loader = getSlugToLoader().get(slug);
+  if (!loader) return undefined;
+
+  const mod = await loader();
+  const content = typeof mod === "string" ? mod : String(mod);
+  cache.set(slug, content);
+  return content;
 }
 
 export function listDocSlugs(): string[] {
-  return [...getDocContentMap().keys()].sort((a, b) => a.localeCompare(b));
+  return [...getSlugToLoader().keys()].sort((a, b) => a.localeCompare(b));
 }
