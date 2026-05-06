@@ -82,6 +82,20 @@ See **`api/stats/`** and backend stats routes.
 
 ---
 
+## Corbits (paid API proxy, x402)
+
+Corbits can expose your existing backend as a **paid API** using the x402 standard:
+
+- Users call your Corbits proxy URL
+- Unpaid requests return **HTTP 402** with payment requirements (`accepts[]`)
+- Payment-capable clients pay (USDC) and retry automatically
+
+Recommended when you want **per-request monetization** without building billing/subscription infrastructure.
+
+Setup and test guide: **[Corbits integration](./corbits-integration.md)**.
+
+---
+
 ## Syraa Signal (x402 paid upstream)
 
 Syraa Signal is a **server-to-server** integration used when a user types `signal ...` and chooses **Syraa Agent** in the chat UI:

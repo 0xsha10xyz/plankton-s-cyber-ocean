@@ -4,11 +4,17 @@ import path from "path";
 
 // https://vitejs.dev/config/
 const API_TARGET = process.env.VITE_DEV_API_PROXY ?? "http://127.0.0.1:3000";
+const CORBITS_TARGET = process.env.VITE_DEV_CORBITS_PROXY ?? "https://planktonomous.0xsha10-xyz.api.corbits.dev";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   define: {
     global: "globalThis",
+  },
+  // Faremeter packages use top-level await in some modules.
+  // Target modern browsers during dev to avoid esbuild errors.
+  esbuild: {
+    target: "es2022",
   },
   server: {
     host: "::",
@@ -24,6 +30,12 @@ export default defineConfig({
         target: API_TARGET,
         changeOrigin: true,
       },
+      "/__corbits": {
+        target: CORBITS_TARGET,
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p) => p.replace(/^\/__corbits/, ""),
+      },
     },
   },
   preview: {
@@ -32,9 +44,16 @@ export default defineConfig({
         target: API_TARGET,
         changeOrigin: true,
       },
+      "/__corbits": {
+        target: CORBITS_TARGET,
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p) => p.replace(/^\/__corbits/, ""),
+      },
     },
   },
   build: {
+    target: "es2022",
     chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
@@ -67,5 +86,8 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ["react", "react-dom", "react/jsx-runtime", "buffer", "ox"],
+    esbuildOptions: {
+      target: "es2022",
+    },
   },
 });

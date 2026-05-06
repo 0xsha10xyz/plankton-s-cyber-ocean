@@ -263,6 +263,13 @@ export default function DocsHome() {
               <li className="flex gap-3">
                 <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                 <span>
+                  <strong className="text-foreground/95">Corbits (paid API)</strong>: x402 proxy monetization, gateway auth, and
+                  local testing. <DocLink file="docs/corbits-integration.md" />
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                <span>
                   <strong className="text-foreground/95">x402 (Solana / USDC)</strong>: paid Agent Chat, Vercel to VPS proxy,
                   facilitator verification. <DocLink file="docs/x402-payments.md" />
                 </span>
@@ -570,6 +577,8 @@ export default function DocsHome() {
           <DocLink file="docs/privy-integration.md" />
           <span className="opacity-40">·</span>
           <DocLink file="docs/llm-providers.md" />
+          <span className="opacity-40">·</span>
+          <DocLink file="docs/corbits-integration.md" />
           <span className="opacity-40">·</span>
           <DocLink file="docs/x402-payments.md" />
           <span className="opacity-40">·</span>

@@ -49,6 +49,13 @@ vercel-express-bundle
 # Cursor IDE. Local workspace state (do not commit)
 .cursor/
 
+# Cursor agent skills / locks (local-only)
+.agents/
+skills-lock.json
+
+# Local payment testing (never commit)
+corbits-test/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

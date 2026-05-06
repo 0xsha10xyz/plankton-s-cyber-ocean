@@ -21,6 +21,7 @@ import DocsHome from "@/components/docs/DocsHome";
 import DocArticle from "@/components/docs/DocArticle";
 import AgentChatPage from "./pages/AgentChatPage";
 import Dashboard from "./pages/Dashboard";
+import CorbitsTest from "./pages/CorbitsTest";
 import { AppConfigProvider } from "@/hooks/useAppConfig";
 import { PrivyProviders } from "@/contexts/PrivyProviders";
 
@@ -59,6 +60,7 @@ const App = () => (
                     <Route path=":slug" element={<DocArticle />} />
                   </Route>
                   <Route path="/agent-chat" element={<AgentChatPage />} />
+                  <Route path="/corbits-test" element={<CorbitsTest />} />
                   <Route path="/launch-agent" element={<Navigate to="/agent-chat" replace />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
