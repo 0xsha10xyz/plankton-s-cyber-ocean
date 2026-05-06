@@ -94,9 +94,11 @@ payshRouter.all("/*", async (req, res) => {
   // Copy headers first (then apply compatibility headers if needed).
   copyHeadersToResponse({ upstream, res, overrideContentType: upstream.headers.get("content-type") ?? "text/plain" });
 
-  // pay.sh expects protocol detection via WWW-Authenticate. Corbits may not include it.
-  if (upstream.status === 402 && looksLikeX402(text) && !res.getHeader("WWW-Authenticate")) {
-    res.setHeader("WWW-Authenticate", "x402");
+  // pay.sh expects protocol detection hints. Some gateways return x402 requirements in the JSON body only.
+  // Emit the same hint headers used by the pay debugger/gateway examples.
+  if (upstream.status === 402 && looksLikeX402(text)) {
+    if (!res.getHeader("WWW-Authenticate")) res.setHeader("WWW-Authenticate", "x402");
+    if (!res.getHeader("X-Payment-Required")) res.setHeader("X-Payment-Required", "x402");
   }
 
   res.status(upstream.status).send(text);
