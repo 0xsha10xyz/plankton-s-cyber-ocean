@@ -71,6 +71,22 @@ Operational guidance:
 
 ## Troubleshooting
 
+### pay says “no recognized payment protocol” when calling Corbits
+
+Some gateways (including Corbits) may return x402 requirements in the **JSON body** but not include a `WWW-Authenticate` hint header that some clients rely on for protocol detection.
+
+If you see:
+
+- `402 Payment Required (no recognized payment protocol)`
+
+Use the VPS compatibility endpoint in this repo instead:
+
+```
+https://<your-vps-domain>/api/paysh/api/v1/status
+```
+
+This route forwards to Corbits and injects `WWW-Authenticate: x402` when the upstream response contains an x402 challenge.
+
 ### “Forbidden” / blank page in browser
 
 pay.sh is primarily a CLI / agent tool. For browser-based payments, use the in-app demo:

@@ -17,6 +17,7 @@ import { subscriptionRouter } from "./routes/subscription.js";
 import { agentRouter } from "./routes/agent.js";
 import { rpcRouter } from "./routes/rpc.js";
 import { usageRouter } from "./routes/usage.js";
+import { payshRouter } from "./routes/paysh.js";
 import { polymarketMarketsRouter } from "./routes/polymarketMarkets.js";
 import { polymarketWalletsRouter } from "./routes/polymarketWallets.js";
 import { autopilotRouter, postAnalyzeAutopilot } from "./routes/autopilot.js";
@@ -114,6 +115,9 @@ app.use("/api/autopilot", autopilotRouter);
 app.post("/api/agent/analyze", (req, res, next) => {
   postAnalyzeAutopilot(req, res).catch(next);
 });
+
+// pay.sh compatibility proxy (VPS): forwards to Corbits and injects `WWW-Authenticate: x402` on 402 challenges.
+app.use("/api/paysh", payshRouter);
 
 if (process.env.API_GATEWAY_ENABLED !== "0") {
   app.use("/api/v1", gatewayRouter);
