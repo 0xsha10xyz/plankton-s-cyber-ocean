@@ -43,17 +43,22 @@ export function MarketMapHero({ className }: { className?: string }) {
             transition={{ duration: 0.5 }}
             className="max-w-xl"
           >
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/65 bg-black/30 px-3 py-1.5 text-[11px] font-mono text-muted-foreground backdrop-blur-sm">
-              <img
-                src="/brand/plankton-token-logo.png"
-                alt="Plankton"
-                width={14}
-                height={14}
-                className="rounded-full ring-1 ring-border/60"
-                loading="eager"
-                decoding="async"
-              />
-              Plankton Market Map
+            <div className="flex flex-col gap-1.5">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-border/65 bg-black/30 px-3 py-1.5 text-[11px] font-mono text-muted-foreground backdrop-blur-sm">
+                <img
+                  src="/brand/plankton-token-logo.png"
+                  alt="Plankton"
+                  width={14}
+                  height={14}
+                  className="rounded-full ring-1 ring-border/60"
+                  loading="eager"
+                  decoding="async"
+                />
+                Plankton Market Map
+              </div>
+              <p className="pl-0.5 text-[10px] font-mono tracking-[0.06em] text-muted-foreground/75">
+                Powered by MPP and MCP on X402
+              </p>
             </div>
 
             <h1 className="mt-5 text-4xl sm:text-5xl lg:text-[3.1rem] font-bold tracking-[-0.045em] leading-[1.02] text-foreground">
