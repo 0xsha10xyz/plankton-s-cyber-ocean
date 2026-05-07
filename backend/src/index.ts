@@ -32,7 +32,15 @@ const app = express();
 /** Correct `req.protocol` / host when behind nginx or a load balancer (needed for x402 `resource` URL). */
 app.set("trust proxy", 1);
 
-const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:8080,http://127.0.0.1:8080";
+const corsOrigin =
+  process.env.CORS_ORIGIN ||
+  [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    // Vite default
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+  ].join(",");
 const corsOrigins = corsOrigin.split(",").map((o) => o.trim()).filter(Boolean);
 const isVercel = process.env.VERCEL === "1";
 
