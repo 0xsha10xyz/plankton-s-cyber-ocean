@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import { AccountSidebar } from "./AccountSidebar";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { PrivyAuthControls } from "@/components/PrivyAuthControls";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+
+const DEMO_VIDEO_SRC = "/plankton-demo.mp4";
 
 const NAV_CONFIG: { label: string; sectionId?: string; path?: string }[] = [
   { label: "Dashboard", path: "/dashboard" },
@@ -234,6 +237,36 @@ const Header = () => {
                 </motion.button>
               );
             })}
+            {isLanding && (
+              <div className="flex items-center gap-1.5 pl-1 border-l border-border/50 ml-1">
+                <a
+                  href="/docs"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2 py-2 text-[13px] font-semibold tracking-tight text-muted-foreground hover:text-intel hover:bg-secondary/35 rounded-lg transition-colors min-h-[40px] inline-flex items-center"
+                >
+                  Docs
+                </a>
+                <span aria-hidden className="text-muted-foreground/45 select-none">
+                  ·
+                </span>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button
+                      type="button"
+                      className="px-2 py-2 text-[13px] font-semibold tracking-tight text-muted-foreground hover:text-foreground hover:bg-secondary/35 rounded-lg transition-colors min-h-[40px] inline-flex items-center"
+                    >
+                      Demo video
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl p-0 overflow-hidden border-border/50 bg-card">
+                    <div className="aspect-video w-full bg-black">
+                      <video src={DEMO_VIDEO_SRC} className="h-full w-full" controls playsInline />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
             {connected && (
               <motion.button
                 type="button"
@@ -385,6 +418,38 @@ const Header = () => {
                     </Link>
                   );
                 })}
+                {isLanding && (
+                  <div className="flex flex-wrap items-center gap-2 border-t border-border/30 px-3 py-3 mt-1">
+                    <a
+                      href="/docs"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-semibold text-muted-foreground hover:text-intel transition-colors"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      Docs
+                    </a>
+                    <span aria-hidden className="text-muted-foreground/45 select-none">
+                      ·
+                    </span>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button
+                          type="button"
+                          className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors text-left"
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          Demo video
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-3xl p-0 overflow-hidden border-border/50 bg-card">
+                        <div className="aspect-video w-full bg-black">
+                          <video src={DEMO_VIDEO_SRC} className="h-full w-full" controls playsInline />
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                )}
                 {connected && (
                   <button
                     type="button"

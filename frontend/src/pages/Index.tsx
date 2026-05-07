@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
@@ -12,7 +12,6 @@ import IntegrationsSection from "@/components/IntegrationsSection";
 import PricingSection from "@/components/PricingSection";
 import Roadmap from "@/components/Roadmap";
 import Footer from "@/components/Footer";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { MarketMapHero } from "@/components/home/MarketMapHero";
 import { useStats } from "@/contexts/StatsContext";
@@ -74,8 +73,6 @@ const Index = () => {
     const el = document.getElementById(hash);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
-
-  const demoVideoSrc = useMemo(() => "/plankton-demo.mp4", []);
 
   const submitAsk = () => {
     const q = askDraft.trim();
@@ -142,45 +139,16 @@ const Index = () => {
               </motion.form>
             </div>
 
-            <div className="mt-4 grid gap-3 border-t border-border/45 pt-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            <div className="mt-4 border-t border-border/45 pt-3">
               <a
                 href={PUMP_FUN_COIN_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 title={PAP_TOKEN_MINT}
-                className="min-w-0 text-[11px] text-muted-foreground/85 font-mono truncate hover:text-signal transition-colors"
+                className="block min-w-0 text-[11px] text-muted-foreground/85 font-mono truncate hover:text-signal transition-colors"
               >
                 Contract: {PAP_TOKEN_MINT}
               </a>
-
-              <div className="flex items-center gap-2 sm:justify-self-end">
-                <a
-                  href="/docs"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[12px] font-semibold text-muted-foreground hover:text-intel transition-colors"
-                >
-                  Docs
-                </a>
-                <span aria-hidden className="text-muted-foreground/50">
-                  ·
-                </span>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <button
-                      type="button"
-                      className="text-[12px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      Demo video
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl p-0 overflow-hidden border-border/50 bg-card">
-                    <div className="aspect-video w-full bg-black">
-                      <video src={demoVideoSrc} className="h-full w-full" controls playsInline />
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
             </div>
           </div>
         </section>
