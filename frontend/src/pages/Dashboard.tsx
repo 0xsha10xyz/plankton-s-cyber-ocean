@@ -313,7 +313,7 @@ export default function Dashboard(): JSX.Element {
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-foreground">Intelligence table</p>
                     <p className="text-xs text-muted-foreground">
-                      Polymarket markets + scored wallets (local API).
+                      Polymarket markets + scored wallets.
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
