@@ -21,6 +21,7 @@ import { payshRouter } from "./routes/paysh.js";
 import { polymarketMarketsRouter } from "./routes/polymarketMarkets.js";
 import { polymarketWalletsRouter } from "./routes/polymarketWallets.js";
 import { autopilotRouter, postAnalyzeAutopilot } from "./routes/autopilot.js";
+import { nansenRouter } from "./routes/nansen.js";
 import { gatewayRouter } from "./gateway/router.js";
 import { getPgPool } from "./db/pool.js";
 import { runMigrations } from "./db/migrate.js";
@@ -112,6 +113,7 @@ app.use("/api/usage", usageRouter);
 app.use("/api/markets", polymarketMarketsRouter);
 app.use("/api/wallets", polymarketWalletsRouter);
 app.use("/api/autopilot", autopilotRouter);
+app.use("/api/nansen", nansenRouter);
 app.post("/api/agent/analyze", (req, res, next) => {
   postAnalyzeAutopilot(req, res).catch(next);
 });

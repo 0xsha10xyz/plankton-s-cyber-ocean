@@ -42,6 +42,22 @@ type WalletRow = {
   meetsFollowCriteria: boolean;
 };
 
+type NansenTokenRow = {
+  chain: string;
+  token_address: string;
+  token_symbol: string;
+  token_age_days?: number | null;
+  market_cap_usd?: number | null;
+  liquidity?: number | null;
+  price_usd?: number | null;
+  price_change?: number | null;
+  volume?: number | null;
+  buy_volume?: number | null;
+  sell_volume?: number | null;
+  netflow?: number | null;
+  nof_traders?: number | null;
+};
+
 type SidebarItem = {
   id: "overview" | "autopilot" | "screener";
   label: string;
@@ -65,6 +81,13 @@ function formatUsd(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return "N/A";
   if (n >= 1000) return `$${formatCompact(n)}`;
   return `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function formatPct(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "N/A";
+  const v = n;
+  const sign = v > 0 ? "+" : "";
+  return `${sign}${v.toFixed(2)}%`;
 }
 
 function shortAddr(addr: string): string {
@@ -102,6 +125,14 @@ export default function Dashboard(): JSX.Element {
     queryKey: ["dash", "wallets"],
     queryFn: () => fetchJson<{ ok: boolean; wallets: WalletRow[] }>(`${apiBase}/api/wallets?limit=25`),
     staleTime: 50_000,
+  });
+  const nansenTokensQ = useQuery({
+    queryKey: ["dash", "nansen", "token-screener"],
+    queryFn: () =>
+      fetchJson<{ ok: boolean; data: NansenTokenRow[] }>(
+        `${apiBase}/api/nansen/token-screener?chains=solana,ethereum&timeframe=24h&perPage=25&sortField=volume&sortDir=DESC&includeStablecoins=false`
+      ),
+    staleTime: 25_000,
   });
 
   return (
@@ -315,6 +346,12 @@ export default function Dashboard(): JSX.Element {
                       >
                         Markets
                       </TabsTrigger>
+                    <TabsTrigger
+                      value="tokens"
+                      className="rounded-lg px-4 py-2 text-xs font-semibold data-[state=active]:bg-signal/12 data-[state=active]:text-signal data-[state=active]:shadow-none"
+                    >
+                      Tokens
+                    </TabsTrigger>
                       <TabsTrigger
                         value="wallets"
                         className="rounded-lg px-4 py-2 text-xs font-semibold data-[state=active]:bg-signal/12 data-[state=active]:text-signal data-[state=active]:shadow-none"
@@ -390,6 +427,82 @@ export default function Dashboard(): JSX.Element {
                                       "N/A"
                                     )}
                                   </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="tokens" className="mt-4">
+                      {nansenTokensQ.isError ? (
+                        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-muted-foreground">
+                          Failed to load tokens (Nansen). Make sure backend is running and `NANSEN_API_KEY` is set.
+                        </div>
+                      ) : null}
+
+                      <div className="intel-surface overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="hover:bg-transparent">
+                              <TableHead className="text-xs">Token</TableHead>
+                              <TableHead className="text-xs w-[130px]">24h Volume</TableHead>
+                              <TableHead className="text-xs w-[120px]">Liquidity</TableHead>
+                              <TableHead className="text-xs w-[120px]">MCap</TableHead>
+                              <TableHead className="text-xs w-[120px] text-right">Δ Price</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {(nansenTokensQ.isLoading
+                              ? Array.from({ length: 8 })
+                              : nansenTokensQ.data?.data ?? []
+                            ).map((t, idx) => {
+                              if (nansenTokensQ.isLoading) {
+                                return (
+                                  <TableRow key={idx}>
+                                    <TableCell>
+                                      <Skeleton className="h-4 w-[320px] bg-secondary/40" />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Skeleton className="h-4 w-24 bg-secondary/40" />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Skeleton className="h-4 w-20 bg-secondary/40" />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Skeleton className="h-4 w-20 bg-secondary/40" />
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <Skeleton className="h-4 w-20 ml-auto bg-secondary/40" />
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              }
+
+                              const row = t as NansenTokenRow;
+                              const addr = row.token_address;
+                              const chain = row.chain;
+                              const symbol = row.token_symbol;
+                              return (
+                                <TableRow key={`${chain}:${addr}`}>
+                                  <TableCell className="py-3">
+                                    <div className="min-w-0">
+                                      <p className="font-semibold text-foreground truncate" title={addr}>
+                                        {symbol}
+                                      </p>
+                                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                                        <Badge className="bg-background/20 border border-border/45 text-muted-foreground" variant="secondary">
+                                          {chain}
+                                        </Badge>
+                                        <span className="font-mono">{shortAddr(addr)}</span>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="font-mono text-muted-foreground">{formatUsd(row.volume)}</TableCell>
+                                  <TableCell className="font-mono text-muted-foreground">{formatUsd(row.liquidity)}</TableCell>
+                                  <TableCell className="font-mono text-muted-foreground">{formatUsd(row.market_cap_usd)}</TableCell>
+                                  <TableCell className="font-mono text-muted-foreground text-right">{formatPct(row.price_change)}</TableCell>
                                 </TableRow>
                               );
                             })}
