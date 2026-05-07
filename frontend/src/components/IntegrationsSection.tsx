@@ -73,7 +73,7 @@ const INTEGRATIONS: Integration[] = [
   {
     name: "Polymarket",
     role: "Real-time prediction market data (Gamma + CLOB) for market intelligence.",
-    logoUrl: "/logos/polymarket.svg",
+    logoUrl: "/logos/polymarket.png",
   },
 ];
 
