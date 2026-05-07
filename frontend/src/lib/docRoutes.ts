@@ -9,6 +9,7 @@ export const DOC_ROUTE_FILES = [
   "docs/CONFIGURATION.md",
   "docs/DEPLOYMENT.md",
   "docs/INTEGRATIONS.md",
+  "docs/polymarket-market-data.md",
   "docs/corbits-integration.md",
   "docs/pay-sh.md",
   "docs/llm-providers.md",
