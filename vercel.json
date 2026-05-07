@@ -4,6 +4,10 @@
   "outputDirectory": "dist",
   "routes": [
     { "handle": "filesystem" },
+    { "src": "/api/wallet/balances", "dest": "/api/data?segment=wallet-balances" },
+    { "src": "/api/markets", "dest": "/api/data?segment=markets" },
+    { "src": "/api/wallets", "dest": "/api/data?segment=wallets" },
+    { "src": "/api/nansen/token-screener", "dest": "/api/data?segment=nansen-token-screener" },
     { "src": "/api/config", "dest": "/api/health?mode=config" },
     { "src": "/api/privy/verify", "dest": "/api/health?mode=privy-verify" },
     { "src": "/api/agent/?$", "dest": "/api/agent/index" },
