@@ -18,6 +18,7 @@ The **Plankton Agent** matches the user’s latest message language when possibl
 | [API gateway](./API_GATEWAY.md) | Optional API keys, Bearer auth, rate limits (`/api/v1` on Express) |
 | [Deployment](./DEPLOYMENT.md) | Vercel SPA plus root `api/` (Root Directory **`.`**) vs optional VPS |
 | [Integrations](./INTEGRATIONS.md) | External APIs (Claude, Groq, Jupiter, Birdeye, Solana RPC, Redis, x402) |
+| [Polymarket market data](./polymarket-market-data.md) | Real-time Polymarket market discovery (Gamma) + best bid/ask (CLOB), read-only |
 | [Corbits integration](./corbits-integration.md) | Monetize endpoints via Corbits (x402), proxy setup, and testing |
 | [pay.sh CLI integration](./pay-sh.md) | `pay` CLI + `/api/paysh` adapter, security, OS setup (Windows/macOS/Linux), operator verification |
 | [Privy integration](./privy-integration.md) | Privy auth, embedded wallets, server token verification, secure env usage |
