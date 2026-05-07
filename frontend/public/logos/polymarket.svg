@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Polymarket">
+  <rect width="256" height="256" rx="28" fill="#2f53ff"/>
+  <!-- Simplified Polymarket mark (stylized P) -->
+  <path
+    d="M76 62h104c6.6 0 12 5.4 12 12v18c0 6.6-5.4 12-12 12H116v18h64c6.6 0 12 5.4 12 12v18c0 6.6-5.4 12-12 12H116v30c0 6.6-5.4 12-12 12H88c-6.6 0-12-5.4-12-12V74c0-6.6 5.4-12 12-12z"
+    fill="#ffffff"
+    opacity="0.96"
+  />
+</svg>
+

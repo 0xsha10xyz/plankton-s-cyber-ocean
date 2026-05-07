@@ -70,6 +70,11 @@ const INTEGRATIONS: Integration[] = [
     role: "Payments and AI powered settlement rails for on chain execution.",
     logoUrl: "/logos/payai.png",
   },
+  {
+    name: "Polymarket",
+    role: "Real-time prediction market data (Gamma + CLOB) for market intelligence.",
+    logoUrl: "/logos/polymarket.svg",
+  },
 ];
 
 export function IntegrationsSection() {
