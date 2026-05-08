@@ -318,9 +318,6 @@ export default function Dashboard(): JSX.Element {
                 <div className="flex items-center justify-between px-4 py-3.5 border-b border-border/35">
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-foreground">Intelligence table</p>
-                    <p className="text-xs text-muted-foreground">
-                      Polymarket markets + scored wallets.
-                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
