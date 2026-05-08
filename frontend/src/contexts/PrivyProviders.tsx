@@ -29,7 +29,8 @@ export function PrivyProviders({ children }: { children: ReactNode }): JSX.Eleme
           overflow: ["email", "passkey"],
         },
         embeddedWallets: {
-          ethereum: { createOnLogin: "users-without-wallets" },
+          /** Skip EVM wallet on login — Solana-first app; provisioning both chains doubles Privy “Creating your wallet” time. Users can add an ETH wallet later from Privy if needed. */
+          ethereum: { createOnLogin: "off" },
           solana: { createOnLogin: "users-without-wallets" },
         },
         externalWallets: {
