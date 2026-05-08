@@ -36,10 +36,12 @@ export function PrivySocialLoginButtons({ layout, className }: Props): JSX.Eleme
     onError: (err) => {
       setPending(null);
       const msg = err instanceof Error ? err.message : String(err);
+      const exited = /exited_auth_flow/i.test(msg);
       toast.error(msg || "Sign-in failed", {
-        description:
-          "Privy Dashboard → App settings → Advanced: Allowed OAuth redirect URLs must exactly match your URL (https, trailing slash). Domains tab must list this origin.",
-        duration: 10_000,
+        description: exited
+          ? "OAuth did not finish: cancel/close, blocked redirect, or return URL not allowed. Add https://your-domain/ (and without trailing slash) under Advanced → Allowed OAuth redirect URLs; list the origin under Domains. Try incognito without extensions."
+          : "Privy → App settings → Advanced: Allowed OAuth redirect URLs must exactly match the page URL (https, trailing slash). Domains must list this site’s origin. Use the same Privy app as VITE_PRIVY_APP_ID in Vercel.",
+        duration: exited ? 14_000 : 10_000,
       });
     },
   });
