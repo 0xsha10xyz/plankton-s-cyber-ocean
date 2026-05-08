@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLoginWithOAuth, type OAuthProviderType } from "@privy-io/react-auth";
 import { Button } from "@/components/ui/button";
 import { Github, Linkedin, Loader2, Twitter } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const SOCIAL: {
@@ -26,8 +27,22 @@ type Props = {
  * Headless OAuth entry points for Privy (must match providers enabled in the Privy dashboard).
  */
 export function PrivySocialLoginButtons({ layout, className }: Props): JSX.Element {
-  const { initOAuth, loading } = useLoginWithOAuth();
   const [pending, setPending] = useState<OAuthProviderType | null>(null);
+  const { initOAuth, loading } = useLoginWithOAuth({
+    onComplete: () => {
+      setPending(null);
+      toast.success("Signed in");
+    },
+    onError: (err) => {
+      setPending(null);
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(msg || "Sign-in failed", {
+        description:
+          "Privy Dashboard → App settings → Advanced: Allowed OAuth redirect URLs must exactly match your URL (https, trailing slash). Domains tab must list this origin.",
+        duration: 10_000,
+      });
+    },
+  });
 
   const handle = (provider: OAuthProviderType) => {
     setPending(provider);
