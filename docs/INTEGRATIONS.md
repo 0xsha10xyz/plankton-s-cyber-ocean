@@ -60,6 +60,7 @@ Full setup, env separation, verify endpoint, and security checklist: **[Privy in
 | **Jupiter** | Swap quotes and swap transactions | `JUPITER_API_KEY` on Vercel/server; routes under `api/jupiter/` and `backend` |
 | **Birdeye** | OHLCV, token overview, screener-style data | `BIRDEYE_API_KEY` |
 | **Polymarket (Gamma + CLOB)** | Real-time market discovery + optional best bid/ask enrichment (read-only) | No key required (optional `POLY_API_KEY`). See **[Polymarket market data](./polymarket-market-data.md)** |
+| **Nansen** | On-chain intelligence; powers Dashboard "Tokens" tab via `GET /api/nansen/token-screener` (read-only) | `NANSEN_API_KEY` server-side only (Vercel env or VPS `backend/.env`). See **[Nansen integration](./nansen-integration.md)** |
 
 Without Birdeye, charts may use fallback/sample data depending on route.
 
