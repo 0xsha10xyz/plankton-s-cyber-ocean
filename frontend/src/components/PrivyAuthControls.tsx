@@ -1,6 +1,7 @@
 import { usePrivy, getAccessToken } from "@privy-io/react-auth";
 import { Button } from "@/components/ui/button";
 import { Loader2, LogOut } from "lucide-react";
+import { PrivySocialLoginButtons } from "@/components/PrivySocialLoginButtons";
 
 const privyLogo = (
   <img
@@ -59,17 +60,20 @@ function PrivyAuthControlsInner(): JSX.Element {
   }
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      className="h-8 gap-1.5 text-xs border-intel/40 text-intel hover:bg-intel/10"
-      onClick={() => void login()}
-      aria-label="Sign in with Privy"
-    >
-      {privyLogo}
-      <span className="font-medium">Sign in</span>
-    </Button>
+    <div className="flex flex-wrap items-center gap-1.5 justify-end max-w-[min(100%,280px)] sm:max-w-none">
+      <PrivySocialLoginButtons layout="compact" />
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-8 gap-1.5 text-xs border-intel/40 text-intel hover:bg-intel/10"
+        onClick={() => void login()}
+        aria-label="More sign-in options (email, wallet, passkey)"
+      >
+        {privyLogo}
+        <span className="font-medium">More</span>
+      </Button>
+    </div>
   );
 }
 

@@ -24,6 +24,11 @@ export function PrivyProviders({ children }: { children: ReactNode }): JSX.Eleme
           theme: "dark",
           walletChainType: "ethereum-and-solana",
         },
+        loginMethods: ["twitter", "github", "linkedin", "wallet", "email", "passkey"],
+        loginMethodsAndOrder: {
+          primary: ["twitter", "github", "linkedin", "wallet"],
+          overflow: ["email", "passkey"],
+        },
         embeddedWallets: {
           ethereum: { createOnLogin: "users-without-wallets" },
           solana: { createOnLogin: "users-without-wallets" },

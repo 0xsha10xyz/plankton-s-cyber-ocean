@@ -1,6 +1,7 @@
 import { usePrivy } from "@privy-io/react-auth";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { PrivySocialLoginButtons } from "@/components/PrivySocialLoginButtons";
 
 type Props = {
   onDismiss: () => void;
@@ -41,6 +42,15 @@ function WalletModalPrivyInner({ onDismiss }: Props): JSX.Element {
           <span className="glass-card px-3 py-0.5 text-muted-foreground">Or</span>
         </div>
       </div>
+      <PrivySocialLoginButtons layout="stack" />
+      <div className="relative my-4">
+        <div className="absolute inset-0 flex items-center" aria-hidden>
+          <span className="w-full border-t border-border/55" />
+        </div>
+        <div className="relative flex justify-center text-[11px] font-medium uppercase tracking-wider">
+          <span className="glass-card px-3 py-0.5 text-muted-foreground">Or</span>
+        </div>
+      </div>
       <Button
         type="button"
         variant="outline"
@@ -56,10 +66,10 @@ function WalletModalPrivyInner({ onDismiss }: Props): JSX.Element {
           draggable={false}
           aria-hidden
         />
-        Sign in with Privy
+        Email, wallet & more
       </Button>
       <p className="text-[11px] text-muted-foreground text-center mt-2.5 leading-snug">
-        Email, social, passkey, or embedded wallet — powered by Privy
+        X, GitHub, and LinkedIn use direct OAuth; other options open the Privy modal.
       </p>
     </>
   );
