@@ -256,6 +256,13 @@ export default function DocsHome() {
               <li className="flex gap-3">
                 <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                 <span>
+                  <strong className="text-foreground/95">Nansen</strong>: on-chain intelligence proxy for the Dashboard tokens
+                  tab; API key stays server side. <DocLink file="docs/nansen-integration.md" />
+                </span>
+              </li>
+              <li className="flex gap-3">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                <span>
                   <strong className="text-foreground/95">LLM providers</strong>: Claude, Groq, OpenAI setup with security first
                   deployment. <DocLink file="docs/llm-providers.md" />
                 </span>

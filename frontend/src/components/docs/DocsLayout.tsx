@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
+  Activity,
   Book,
   Coins,
   Cpu,
@@ -29,6 +30,7 @@ const sidebarSections = [
   { id: "autonomous", label: "Autonomous Agent", icon: Rocket },
   { id: "security", label: "Security", icon: Shield },
   { id: "polymarket-market-data", label: "Polymarket market data", icon: Signal, path: "/docs/polymarket-market-data" as const },
+  { id: "nansen-integration", label: "Nansen integration", icon: Activity, path: "/docs/nansen-integration" as const },
   { id: "privy-integration", label: "Privy integration", icon: KeyRound, path: "/docs/privy-integration" as const },
   { id: "llm-providers", label: "LLM providers", icon: Cpu, path: "/docs/llm-providers" as const },
   { id: "corbits-integration", label: "Corbits integration", icon: Zap, path: "/docs/corbits-integration" as const },
