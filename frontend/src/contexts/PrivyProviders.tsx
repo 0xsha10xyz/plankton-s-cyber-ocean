@@ -15,22 +15,15 @@ export function PrivyProviders({ children }: { children: ReactNode }): JSX.Eleme
     return <>{children}</>;
   }
 
-  const oauthRedirect =
-    typeof window !== "undefined"
-      ? `${window.location.origin}${window.location.pathname === "" ? "/" : window.location.pathname}`
-      : undefined;
-
   return (
     <PrivyProvider
       appId={appId.trim()}
       {...(clientId?.trim() ? { clientId: clientId.trim() } : {})}
       config={{
-        ...(oauthRedirect ? { customOAuthRedirectUrl: oauthRedirect } : {}),
         appearance: {
           theme: "dark",
           walletChainType: "ethereum-and-solana",
         },
-        loginMethods: ["twitter", "github", "linkedin", "wallet", "email", "passkey"],
         loginMethodsAndOrder: {
           primary: ["twitter", "github", "linkedin", "wallet"],
           overflow: ["email", "passkey"],

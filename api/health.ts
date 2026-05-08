@@ -5,7 +5,6 @@
  * Rewrite: /api/privy/verify → /api/health?mode=privy-verify (see vercel.json).
  */
 import type { IncomingMessage, ServerResponse } from "http";
-import { PrivyClient } from "@privy-io/node";
 
 export const config = {
   runtime: "nodejs",
@@ -60,6 +59,7 @@ async function handlePrivyVerify(req: IncomingMessage, res: ServerResponse): Pro
   }
 
   try {
+    const { PrivyClient } = await import("@privy-io/node");
     const privy = new PrivyClient({
       appId,
       appSecret,
