@@ -154,11 +154,17 @@ export default function Dashboard(): JSX.Element {
                   onClick={() => {
                     marketsQ.refetch();
                     walletsQ.refetch();
+                    nansenTokensQ.refetch();
                   }}
                   className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground border border-border/50 bg-background/20 hover:bg-secondary/30 transition-colors"
                   title="Refresh"
                 >
-                  <RefreshCw size={14} className={marketsQ.isFetching || walletsQ.isFetching ? "animate-spin" : ""} />
+                  <RefreshCw
+                    size={14}
+                    className={
+                      marketsQ.isFetching || walletsQ.isFetching || nansenTokensQ.isFetching ? "animate-spin" : ""
+                    }
+                  />
                   Refresh
                 </button>
               </span>
@@ -322,11 +328,17 @@ export default function Dashboard(): JSX.Element {
                       onClick={() => {
                         marketsQ.refetch();
                         walletsQ.refetch();
+                        nansenTokensQ.refetch();
                       }}
                       className="inline-flex items-center justify-center rounded-xl border border-border/55 bg-black/20 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors"
-                      title="Refresh"
+                      title="Refresh markets, tokens (Nansen), and wallets"
                     >
-                      <RefreshCw size={14} className={marketsQ.isFetching || walletsQ.isFetching ? "animate-spin" : ""} />
+                      <RefreshCw
+                        size={14}
+                        className={
+                          marketsQ.isFetching || walletsQ.isFetching || nansenTokensQ.isFetching ? "animate-spin" : ""
+                        }
+                      />
                     </button>
                     <Badge
                       variant="secondary"
