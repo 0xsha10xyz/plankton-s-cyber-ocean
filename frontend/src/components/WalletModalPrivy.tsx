@@ -71,6 +71,16 @@ function WalletModalPrivyInner({ onDismiss }: Props): JSX.Element {
       <p className="text-[11px] text-muted-foreground text-center mt-2.5 leading-snug">
         Social buttons open Privy’s login flow for that provider. Use “Email, wallet & more” for other methods.
       </p>
+      <p className="text-[10px] text-center text-muted-foreground/85 mt-3 pt-2 border-t border-border/40">
+        <a
+          href="https://privy.io"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-1 hover:text-muted-foreground transition-colors"
+        >
+          Powered by <span className="font-medium">Privy</span>
+        </a>
+      </p>
     </>
   );
 }

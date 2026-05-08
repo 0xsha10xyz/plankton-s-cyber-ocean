@@ -47,9 +47,9 @@ Frontend optional: **`VITE_SOLANA_RPC_URL`**, **`VITE_SOLANA_WS_URL`** (WebSocke
 
 ## Privy (authentication & embedded wallets)
 
-**Privy** handles optional **sign-in**, **embedded Solana/EVM wallets**, and bridges those wallets into the same flows as Phantom/Solflare via `useUnifiedSolanaWallet`. Client IDs use **`VITE_PRIVY_*`**; server verification uses **`PRIVY_APP_ID`**, **`PRIVY_APP_SECRET`**, and optionally **`PRIVY_JWT_VERIFICATION_KEY`**—only on the host (e.g. Vercel), never in client bundles.
+**Privy** handles optional **sign-in**, **embedded Solana/EVM wallets**, and bridges those wallets into the same flows as Phantom/Solflare via `useUnifiedSolanaWallet`. **X (Twitter)** login is implemented **through Privy** (not a standalone OAuth integration); UI attribution uses **“Powered by Privy.”** Client IDs use **`VITE_PRIVY_*`**; server verification uses **`PRIVY_APP_ID`**, **`PRIVY_APP_SECRET`**, and optionally **`PRIVY_JWT_VERIFICATION_KEY`**—only on the host (e.g. Vercel), never in client bundles. **X OAuth secrets** belong in the **Privy Dashboard** and X Developer Portal—never in committed env files.
 
-Full setup, env separation, verify endpoint, and security checklist: **[Privy integration](./privy-integration.md)**.
+Full setup (including X), env separation, verify endpoint, credential-file practices, and security checklist: **[Privy integration](./privy-integration.md)**.
 
 ---
 

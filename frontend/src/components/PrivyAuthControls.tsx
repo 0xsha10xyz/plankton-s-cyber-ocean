@@ -135,6 +135,17 @@ function PrivyAuthControlsInner({ onConnectWallet }: InnerProps): JSX.Element {
             </DropdownMenuItem>
           </>
         ) : null}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className="py-2 focus:bg-muted/40">
+          <a
+            href="https://privy.io"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex cursor-pointer items-center justify-center gap-1 text-[10px] font-normal text-muted-foreground no-underline hover:text-muted-foreground"
+          >
+            Powered by <span className="font-medium text-muted-foreground/95">Privy</span>
+          </a>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
