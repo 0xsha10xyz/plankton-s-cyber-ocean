@@ -8,6 +8,7 @@ import { AccountSidebar } from "./AccountSidebar";
 import { useWalletModal } from "@/contexts/WalletModalContext";
 import { PrivyAuthControls } from "@/components/PrivyAuthControls";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { usePrivy } from "@privy-io/react-auth";
 
 const DEMO_VIDEO_SRC = "/plankton-demo.mp4";
 
@@ -41,6 +42,28 @@ const scrollToSection = (sectionId: string) => {
   el?.scrollIntoView({ behavior: "auto", block: "start" });
 };
 
+/**
+ * When Privy is enabled, “Connect Wallet” lives inside the Login menu until the user signs in with Privy;
+ * after Privy auth, surface the neon Connect CTA again if Solana is still disconnected.
+ * Must only render when `VITE_PRIVY_APP_ID` is set (PrivyProvider active).
+ */
+function PrivyPostLoginConnectWallet({ openWalletModal }: { openWalletModal: () => void }) {
+  const { authenticated, ready } = usePrivy();
+  if (!ready || !authenticated) return null;
+  return (
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={openWalletModal}
+      className="neon-button flex items-center gap-2 text-[13px] text-primary"
+      type="button"
+    >
+      <Wallet size={16} />
+      <span className="hidden sm:inline">Connect Wallet</span>
+    </motion.button>
+  );
+}
+
 function truncateAddress(address: string, chars = 4): string {
   return `${address.slice(0, chars)}...${address.slice(-chars)}`;
 }
@@ -56,6 +79,7 @@ const Header = () => {
   const isLanding = pathname === "/";
   const isDashboard = pathname === "/dashboard";
   const isSwap = pathname === "/swap";
+  const hasPrivyAppId = Boolean(import.meta.env.VITE_PRIVY_APP_ID?.trim());
 
   const navItems = useMemo(() => {
     // On landing we avoid duplicating primary actions (Dashboard/Swap/Docs/etc)
@@ -282,7 +306,7 @@ const Header = () => {
           </nav>
 
           <div className="flex items-center gap-3">
-            <PrivyAuthControls />
+            <PrivyAuthControls onConnectWallet={openWalletModal} />
             <div className="relative">
               {connected && truncated ? (
                 <>
@@ -334,16 +358,19 @@ const Header = () => {
                     )}
                   </AnimatePresence>
                 </>
-              ) : (
+              ) : !hasPrivyAppId ? (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={openWalletModal}
                   className="neon-button flex items-center gap-2 text-[13px] text-primary"
+                  type="button"
                 >
                   <Wallet size={16} />
                   <span className="hidden sm:inline">Connect Wallet</span>
                 </motion.button>
+              ) : (
+                <PrivyPostLoginConnectWallet openWalletModal={openWalletModal} />
               )}
             </div>
 

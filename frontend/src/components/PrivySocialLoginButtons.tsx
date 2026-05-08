@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Github, Linkedin, Loader2, Twitter } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const SOCIAL: {
+/** Shared with header login menu — keep provider list in one place. */
+export const PRIVY_SOCIAL_LOGIN_OPTIONS: {
   provider: OAuthProviderType;
   label: string;
   shortLabel: string;
@@ -39,7 +40,7 @@ export function PrivySocialLoginButtons({ layout, className }: Props): JSX.Eleme
   if (layout === "compact") {
     return (
       <div className={cn("flex items-center gap-1", className)} role="group" aria-label="Sign in with social account">
-        {SOCIAL.map(({ provider, shortLabel, Icon }) => (
+        {PRIVY_SOCIAL_LOGIN_OPTIONS.map(({ provider, shortLabel, Icon }) => (
           <Button
             key={provider}
             type="button"
@@ -64,7 +65,7 @@ export function PrivySocialLoginButtons({ layout, className }: Props): JSX.Eleme
 
   return (
     <div className={cn("flex flex-col gap-2", className)} role="group" aria-label="Sign in with social account">
-      {SOCIAL.map(({ provider, label, Icon }) => (
+      {PRIVY_SOCIAL_LOGIN_OPTIONS.map(({ provider, label, Icon }) => (
         <Button
           key={provider}
           type="button"
