@@ -1,8 +1,6 @@
-import { useState } from "react";
-import { useLoginWithOAuth, type OAuthProviderType } from "@privy-io/react-auth";
+import { usePrivy, type OAuthProviderType } from "@privy-io/react-auth";
 import { Button } from "@/components/ui/button";
 import { Github, Linkedin, Loader2, Twitter } from "lucide-react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const SOCIAL: {
@@ -24,34 +22,19 @@ type Props = {
 };
 
 /**
- * Headless OAuth entry points for Privy (must match providers enabled in the Privy dashboard).
+ * OAuth via Privy’s **login modal** (not headless `initOAuth`).
+ * Privy documents that embedded-wallet `createOnLogin` and the supported login path apply to
+ * modal login — not to `useLoginWithOAuth`, which was causing `exited_auth_flow` / 401 for many setups.
+ *
+ * Requires Twitter/GitHub/LinkedIn enabled in the Privy dashboard for this app.
  */
 export function PrivySocialLoginButtons({ layout, className }: Props): JSX.Element {
-  const [pending, setPending] = useState<OAuthProviderType | null>(null);
-  const { initOAuth, loading } = useLoginWithOAuth({
-    onComplete: () => {
-      setPending(null);
-      toast.success("Signed in");
-    },
-    onError: (err) => {
-      setPending(null);
-      const msg = err instanceof Error ? err.message : String(err);
-      const exited = /exited_auth_flow/i.test(msg);
-      toast.error(msg || "Sign-in failed", {
-        description: exited
-          ? "OAuth did not finish: cancel/close, blocked redirect, or return URL not allowed. Add https://your-domain/ (and without trailing slash) under Advanced → Allowed OAuth redirect URLs; list the origin under Domains. Try incognito without extensions."
-          : "Privy → App settings → Advanced: Allowed OAuth redirect URLs must exactly match the page URL (https, trailing slash). Domains must list this site’s origin. Use the same Privy app as VITE_PRIVY_APP_ID in Vercel.",
-        duration: exited ? 14_000 : 10_000,
-      });
-    },
-  });
+  const { login, ready } = usePrivy();
 
-  const handle = (provider: OAuthProviderType) => {
-    setPending(provider);
-    void initOAuth({ provider }).catch(() => setPending(null));
+  const openProvider = (provider: OAuthProviderType) => {
+    if (!ready) return;
+    login({ loginMethods: [provider] });
   };
-
-  const busy = loading || pending !== null;
 
   if (layout === "compact") {
     return (
@@ -63,12 +46,12 @@ export function PrivySocialLoginButtons({ layout, className }: Props): JSX.Eleme
             variant="outline"
             size="icon"
             className="h-8 w-8 shrink-0 border-border/60"
-            disabled={busy}
-            onClick={() => handle(provider)}
+            disabled={!ready}
+            onClick={() => openProvider(provider)}
             aria-label={`Sign in with ${shortLabel}`}
             title={`Sign in with ${shortLabel}`}
           >
-            {pending === provider ? (
+            {!ready ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
             ) : (
               <Icon className="h-3.5 w-3.5" aria-hidden />
@@ -87,10 +70,10 @@ export function PrivySocialLoginButtons({ layout, className }: Props): JSX.Eleme
           type="button"
           variant="outline"
           className="w-full gap-2 min-h-11 border-border/55 justify-start font-medium"
-          disabled={busy}
-          onClick={() => handle(provider)}
+          disabled={!ready}
+          onClick={() => openProvider(provider)}
         >
-          {pending === provider ? (
+          {!ready ? (
             <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden />
           ) : (
             <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />

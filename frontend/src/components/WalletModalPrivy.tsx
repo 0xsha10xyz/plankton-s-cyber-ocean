@@ -69,7 +69,7 @@ function WalletModalPrivyInner({ onDismiss }: Props): JSX.Element {
         Email, wallet & more
       </Button>
       <p className="text-[11px] text-muted-foreground text-center mt-2.5 leading-snug">
-        X, GitHub, and LinkedIn use direct OAuth; other options open the Privy modal.
+        Social buttons open Privy’s login flow for that provider. Use “Email, wallet & more” for other methods.
       </p>
     </>
   );
