@@ -75,6 +75,11 @@ const INTEGRATIONS: Integration[] = [
     role: "Real-time prediction market data (Gamma + CLOB) for market intelligence.",
     logoUrl: "/logos/polymarket.png",
   },
+  {
+    name: "Nansen",
+    role: "On-chain intelligence powering the token screener and smart-money analytics.",
+    logoUrl: "/logos/nansen.png",
+  },
 ];
 
 export function IntegrationsSection() {
