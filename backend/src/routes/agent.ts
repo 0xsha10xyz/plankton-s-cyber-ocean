@@ -496,8 +496,8 @@ agentRouter.post("/chat", async (req, res) => {
       try {
         const snap = await fetchHyreDefiSnapshot(hyreIntent);
         if (snap) hyreSupplement = `\n\n${snap}`;
-      } catch {
-        /* HYRE enrichment is optional */
+      } catch (e) {
+        console.warn("[HYRE] optional enrichment failed:", e instanceof Error ? e.message : e);
       }
     }
   }
