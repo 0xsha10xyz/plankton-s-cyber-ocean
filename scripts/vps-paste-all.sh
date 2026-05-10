@@ -36,8 +36,8 @@ else
   echo "==> [1/4] WARN: no .git here — skip git pull (copy a fresh build or add .git)"
 fi
 
-echo "==> [2/4] npm ci (backend)"
-cd "${REPO_ROOT}/backend"
+echo "==> [2/4] npm ci (monorepo root — lockfile lives here, not in backend/)"
+cd "${REPO_ROOT}"
 if [[ -f package-lock.json ]]; then
   npm ci
 else
@@ -45,6 +45,7 @@ else
 fi
 
 echo "==> [3/4] npm run build (backend)"
+cd "${REPO_ROOT}/backend"
 npm run build
 
 if command -v pm2 >/dev/null 2>&1; then

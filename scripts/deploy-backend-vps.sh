@@ -55,15 +55,16 @@ else
   echo "[1/4] Skipping git pull (RUN_GIT_PULL=0)."
 fi
 
-echo "[2/4] npm ci (backend)..."
-cd "${DEPLOY_REPO_ROOT}/backend"
+echo "[2/4] npm ci (monorepo root)..."
+cd "${DEPLOY_REPO_ROOT}"
 if [[ -f package-lock.json ]]; then
   npm ci
 else
   npm install
 fi
 
-echo "[3/4] npm run build..."
+echo "[3/4] npm run build (backend)..."
+cd "${DEPLOY_REPO_ROOT}/backend"
 npm run build
 
 if [[ -n "${PM2_APP_NAME}" ]]; then
