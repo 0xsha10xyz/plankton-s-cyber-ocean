@@ -55,15 +55,127 @@ function defiLimit(): string {
   return "15";
 }
 
+function normalizeForMatch(s: string): string {
+  return s.normalize("NFC").trim();
+}
+
+/** Single-token match with Unicode word boundaries (works for accented Latin & mixed scripts next to punctuation). */
+function matchesToken(text: string, token: string): boolean {
+  const k = normalizeForMatch(token).toLowerCase();
+  if (!k) return false;
+  const t = normalizeForMatch(text);
+  if (k.includes(" ")) {
+    return t.toLowerCase().includes(k);
+  }
+  const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  try {
+    return new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}($|[^\\p{L}\\p{N}])`, "iu").test(t);
+  } catch {
+    return t.toLowerCase().includes(k);
+  }
+}
+
+function matchesPhrase(text: string, phrase: string): boolean {
+  const p = normalizeForMatch(phrase).toLowerCase();
+  if (!p) return false;
+  return normalizeForMatch(text).toLowerCase().includes(p);
+}
+
+/**
+ * Phrases that imply DeFi market context (substring match; multilingual).
+ * Keep multi-word phrases here so short tokens do not rely on \\b-only English regex.
+ */
+const HYRE_TRIGGER_PHRASES: readonly string[] = [
+  "chain rank",
+  "total value locked",
+  "imbal hasil",
+  "nilai terkunci",
+  "peringkat rantai",
+  "keuangan terdesentralisasi",
+  "thanh khoản",
+  "lợi suất",
+  "finanzas descentralizadas",
+  "finanças descentralizadas",
+  "valeur totale verrouillée",
+  "finanza decentralizzata",
+  "merkeziyetsiz finans",
+  "заблокированная стоимость",
+];
+
+/** Tokens: DeFi / TVL / liquidity / regional synonyms (single-token Unicode boundaries). */
+const HYRE_TRIGGER_TOKENS: readonly string[] = [
+  // English (crypto lingua franca)
+  "defi",
+  "defillama",
+  "tvl",
+  "yield",
+  "yields",
+  "apy",
+  "apr",
+  "liquidity",
+  "farming",
+  "farm",
+  // Indonesian / Malay
+  "likuiditas",
+  // Spanish / Portuguese / Italian
+  "rendimiento",
+  "liquidez",
+  "rendimento",
+  "liquidità",
+  // French
+  "rendement",
+  "liquidité",
+  // German
+  "rendite",
+  "liquidität",
+  // Dutch
+  "liquiditeit",
+  // Turkish
+  "getiri",
+  "likidite",
+];
+
+/** Prefer /defi/yields when these appear (yield / APY / farming focus). */
+const HYRE_YIELDS_PHRASES: readonly string[] = ["imbal hasil", "taxa de juros", "tasa de interés"];
+
+const HYRE_YIELDS_TOKENS: readonly string[] = [
+  "yield",
+  "yields",
+  "apy",
+  "apr",
+  "farming",
+  "farm",
+  "rendimiento",
+  "rendimento",
+  "rendement",
+  "rendite",
+  "getiri",
+  "lợi suất",
+  "colheita",
+  "cosecha",
+];
+
+function hyreTriggerMatched(text: string): boolean {
+  if (HYRE_TRIGGER_PHRASES.some((p) => matchesPhrase(text, p))) return true;
+  if (HYRE_TRIGGER_TOKENS.some((w) => matchesToken(text, w))) return true;
+  return false;
+}
+
+function hyreYieldsPreferred(text: string): boolean {
+  if (HYRE_YIELDS_PHRASES.some((p) => matchesPhrase(text, p))) return true;
+  if (HYRE_YIELDS_TOKENS.some((w) => matchesToken(text, w))) return true;
+  return false;
+}
+
 /**
  * Choose HYRE DeFi endpoint from user message (TVL rankings vs yield opportunities).
+ * Triggers are multilingual (Latin scripts + common regional crypto terms).
  */
 export function decideHyreDefiIntent(message: string): "tvl" | "yields" | null {
-  if (!/\b(defi|defillama|tvl|yield|yields|apy|apr|liquidity|farming|farm|chain rank)\b/i.test(message)) {
-    return null;
-  }
-  const m = message.toLowerCase();
-  if (/\b(yield|yields|apy|apr|farming|farm)\b/.test(m)) return "yields";
+  const text = normalizeForMatch(message);
+  if (!text) return null;
+  if (!hyreTriggerMatched(text)) return null;
+  if (hyreYieldsPreferred(text)) return "yields";
   return "tvl";
 }
 
