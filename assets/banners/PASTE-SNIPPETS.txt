@@ -21,6 +21,9 @@ Regenerate setelah edit logo:
 Plankton | x402scan — banner posting (X / Discord)
 ===================================================
 
+UKURAN FILE PNG:
+  2400 × 640 px (format memanjang / panoramic untuk posting & header X)
+
 FILE GAMBAR:
   assets/banners/plankton-x402scan-banner.png
   frontend/public/banners/plankton-x402scan-banner.png  (same file for prod URL)

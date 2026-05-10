@@ -9,7 +9,7 @@ export function PlanktonX402scanBanner({ className }: Props): JSX.Element {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#020203] shadow-[0_0_80px_-30px_rgba(255,255,255,0.08)]",
+        "relative aspect-[15/4] max-h-[min(420px,42vw)] w-full max-w-[2400px] overflow-hidden rounded-2xl border border-white/[0.08] bg-[#020203] shadow-[0_0_80px_-30px_rgba(255,255,255,0.08)]",
         className,
       )}
       role="img"
