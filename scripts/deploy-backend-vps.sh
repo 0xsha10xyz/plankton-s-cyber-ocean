@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # -----------------------------------------------------------------------------
-# Rebuild and restart the Express API on your VPS (English-only script).
+# Rebuild and restart the Express API on your VPS.
 #
 # Before running:
 #   1. Set DEPLOY_REPO_ROOT to the folder where this repo is cloned on the server.

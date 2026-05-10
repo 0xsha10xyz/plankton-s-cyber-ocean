@@ -80,7 +80,7 @@ See **[SECURITY.md](SECURITY.md)** for details and what must never be pushed to 
 - **Integrations:** **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)**: Claude, Groq, OpenAI, Jupiter, Birdeye, Solana RPC, Redis/KV, x402, Vercel vs VPS.
 - **Deployment:** **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**: Root Directory `.`, Hobby serverless limits, hybrid setups.
 - **API gateway (optional):** **[docs/API_GATEWAY.md](docs/API_GATEWAY.md)**: hashed API keys and `/api/v1` on the Express backend for external integrations.
-- **Language:** UI and maintainer docs are **English**. The Plankton Agent replies in the **same language as the user’s latest message** when possible. See **[docs/language-and-localization.md](docs/language-and-localization.md)**.
+- **Language:** The Plankton Agent replies in the **same language as the user’s latest message** when possible. UI and maintainer docs follow the repo default. See **[docs/language-and-localization.md](docs/language-and-localization.md)**.
 
 ## Demo video
 

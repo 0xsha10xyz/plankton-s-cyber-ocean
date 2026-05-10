@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Plankton — VPS one-shot: pull, build Express backend, restart PM2, smoke tests
-# Full English. Edit REPO_ROOT / PM2_NAME if your paths differ, then run:
+# Edit REPO_ROOT / PM2_NAME if your paths differ, then run:
 #   chmod +x scripts/vps-paste-all.sh
 #   bash scripts/vps-paste-all.sh
 # Or from repo root:  bash ./scripts/vps-paste-all.sh
