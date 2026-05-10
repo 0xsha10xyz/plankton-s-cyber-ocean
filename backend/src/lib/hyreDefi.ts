@@ -115,6 +115,11 @@ export async function fetchHyreDefiSnapshot(kind: "tvl" | "yields"): Promise<str
       parsed = text;
     }
     const formatted = formatHyreEnvelope(parsed);
+    if (formatted) {
+      console.info("[HYRE] DeFi", kind, "upstream OK — snapshot merged into chat context");
+    } else {
+      console.warn("[HYRE] DeFi", kind, "empty envelope after parse");
+    }
     return formatted ? `[HYRE ${kind.toUpperCase()}]\n${formatted}` : null;
   } catch (e) {
     console.warn("[HYRE] DeFi fetch failed:", e instanceof Error ? e.message : e);
