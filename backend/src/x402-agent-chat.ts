@@ -63,7 +63,9 @@ export function getAgentChatX402Handler(): X402PaymentHandler | null {
 
 /**
  * Canonical URL for this resource (must match the URL the browser passes to `createX402Client.fetch`).
- * Set `X402_RESOURCE_BASE_URL=https://api.example.com` behind reverse proxies if Host/proto are wrong.
+ * Always `/api/agent/chat` — do not derive from `req.path` (wrong for `/.well-known/x402`, `/openapi.json`, etc.).
+ * Set `X402_RESOURCE_BASE_URL=https://api.example.com` if Host/proto behind nginx don't match the public API origin
+ * (must match the hostname you register on x402scan, e.g. api subdomain vs apex).
  */
 export function agentChatResourceUrl(req: Request): string {
   const base = process.env.X402_RESOURCE_BASE_URL?.trim();
@@ -74,8 +76,7 @@ export function agentChatResourceUrl(req: Request): string {
   const proto = xfProto || req.protocol;
   const xfHost = (req.headers["x-forwarded-host"] as string | undefined)?.split(",")[0]?.trim();
   const host = xfHost || req.get("host") || "localhost";
-  const path = `${req.baseUrl}${req.path}`;
-  return `${proto}://${host}${path}`;
+  return `${proto}://${host}/api/agent/chat`;
 }
 
 export function getAgentChatX402PublicConfig(): {

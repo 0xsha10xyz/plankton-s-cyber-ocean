@@ -29,6 +29,17 @@ function base64ToBytes(b64: string): Uint8Array {
 /**
  * Verify a signed usage request. Returns `false` on any parse/verify error.
  */
+/** True if `s` decodes to a valid Solana `PublicKey` (rejects OpenAPI placeholder values like `"string"`). */
+export function walletLooksLikeSolanaAddress(s: string): boolean {
+  if (!s?.trim()) return false;
+  try {
+    new PublicKey(s.trim());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function verifyUsageSignature(opts: {
   wallet: string;
   ts: number;

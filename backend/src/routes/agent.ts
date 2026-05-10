@@ -1,8 +1,13 @@
 import { Router } from "express";
 import { resolveX402UsdcMint } from "../lib/x402UsdcMint.js";
 import { agentChatResourceUrl, isAgentChatX402Enabled } from "../x402-agent-chat.js";
-import { consumeUsageOrBlock, requireBlockPaymentAndCredit, sendJsonWithPaymentRequiredHeader } from "../usage/x402-blocks.js";
-import { verifyUsageSignature } from "../usage/verify-wallet.js";
+import {
+  consumeUsageOrBlock,
+  issueX402AgentChatRegistrationChallenge,
+  requireBlockPaymentAndCredit,
+  sendJsonWithPaymentRequiredHeader,
+} from "../usage/x402-blocks.js";
+import { verifyUsageSignature, walletLooksLikeSolanaAddress } from "../usage/verify-wallet.js";
 import { fetchSyraaSignal, type SyraaSignalRequest } from "../lib/syraaSignal.js";
 
 export const agentRouter = Router();
@@ -408,6 +413,27 @@ agentRouter.post("/chat", async (req, res) => {
   }
 
   const message = typeof body.message === "string" ? body.message.trim() : "";
+  const wallet = typeof body.wallet === "string" ? body.wallet.trim() : "";
+  const usageTs =
+    typeof (body as any).usageTs === "number" ? (body as any).usageTs : Number((body as any).usageTs);
+  const usageSig =
+    typeof (body as any).usageSignature === "string" ? (body as any).usageSignature.trim() : "";
+
+  // x402scan probes POST with an empty body and with OpenAPI `example` JSON; both must receive HTTP 402 +
+  // parseable x402 challenge when paid chat is enabled (not 400/401 only).
+  const needsX402RegistrationChallenge =
+    isAgentChatX402Enabled() &&
+    (!message ||
+      !wallet ||
+      !Number.isFinite(usageTs) ||
+      usageTs <= 0 ||
+      !usageSig ||
+      !walletLooksLikeSolanaAddress(wallet));
+  if (needsX402RegistrationChallenge) {
+    const issued = await issueX402AgentChatRegistrationChallenge(req, res);
+    if (issued) return;
+  }
+
   if (!message || message.length > 8000) {
     res.status(400).json({ error: "Invalid message" });
     return;
@@ -415,9 +441,6 @@ agentRouter.post("/chat", async (req, res) => {
 
   // Block-based x402 gating: 5 free, then 0.1 USDC to unlock next 5.
   // Require a signed message to prevent spoofing another wallet's quota.
-  const wallet = typeof body.wallet === "string" ? body.wallet.trim() : "";
-  const usageTs = typeof (body as any).usageTs === "number" ? (body as any).usageTs : Number((body as any).usageTs);
-  const usageSig = typeof (body as any).usageSignature === "string" ? (body as any).usageSignature.trim() : "";
   if (!wallet || !Number.isFinite(usageTs) || !usageSig) {
     res.status(401).json({ error: "Wallet signature required", code: "WALLET_SIGNATURE_REQUIRED" });
     return;

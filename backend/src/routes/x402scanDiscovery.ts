@@ -72,6 +72,13 @@ function buildOpenApiAgentChat(req: Request): Record<string, unknown> {
               },
             },
           },
+          /** Invalid Solana address → registration probes get HTTP 402 (x402scan) instead of 401. */
+          example: {
+            message: "x402scan registration probe",
+            wallet: "not-a-valid-solana-address",
+            usageTs: 1,
+            usageSignature: "AA==",
+          },
         },
       },
     },

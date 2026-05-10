@@ -46,6 +46,42 @@ export function sendJsonWithPaymentRequiredHeader(res: Response, status: number,
   res.status(status).json(body);
 }
 
+/**
+ * Return 402 + x402 challenge for POST /api/agent/chat when the request is not yet usage-authenticated.
+ * x402scan registration probes with an empty body and an OpenAPI-derived sample; both must see a valid 402
+ * (see Merit-Systems/x402scan DISCOVERY.md: runtime 402 is authoritative).
+ */
+export async function issueX402AgentChatRegistrationChallenge(req: Request, res: Response): Promise<boolean> {
+  try {
+    const x402 = getX402();
+    if (!x402) return false;
+    const paymentHeader = x402.extractPayment(
+      normalizeX402HeaderCasing(req.headers as Record<string, string | string[] | undefined>)
+    );
+    if (paymentHeader) return false;
+
+    const network = parseNetwork();
+    const asset = usdcAssetForNetwork(network);
+    const amount = blockPriceAtomic();
+    const rUrl = resourceUrl(req);
+    const paymentRequirements = await x402.createPaymentRequirements(
+      {
+        amount,
+        asset,
+        description: "Unlock 5 chat messages",
+        mimeType: "application/json",
+      },
+      rUrl
+    );
+    const { status, body } = x402.create402Response(paymentRequirements, rUrl);
+    sendJsonWithPaymentRequiredHeader(res, status, body);
+    return true;
+  } catch (e) {
+    console.error("[x402] registration challenge failed:", e);
+    return false;
+  }
+}
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -112,6 +148,8 @@ function setCachedPaymentRequirements(key: string, pr: PaymentRequirements): voi
 let x402Singleton: X402PaymentHandler | null = null;
 
 function getX402(): X402PaymentHandler | null {
+  const off = process.env.DISABLE_AGENT_CHAT_X402?.trim().toLowerCase();
+  if (off === "1" || off === "true" || off === "yes") return null;
   const treasuryAddress = process.env.X402_TREASURY_ADDRESS?.trim();
   if (!treasuryAddress) return null;
   if (!x402Singleton) {
