@@ -9,6 +9,11 @@ import {
 } from "../usage/x402-blocks.js";
 import { verifyUsageSignature, walletLooksLikeSolanaAddress } from "../usage/verify-wallet.js";
 import { fetchSyraaSignal, type SyraaSignalRequest } from "../lib/syraaSignal.js";
+import {
+  decideHyreDefiIntent,
+  fetchHyreDefiSnapshot,
+  isHyreDefiChatEnabled,
+} from "../lib/hyreDefi.js";
 
 export const agentRouter = Router();
 
@@ -484,13 +489,26 @@ agentRouter.post("/chat", async (req, res) => {
         }))
     : [];
 
+  let hyreSupplement = "";
+  if (isHyreDefiChatEnabled()) {
+    const hyreIntent = decideHyreDefiIntent(message);
+    if (hyreIntent) {
+      try {
+        const snap = await fetchHyreDefiSnapshot(hyreIntent);
+        if (snap) hyreSupplement = `\n\n${snap}`;
+      } catch {
+        /* HYRE enrichment is optional */
+      }
+    }
+  }
+
   const ctxParts: string[] = [];
   if (body.context?.tokenMint) ctxParts.push(`Context tokenMint: ${body.context.tokenMint}`);
   if (body.context?.wallet) ctxParts.push(`Context wallet: ${body.context.wallet}`);
   if (body.context?.timeframe) ctxParts.push(`Context timeframe: ${body.context.timeframe}`);
   if (body.wallet) ctxParts.push(`Connected wallet: ${body.wallet}`);
   const contextBlock = ctxParts.length ? `\n\n${ctxParts.join("\n")}` : "";
-  const userBlock = clampChatLength(message + contextBlock + LANGUAGE_LOCK_FOOTER, 9500);
+  const userBlock = clampChatLength(message + hyreSupplement + contextBlock + LANGUAGE_LOCK_FOOTER, 9500);
 
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), 55_000);
