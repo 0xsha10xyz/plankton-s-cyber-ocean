@@ -11,6 +11,11 @@ const INTEGRATIONS: Integration[] = [
     logoUrl: "/logos/corbits.svg",
   },
   {
+    name: "x402scan",
+    role: "Public discovery and listing for x402 resources across the ecosystem.",
+    logoUrl: "/brand/x402scan-logo.png",
+  },
+  {
     name: "Solana",
     role: "Base layer for all protocol activity, swaps, and agent execution.",
     logoUrl: "/logos/solana.png",
