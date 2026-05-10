@@ -1,0 +1,36 @@
+Plankton | X banner — siap tempel
+=================================
+
+FILE GAMBAR (drag & drop ke Discord, Slides, dll.):
+  assets/banners/plankton-x-privy-banner.png
+
+MARKDOWN (wiki / GitHub / docs setelah deploy):
+  ![Plankton · X — powered by privy.io](/banners/plankton-x-privy-banner.png)
+
+HTML:
+  <img src="/banners/plankton-x-privy-banner.png" width="960" alt="Plankton · X — powered by privy.io" />
+
+URL PRODUCTION (ganti domain Anda):
+  https://planktonomous.dev/banners/plankton-x-privy-banner.png
+
+Regenerate setelah edit logo:
+  npm run generate:banner
+
+---
+
+Plankton | x402scan — banner posting (X / Discord)
+===================================================
+
+FILE GAMBAR:
+  assets/banners/plankton-x402scan-banner.png
+  frontend/public/banners/plankton-x402scan-banner.png  (same file for prod URL)
+
+URL PRODUCTION:
+  https://planktonomous.dev/banners/plankton-x402scan-banner.png
+
+CONTOH POSTING X (sesuaikan):
+  Plankton Agent API is now listed on @x402scan — HTTP 402 + Solana USDC discovery for Agent Chat.
+  api.planktonomous.dev · x402scan.com
+
+Regenerate setelah ganti logo:
+  npm run generate:banner-x402scan

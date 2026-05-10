@@ -12,7 +12,9 @@
     "vercel-build": "node scripts/copy-dist.cjs",
     "preview": "npm run preview --workspace=frontend",
     "lint": "npm run lint --workspaces --if-present",
-    "test": "npm run test --workspace=frontend"
+    "test": "npm run test --workspace=frontend",
+    "generate:banner": "node scripts/generate-plankton-x-banner.mjs",
+    "generate:banner-x402scan": "node scripts/generate-plankton-x402scan-banner.mjs"
   },
   "workspaces": [
     "frontend",
@@ -26,5 +28,8 @@
   "dependencies": {
     "@privy-io/node": "^0.16.0",
     "ox": "0.14.20"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2"
   }
 }
