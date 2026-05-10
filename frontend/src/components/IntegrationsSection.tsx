@@ -16,6 +16,11 @@ const INTEGRATIONS: Integration[] = [
     logoUrl: "/brand/x402scan-logo.png",
   },
   {
+    name: "Hyre",
+    role: "DeFi TVL and yield intelligence via x402 for Agent Chat enrichment.",
+    logoUrl: "/brand/hyre.png",
+  },
+  {
     name: "Solana",
     role: "Base layer for all protocol activity, swaps, and agent execution.",
     logoUrl: "/logos/solana.png",
