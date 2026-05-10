@@ -10,9 +10,10 @@ import { useWalletModal } from "@/contexts/WalletModalContext";
 import { getAgentApiBase, getApiBase } from "@/lib/api";
 import {
   fetchAgentChat,
-  fetchAgentConfigWithX402,
+  fetchAgentConfig,
   toastIfAgentChatFailed,
   type AgentChatX402Info,
+  type X402DiscoveryLinks,
 } from "@/lib/agent-chat-fetch";
 import { usageSignMessage } from "@/lib/x402-usage";
 import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
@@ -514,6 +515,7 @@ export function AgentChatInlinePreview({
   const [pendingSendBalance, setPendingSendBalance] = useState<{ tokens: SendTokenInfo[] } | null>(null);
   const [placeholderMode, setPlaceholderMode] = useState<"help" | "see">("help");
   const [agentX402, setAgentX402] = useState<AgentChatX402Info | null>(null);
+  const [agentX402Discovery, setAgentX402Discovery] = useState<X402DiscoveryLinks | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<ChatMessage[]>(messages);
   // Cache usage signatures per (wallet,path,method) to avoid re-signing every request.
@@ -527,8 +529,11 @@ export function AgentChatInlinePreview({
     let cancelled = false;
     void (async () => {
       const origin = getAgentApiBase();
-      const info = await fetchAgentConfigWithX402(origin);
-      if (!cancelled) setAgentX402(info);
+      const { x402, discovery } = await fetchAgentConfig(origin);
+      if (!cancelled) {
+        setAgentX402(x402);
+        setAgentX402Discovery(discovery);
+      }
     })();
     return () => {
       cancelled = true;
@@ -1679,12 +1684,35 @@ export function AgentChatInlinePreview({
               Connect wallet to unlock guided alpha scan.
             </div>
           ) : agentX402?.enabled ? (
-            <div className="text-xs text-muted-foreground mt-2">
-              x402: about{" "}
-              {typeof agentX402.priceUsd === "number"
-                ? `$${agentX402.priceUsd.toFixed(2)}`
-                : "$0.01"}{" "}
-              USDC per agent message.
+            <div className="text-xs text-muted-foreground mt-2 space-y-1">
+              <p>
+                x402 unlock: ~{" "}
+                {typeof agentX402.priceUsd === "number"
+                  ? `$${agentX402.priceUsd.toFixed(2)}`
+                  : "$0.10"}{" "}
+                USDC / up to {agentX402.blockSize ?? 5} messages.
+              </p>
+              {agentX402Discovery ? (
+                <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <a
+                    href={agentX402Discovery.ecosystemUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-signal hover:underline underline-offset-2"
+                  >
+                    x402scan
+                  </a>
+                  <span className="text-muted-foreground/50">·</span>
+                  <a
+                    href={`${agentX402Discovery.registerUrl}?${new URLSearchParams({ url: agentX402Discovery.resourceUrl }).toString()}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-signal hover:underline underline-offset-2"
+                  >
+                    List resource
+                  </a>
+                </p>
+              ) : null}
             </div>
           ) : null}
         </div>

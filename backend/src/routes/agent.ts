@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { resolveX402UsdcMint } from "../lib/x402UsdcMint.js";
+import { agentChatResourceUrl, isAgentChatX402Enabled } from "../x402-agent-chat.js";
 import { consumeUsageOrBlock, requireBlockPaymentAndCredit, sendJsonWithPaymentRequiredHeader } from "../usage/x402-blocks.js";
 import { verifyUsageSignature } from "../usage/verify-wallet.js";
 import { fetchSyraaSignal, type SyraaSignalRequest } from "../lib/syraaSignal.js";
@@ -164,11 +165,11 @@ agentRouter.get("/logs", async (req, res) => {
   res.json({ lines: lines.slice(0, limit), source: "rpc" });
 });
 
-agentRouter.get("/config", (_req, res) => {
+agentRouter.get("/config", (req, res) => {
   // Advertise x402 config for the current "block unlock" mode:
   // - 0.1 USDC unlocks 5 messages
   // Frontend uses this only to decide whether to use x402 client and to show UI copy.
-  const x402Enabled = Boolean(process.env.X402_TREASURY_ADDRESS?.trim()) && process.env.DISABLE_AGENT_CHAT_X402?.trim() !== "1";
+  const x402Enabled = isAgentChatX402Enabled();
   const network = (process.env.X402_NETWORK?.trim().toLowerCase() === "solana-devnet" || process.env.X402_NETWORK?.trim().toLowerCase() === "devnet")
     ? "solana-devnet"
     : "solana";
@@ -178,6 +179,9 @@ agentRouter.get("/config", (_req, res) => {
   const usdcMint = resolveX402UsdcMint(process.env.X402_USDC_MINT, network);
   const decimals = 6;
   const priceUsd = Number(amountAtomic) / 10 ** decimals;
+
+  const chatResourceUrl = agentChatResourceUrl(req);
+  const origin = new URL(chatResourceUrl).origin;
 
   res.json({
     riskLevels: ["conservative", "mid", "aggressive"],
@@ -193,6 +197,17 @@ agentRouter.get("/config", (_req, res) => {
           blockSize: 5,
         }
       : { enabled: false },
+    ...(x402Enabled
+      ? {
+          x402Discovery: {
+            resourceUrl: chatResourceUrl,
+            wellKnownUrl: `${origin}/.well-known/x402`,
+            openapiUrl: `${origin}/openapi.json`,
+            ecosystemUrl: "https://www.x402scan.com/",
+            registerUrl: "https://www.x402scan.com/resources/register",
+          },
+        }
+      : {}),
   });
 });
 

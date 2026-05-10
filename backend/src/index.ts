@@ -26,6 +26,7 @@ import { gatewayRouter } from "./gateway/router.js";
 import { getPgPool } from "./db/pool.js";
 import { runMigrations } from "./db/migrate.js";
 import { isPaperTradingMode } from "./autopilot/decisionPipeline.js";
+import { registerX402scanDiscoveryRoutes } from "./routes/x402scanDiscovery.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
@@ -81,6 +82,9 @@ app.use(
   })
 );
 app.use(express.json({ limit: "512kb" }));
+
+/** [x402scan](https://www.x402scan.com/) discovery: `/openapi.json` then `/.well-known/x402` — serve from the same public origin as agent chat (set `X402_RESOURCE_BASE_URL` behind nginx if needed). */
+registerX402scanDiscoveryRoutes(app);
 
 /** Malformed JSON bodies must not take down the process. Return 400 instead of 502 from nginx. */
 app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {

@@ -8,10 +8,12 @@ interface ImportMetaEnv {
    */
   readonly VITE_API_MODE?: string;
   /**
-   * Optional: origin of the Express API that serves `POST /api/agent/chat` (Claude on VPS).
-   * When set, the browser calls this host for agent routes (no need for `VITE_API_MODE=external`).
+   * Origin of the Express API for agent routes (`/api/agent/chat`, `/api/agent/config`, …) when not same-origin.
+   * Set **`VITE_AGENT_API_MODE=external`** so the SPA calls this host for `/api/agent/*` (full backend on VPS).
    */
   readonly VITE_AGENT_API_URL?: string;
+  /** Must be `external` when using `VITE_AGENT_API_URL` for agent-only split routing. */
+  readonly VITE_AGENT_API_MODE?: string;
   readonly VITE_SOLANA_RPC_URL?: string;
   /** Optional: JSON-RPC URL for x402-solana only (overrides same-origin `/api/rpc`). */
   readonly VITE_X402_RPC_URL?: string;

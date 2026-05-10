@@ -12,6 +12,16 @@ export type AgentChatX402Info = {
   usdcMint: string;
   decimals: number;
   priceUsd?: number;
+  blockSize?: number;
+};
+
+/** Returned when paid x402 is enabled — links align with [x402scan](https://www.x402scan.com/) discovery. */
+export type X402DiscoveryLinks = {
+  resourceUrl: string;
+  wellKnownUrl: string;
+  openapiUrl: string;
+  ecosystemUrl: string;
+  registerUrl: string;
 };
 
 export function parseAgentConfigX402(data: unknown): AgentChatX402Info | null {
@@ -30,18 +40,45 @@ export function parseAgentConfigX402(data: unknown): AgentChatX402Info | null {
     usdcMint: normalizeAgentX402UsdcMint(rawMint, network),
     decimals: typeof o.decimals === "number" ? o.decimals : 6,
     priceUsd: typeof o.priceUsd === "number" ? o.priceUsd : undefined,
+    blockSize: typeof o.blockSize === "number" ? o.blockSize : undefined,
   };
 }
 
-export async function fetchAgentConfigWithX402(agentOrigin: string): Promise<AgentChatX402Info | null> {
+function parseX402Discovery(data: unknown): X402DiscoveryLinks | null {
+  if (!data || typeof data !== "object") return null;
+  const d = (data as Record<string, unknown>).x402Discovery;
+  if (!d || typeof d !== "object") return null;
+  const o = d as Record<string, unknown>;
+  if (typeof o.resourceUrl !== "string" || typeof o.wellKnownUrl !== "string") return null;
+  return {
+    resourceUrl: o.resourceUrl,
+    wellKnownUrl: o.wellKnownUrl,
+    openapiUrl: typeof o.openapiUrl === "string" ? o.openapiUrl : "",
+    ecosystemUrl: typeof o.ecosystemUrl === "string" ? o.ecosystemUrl : "https://www.x402scan.com/",
+    registerUrl: typeof o.registerUrl === "string" ? o.registerUrl : "https://www.x402scan.com/resources/register",
+  };
+}
+
+export async function fetchAgentConfig(agentOrigin: string): Promise<{
+  x402: AgentChatX402Info | null;
+  discovery: X402DiscoveryLinks | null;
+}> {
   try {
     const r = await fetch(`${agentOrigin}/api/agent/config`);
-    if (!r.ok) return null;
+    if (!r.ok) return { x402: null, discovery: null };
     const data = await r.json();
-    return parseAgentConfigX402(data);
+    return {
+      x402: parseAgentConfigX402(data),
+      discovery: parseX402Discovery(data),
+    };
   } catch {
-    return null;
+    return { x402: null, discovery: null };
   }
+}
+
+export async function fetchAgentConfigWithX402(agentOrigin: string): Promise<AgentChatX402Info | null> {
+  const { x402 } = await fetchAgentConfig(agentOrigin);
+  return x402;
 }
 
 function maxPaymentAtomic(expected: bigint): bigint {

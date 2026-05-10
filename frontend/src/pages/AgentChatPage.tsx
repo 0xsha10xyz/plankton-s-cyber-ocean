@@ -12,9 +12,10 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { getAgentApiBase, getApiBase } from "@/lib/api";
 import {
   fetchAgentChat,
-  fetchAgentConfigWithX402,
+  fetchAgentConfig,
   toastIfAgentChatFailed,
   type AgentChatX402Info,
+  type X402DiscoveryLinks,
 } from "@/lib/agent-chat-fetch";
 import { usageSignMessage } from "@/lib/x402-usage";
 import { fetchWalletBalancesFromApi, rawToUiAmount } from "@/lib/wallet-api";
@@ -383,6 +384,7 @@ export default function AgentChatPage() {
   const [pendingSendBalance, setPendingSendBalance] = useState<{ tokens: SendTokenInfo[] } | null>(null);
   const [placeholderMode, setPlaceholderMode] = useState<"help" | "see">("help");
   const [agentX402, setAgentX402] = useState<AgentChatX402Info | null>(null);
+  const [agentX402Discovery, setAgentX402Discovery] = useState<X402DiscoveryLinks | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<ChatMessage[]>(messages);
   const usageSigRef = useRef<{ wallet: string; ts: number; sig: string } | null>(null);
@@ -529,8 +531,11 @@ export default function AgentChatPage() {
     let cancelled = false;
     void (async () => {
       const origin = getAgentApiBase();
-      const info = await fetchAgentConfigWithX402(origin);
-      if (!cancelled) setAgentX402(info);
+      const { x402, discovery } = await fetchAgentConfig(origin);
+      if (!cancelled) {
+        setAgentX402(x402);
+        setAgentX402Discovery(discovery);
+      }
     })();
     return () => {
       cancelled = true;
@@ -1675,12 +1680,35 @@ export default function AgentChatPage() {
               Chat is locked until wallet is connected. Connect to enable sending.
             </div>
           ) : agentX402?.enabled ? (
-            <div className="text-xs text-muted-foreground">
-              Agent chat uses x402: about{" "}
-              {typeof agentX402.priceUsd === "number"
-                ? `$${agentX402.priceUsd.toFixed(2)}`
-                : "$0.01"}{" "}
-              USDC per message on Solana (wallet will prompt to approve).
+            <div className="text-xs text-muted-foreground space-y-1.5">
+              <p>
+                Paid unlock (x402): ~{" "}
+                {typeof agentX402.priceUsd === "number"
+                  ? `$${agentX402.priceUsd.toFixed(2)}`
+                  : "$0.10"}{" "}
+                USDC on Solana per unlock (up to {agentX402.blockSize ?? 5} messages each; wallet will prompt).
+              </p>
+              {agentX402Discovery ? (
+                <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <a
+                    href={agentX402Discovery.ecosystemUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-signal hover:underline underline-offset-2"
+                  >
+                    x402scan ecosystem
+                  </a>
+                  <span className="text-muted-foreground/50">·</span>
+                  <a
+                    href={`${agentX402Discovery.registerUrl}?${new URLSearchParams({ url: agentX402Discovery.resourceUrl }).toString()}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-signal hover:underline underline-offset-2"
+                  >
+                    List on x402scan
+                  </a>
+                </p>
+              ) : null}
             </div>
           ) : null}
         </div>
