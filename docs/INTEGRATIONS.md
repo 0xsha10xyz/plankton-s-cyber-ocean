@@ -113,6 +113,15 @@ Configuration is documented in **[Syraa Signal Agent](./syraa-signal-agent.md)**
 
 ---
 
+## HYRE DeFi (Agent Chat enrichment)
+
+**HYRE** supplies optional **DeFi TVL / yields** snapshots for Agent Chat on the **VPS**. The backend pays HYRE upstream via **x402 on Solana** using **`HYRE_SOLANA_PRIVATE_KEY`**; snapshots are merged into LLM context when user messages match multilingual DeFi intent rules.
+
+- No HYRE secrets belong on Vercel or in the browser bundle.
+- Full setup, threat considerations, env reference, and verification steps: **[HYRE integration](./hyre-integration.md)**.
+
+---
+
 ## Deployment platforms
 
 | Platform | What it hosts |
@@ -134,3 +143,4 @@ Environment files: **`frontend/.env.example`**, **`backend/.env.example`**, **`a
 | [Language & localization](./language-and-localization.md) | Default UI/docs copy vs agent reply language |
 | [API recommendations](./api-recommendations.md) | Broader ecosystem suggestions for future features |
 | [Privy integration](./privy-integration.md) | Auth, embedded wallets, unified Solana wallet, verify route, secret handling |
+| [HYRE integration](./hyre-integration.md) | DeFi TVL/yields enrichment for Agent Chat (server-paid x402, VPS-only secrets) |

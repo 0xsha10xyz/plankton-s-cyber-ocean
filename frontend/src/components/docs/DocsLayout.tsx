@@ -12,6 +12,7 @@ import {
   Rocket,
   Signal,
   Shield,
+  TrendingUp,
   Zap,
   ChevronRight,
   Menu,
@@ -39,6 +40,7 @@ const sidebarSections = [
   { id: "x402-payments", label: "x402 payments", icon: Landmark, path: "/docs/x402-payments" as const },
   { id: "x402scan-integration", label: "x402scan listing", icon: Globe, path: "/docs/x402scan-integration" as const },
   { id: "syraa-signal-agent", label: "Syraa signal agent", icon: Signal, path: "/docs/syraa-signal-agent" as const },
+  { id: "hyre-integration", label: "HYRE DeFi integration", icon: TrendingUp, path: "/docs/hyre-integration" as const },
 ] as const;
 
 export default function DocsLayout() {
