@@ -15,6 +15,7 @@ export const DOC_ROUTE_FILES = [
   "docs/pay-sh.md",
   "docs/llm-providers.md",
   "docs/x402-payments.md",
+  "docs/x402scan-integration.md",
   "docs/syraa-signal-agent.md",
   "docs/plankton-documentation.md",
   "SECURITY.md",

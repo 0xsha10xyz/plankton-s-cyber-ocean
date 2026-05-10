@@ -81,6 +81,7 @@ See **`api/stats/`** and backend stats routes.
 | Integration | Purpose | Configuration |
 |-------------|---------|----------------|
 | **x402-solana** + **PayAI facilitator** | USDC payment per agent message on Solana | `X402_TREASURY_ADDRESS`, optional `X402_RESOURCE_BASE_URL`, facilitator keys. See **[Configuration: x402](./CONFIGURATION.md#agent-chat--x402-optional-usdc-on-solana)** |
+| **[x402scan](https://www.x402scan.com/)** | Public discovery / listing for x402 resources | No extra secrets. Align **`X402_RESOURCE_BASE_URL`** with the API host you register. See **[x402scan integration](./x402scan-integration.md)** |
 
 ---
 

@@ -66,7 +66,7 @@ Configure these on the **VPS** (and on **Vercel** where noted). Use your own val
 | **`X402_TREASURY_ADDRESS`** | Solana address receiving USDC (required for x402 handler). |
 | **`X402_NETWORK`** | `solana` or `solana-devnet`. |
 | **`X402_BLOCK_PRICE_ATOMIC`** | Price in smallest USDC units (e.g. `100000` = 0.1 USDC with 6 decimals). |
-| **`X402_RESOURCE_BASE_URL`** | Public site origin used to build stable resource URLs (often your Vercel canonical domain). |
+| **`X402_RESOURCE_BASE_URL`** | Public **API** origin used to build stable x402 `resource` URLs (no path). Use the same host you register on **x402scan** (e.g. `https://api.example.com` when the API is on a subdomain). See [x402scan integration](./x402scan-integration.md). |
 | **`X402_FACILITATOR_URL`** | Facilitator base URL (default PayAI if unset). |
 | **`X402_PAYAI_API_KEY_ID`** / **`X402_PAYAI_API_KEY_SECRET`** | Optional; required if your facilitator account uses signed requests. |
 | **`X402_SOLANA_RPC_URL`** | Optional dedicated RPC for x402. If unset, **`SOLANA_RPC_URL`** is used. **Do not** set this to a placeholder string. Either omit it or set a valid mainnet RPC. |
@@ -90,7 +90,8 @@ Optional: **`DISABLE_AGENT_CHAT_X402`**. Set to `1` to disable paid gating for d
 
 ## Code map (for contributors)
 
-- **Backend:** `backend/src/usage/x402-blocks.ts`. Quota, cache for payment requirements, 402 responses.
+- **Backend:** `backend/src/routes/x402scanDiscovery.ts`. `/openapi.json`, `/.well-known/x402` for ecosystem discovery.
+- **Backend:** `backend/src/usage/x402-blocks.ts`. Quota, cache for payment requirements, 402 responses, registration probe helper.
 - **Backend:** `backend/src/routes/agent.ts`. Chat route, `x402PaymentHeaderB64` injection, usage gate.
 - **Vercel:** `api/agent/[segment].ts`. Proxy chat plus **config** to **`AGENT_BACKEND_ORIGIN`**, forward 402 headers.
 - **Frontend:** `frontend/src/lib/agent-chat-fetch.ts`. x402 client, `customFetch`, body duplication.
@@ -100,6 +101,7 @@ Optional: **`DISABLE_AGENT_CHAT_X402`**. Set to `1` to disable paid gating for d
 
 ## Related documentation
 
+- [x402scan integration](./x402scan-integration.md): discovery endpoints, registration on x402scan, probe checks.
 - [Configuration](./CONFIGURATION.md): full environment matrix.
 - [Deployment](./DEPLOYMENT.md): Vercel plus VPS patterns.
 - [Integrations](./INTEGRATIONS.md): external services overview.
