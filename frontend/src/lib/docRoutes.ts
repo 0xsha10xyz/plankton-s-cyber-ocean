@@ -16,6 +16,7 @@ export const DOC_ROUTE_FILES = [
   "docs/llm-providers.md",
   "docs/x402-payments.md",
   "docs/x402scan-integration.md",
+  "docs/zauth-integration.md",
   "docs/syraa-signal-agent.md",
   "docs/hyre-integration.md",
   "docs/plankton-documentation.md",
