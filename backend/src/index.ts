@@ -27,6 +27,8 @@ import { getPgPool } from "./db/pool.js";
 import { runMigrations } from "./db/migrate.js";
 import { isPaperTradingMode } from "./autopilot/decisionPipeline.js";
 import { registerX402scanDiscoveryRoutes } from "./routes/x402scanDiscovery.js";
+import { registerVectorVerifyWellKnownRoute } from "./routes/vectorVerifyWellKnown.js";
+import { registerZauthSdkMonitoring } from "./registerZauthSdk.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
@@ -83,8 +85,12 @@ app.use(
 );
 app.use(express.json({ limit: "512kb" }));
 
+/** zauth x402 telemetry — must run before routes that emit x402 (e.g. `POST /api/agent/chat`). */
+const shutdownZauthSdk = registerZauthSdkMonitoring(app);
+
 /** [x402scan](https://www.x402scan.com/) discovery: `/openapi.json` then `/.well-known/x402` — serve from the same public origin as agent chat (set `X402_RESOURCE_BASE_URL` behind nginx if needed). */
 registerX402scanDiscoveryRoutes(app);
+registerVectorVerifyWellKnownRoute(app);
 
 /** Malformed JSON bodies must not take down the process. Return 400 instead of 502 from nginx. */
 app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -165,6 +171,19 @@ if (process.env.VERCEL !== "1") {
   if (pool) {
     runMigrations(pool).catch((e) => console.error("[autopilot/db] migration failed:", e));
   }
+
+  const onShutdownSignal = async (signal: string) => {
+    if (shutdownZauthSdk) {
+      try {
+        await shutdownZauthSdk();
+      } catch (e) {
+        console.warn(`[zauth sdk] shutdown (${signal}):`, e);
+      }
+    }
+    process.exit(0);
+  };
+  process.once("SIGTERM", () => void onShutdownSignal("SIGTERM"));
+  process.once("SIGINT", () => void onShutdownSignal("SIGINT"));
 
   app.listen(PORT, () => {
     console.log(`Plankton API running at http://localhost:${PORT}`);

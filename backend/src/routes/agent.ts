@@ -14,6 +14,11 @@ import {
   fetchHyreDefiSnapshot,
   isHyreDefiChatEnabled,
 } from "../lib/hyreDefi.js";
+import {
+  ZAUTH_PUBLIC_METADATA,
+  isVectorVerifyTokenConfigured,
+  isZauthProviderSdkEnabled,
+} from "../lib/zauthPublic.js";
 
 export const agentRouter = Router();
 
@@ -196,6 +201,11 @@ agentRouter.get("/config", (req, res) => {
   res.json({
     riskLevels: ["conservative", "mid", "aggressive"],
     defaultRisk: "mid",
+    zauth: {
+      ...ZAUTH_PUBLIC_METADATA,
+      vectorVerifyConfigured: isVectorVerifyTokenConfigured(),
+      providerHubSdkConfigured: isZauthProviderSdkEnabled(),
+    },
     x402AgentChat: x402Enabled
       ? {
           enabled: true,

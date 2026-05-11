@@ -97,7 +97,7 @@ function buildOpenApiAgentChat(req: Request): Record<string, unknown> {
     info: {
       title: "Plankton Agent API",
       version: "1.0.0",
-      description: `Agent chat for Plankton. x402 paid unlocks use Solana USDC. See ${X402SCAN_HINT} for ecosystem discovery.`,
+      description: `Agent chat for Plankton. x402 paid unlocks use Solana USDC. See ${X402SCAN_HINT} for ecosystem discovery. Live x402 registry and agent safety context: https://zauthx402.com/docs/database`,
     },
     servers: [{ url: origin }],
     paths: {

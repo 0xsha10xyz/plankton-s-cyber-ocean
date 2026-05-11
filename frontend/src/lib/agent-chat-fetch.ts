@@ -24,6 +24,20 @@ export type X402DiscoveryLinks = {
   registerUrl: string;
 };
 
+/** [zauth](https://zauthx402.com/) trust layer: Vector, Database, Provider Hub (from `GET /api/agent/config`). */
+export type ZauthPublicInfo = {
+  homeUrl: string;
+  docsUrl: string;
+  vectorDocsUrl: string;
+  repoScanDocsUrl: string;
+  databaseDocsUrl: string;
+  providerHubDocsUrl: string;
+  vectorVerifyWellKnownPath: string;
+  vectorVerifyConfigured: boolean;
+  /** True when the VPS has `@zauthx402/sdk` middleware enabled (`ZAUTH_API_KEY`). */
+  providerHubSdkConfigured: boolean;
+};
+
 export function parseAgentConfigX402(data: unknown): AgentChatX402Info | null {
   if (!data || typeof data !== "object") return null;
   const x = (data as { x402AgentChat?: unknown }).x402AgentChat;
@@ -41,6 +55,27 @@ export function parseAgentConfigX402(data: unknown): AgentChatX402Info | null {
     decimals: typeof o.decimals === "number" ? o.decimals : 6,
     priceUsd: typeof o.priceUsd === "number" ? o.priceUsd : undefined,
     blockSize: typeof o.blockSize === "number" ? o.blockSize : undefined,
+  };
+}
+
+function parseZauth(data: unknown): ZauthPublicInfo | null {
+  if (!data || typeof data !== "object") return null;
+  const z = (data as Record<string, unknown>).zauth;
+  if (!z || typeof z !== "object") return null;
+  const o = z as Record<string, unknown>;
+  const str = (k: string) => (typeof o[k] === "string" ? (o[k] as string) : "");
+  const homeUrl = str("homeUrl");
+  if (!homeUrl) return null;
+  return {
+    homeUrl,
+    docsUrl: str("docsUrl") || "https://zauthx402.com/docs",
+    vectorDocsUrl: str("vectorDocsUrl") || "https://zauthx402.com/docs/vector",
+    repoScanDocsUrl: str("repoScanDocsUrl") || "https://zauthx402.com/docs/reposcan",
+    databaseDocsUrl: str("databaseDocsUrl") || "https://zauthx402.com/docs/database",
+    providerHubDocsUrl: str("providerHubDocsUrl") || "https://zauthx402.com/docs/provider-hub",
+    vectorVerifyWellKnownPath: str("vectorVerifyWellKnownPath") || "/.well-known/vector-verify",
+    vectorVerifyConfigured: o.vectorVerifyConfigured === true,
+    providerHubSdkConfigured: o.providerHubSdkConfigured === true,
   };
 }
 
@@ -62,17 +97,19 @@ function parseX402Discovery(data: unknown): X402DiscoveryLinks | null {
 export async function fetchAgentConfig(agentOrigin: string): Promise<{
   x402: AgentChatX402Info | null;
   discovery: X402DiscoveryLinks | null;
+  zauth: ZauthPublicInfo | null;
 }> {
   try {
     const r = await fetch(`${agentOrigin}/api/agent/config`);
-    if (!r.ok) return { x402: null, discovery: null };
+    if (!r.ok) return { x402: null, discovery: null, zauth: null };
     const data = await r.json();
     return {
       x402: parseAgentConfigX402(data),
       discovery: parseX402Discovery(data),
+      zauth: parseZauth(data),
     };
   } catch {
-    return { x402: null, discovery: null };
+    return { x402: null, discovery: null, zauth: null };
   }
 }
 

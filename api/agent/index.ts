@@ -13,6 +13,7 @@
  * When `AGENT_BACKEND_ORIGIN` (or `VPS_AGENT_API_ORIGIN`) is set, chat/config/info are proxied to the VPS.
  */
 import type { IncomingMessage, ServerResponse } from "http";
+import { ZAUTH_PUBLIC_METADATA, isVectorVerifyTokenConfigured } from "../../server-lib/zauth-public-metadata.js";
 
 export const config = {
   runtime: "nodejs",
@@ -146,7 +147,14 @@ function getAgentBackendOrigin(): string | null {
 async function handleConfigProxy(_req: IncomingMessage, res: ServerResponse): Promise<void> {
   const origin = getAgentBackendOrigin();
   if (!origin) {
-    sendJson(res, 200, { x402AgentChat: { enabled: false } });
+    sendJson(res, 200, {
+      x402AgentChat: { enabled: false },
+      zauth: {
+        ...ZAUTH_PUBLIC_METADATA,
+        vectorVerifyConfigured: isVectorVerifyTokenConfigured(),
+        providerHubSdkConfigured: false,
+      },
+    });
     return;
   }
   try {

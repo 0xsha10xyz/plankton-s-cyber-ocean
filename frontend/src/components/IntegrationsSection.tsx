@@ -16,6 +16,11 @@ const INTEGRATIONS: Integration[] = [
     logoUrl: "/brand/x402scan-logo.png",
   },
   {
+    name: "zauth",
+    role: "Security layer for agents: Vector pentests, x402 endpoint registry, and Provider Hub telemetry.",
+    logoUrl: "/logos/zauth.svg",
+  },
+  {
     name: "Hyre",
     role: "DeFi TVL and yield intelligence via x402 for Agent Chat enrichment.",
     logoUrl: "/brand/hyre.png",

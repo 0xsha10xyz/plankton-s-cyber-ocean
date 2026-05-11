@@ -82,6 +82,7 @@ See **`api/stats/`** and backend stats routes.
 |-------------|---------|----------------|
 | **x402-solana** + **PayAI facilitator** | USDC payment per agent message on Solana | `X402_TREASURY_ADDRESS`, optional `X402_RESOURCE_BASE_URL`, facilitator keys. See **[Configuration: x402](./CONFIGURATION.md#agent-chat--x402-optional-usdc-on-solana)** |
 | **[x402scan](https://www.x402scan.com/)** | Public discovery / listing for x402 resources | No extra secrets. Align **`X402_RESOURCE_BASE_URL`** with the API host you register. See **[x402scan integration](./x402scan-integration.md)** |
+| **[zauth](https://zauthx402.com/)** | Trust layer for agents: [Vector](https://zauthx402.com/docs/vector) pentests, [Database](https://zauthx402.com/docs/database) x402 registry, [Provider Hub](https://zauthx402.com/docs/provider-hub) | Optional **`VECTOR_VERIFY_TOKEN`** serves [`/.well-known/vector-verify`](https://zauthx402.com/docs/vector) on Vercel (rewrite) or the VPS API. **`GET /api/agent/config`** includes a **`zauth`** object with doc URLs and **`vectorVerifyConfigured`**. On the **VPS**, set **`ZAUTH_API_KEY`** (Provider Hub SDK key) to enable **`@zauthx402/sdk`** middleware for telemetry on **`/api/agent/*`**; use **`DISABLE_ZAUTH_SDK=1`** to turn it off. |
 
 ---
 
