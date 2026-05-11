@@ -10,7 +10,7 @@
     { "src": "/api/nansen/token-screener", "dest": "/api/data?segment=nansen-token-screener" },
     { "src": "/api/config", "dest": "/api/health?mode=config" },
     { "src": "/api/privy/verify", "dest": "/api/health?mode=privy-verify" },
-    { "src": "/.well-known/vector-verify", "dest": "/api/vector-verify" },
+    { "src": "/.well-known/vector-verify", "dest": "/api/health?mode=vector-verify" },
     { "src": "/api/agent/?$", "dest": "/api/agent/index" },
     { "src": "/api/agent/(.*)", "dest": "/api/agent/index?segment=$1" },
     { "src": "/(.*)", "dest": "/index.html" }

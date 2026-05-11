@@ -2,6 +2,7 @@
  * GET /api/health — liveness check.
  * GET /api/health?mode=config — Bitquery + Shyft for browser (rewrite: /api/config → here).
  * POST /api/health?mode=privy-verify — verify Privy access token (Bearer). Keeps Hobby ≤12 functions.
+ * GET|HEAD /api/health?mode=vector-verify — zauth Vector `/.well-known/vector-verify` (rewrite in vercel.json).
  * Rewrite: /api/privy/verify → /api/health?mode=privy-verify (see vercel.json).
  */
 import type { IncomingMessage, ServerResponse } from "http";
@@ -83,9 +84,40 @@ async function handlePrivyVerify(req: IncomingMessage, res: ServerResponse): Pro
   }
 }
 
+function respondVectorVerify(req: IncomingMessage, res: ServerResponse): void {
+  const method = (req.method || "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") {
+    res.statusCode = 405;
+    res.setHeader("Allow", "GET, HEAD");
+    res.end();
+    return;
+  }
+  const token = process.env.VECTOR_VERIFY_TOKEN?.trim();
+  if (!token) {
+    res.statusCode = 404;
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "no-store");
+    res.end(JSON.stringify({ error: "vector_verify_not_configured" }));
+    return;
+  }
+  res.statusCode = 200;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  if (method === "HEAD") {
+    res.end();
+    return;
+  }
+  res.end(JSON.stringify({ token }));
+}
+
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const method = (req.method || "GET").toUpperCase();
   const params = searchParams(req);
+
+  if (params.get("mode") === "vector-verify") {
+    respondVectorVerify(req, res);
+    return;
+  }
 
   if (method === "POST" && params.get("mode") === "privy-verify") {
     await handlePrivyVerify(req, res);
