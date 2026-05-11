@@ -3,7 +3,7 @@
   "outputDirectory": "dist",
   "routes": [
     { "handle": "filesystem" },
-    { "src": "/.well-known/vector-verify", "dest": "/api/vector-verify" },
+    { "src": "/.well-known/vector-verify", "dest": "/api/agent/config?__zauth_vector_verify=1" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }

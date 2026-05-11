@@ -1,6 +1,6 @@
 /**
  * GET /.well-known/vector-verify (via repo-root vercel.json rewrite)
- * When Vercel Root Directory is `frontend`, the deployed handler is `frontend/api/vector-verify.ts` (same logic).
+ * When Vercel Root Directory is `frontend`, the same JSON is served from `frontend/api/agent/config.ts` via rewrite (Hobby 12 serverless function limit).
  * @see https://zauthx402.com/docs/vector — platform subdomain verification
  */
 import type { IncomingMessage, ServerResponse } from "http";
