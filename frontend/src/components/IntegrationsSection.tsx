@@ -18,7 +18,7 @@ const INTEGRATIONS: Integration[] = [
   {
     name: "zauth",
     role: "Security layer for agents: Vector pentests, x402 endpoint registry, and Provider Hub telemetry.",
-    logoUrl: "/logos/zauth.svg",
+    logoUrl: "/logos/zauth.png",
   },
   {
     name: "Hyre",
