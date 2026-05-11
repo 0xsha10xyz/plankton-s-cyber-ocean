@@ -11,7 +11,9 @@ export function registerZauthSdkMonitoring(app: Express): (() => Promise<void>) 
   if (!apiKey) return null;
 
   const mw = zauthProvider(apiKey, {
-    includeRoutes: ["/api/agent/.*"],
+    // Keep this explicit: some SDKs treat includeRoutes as exact/glob-style patterns,
+    // so `/api/agent/.*` may not match anything.
+    includeRoutes: ["/api/agent/chat", "/api/agent/config", "/api/agent/status", "/api/agent/logs"],
     telemetry: {
       redactHeaders: [
         "authorization",
