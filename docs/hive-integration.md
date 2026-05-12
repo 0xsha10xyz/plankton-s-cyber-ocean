@@ -6,6 +6,25 @@ Plankton integrates with **[Hive Protocol](https://uphive.xyz/docs)** (UpHive) f
 
 ---
 
+## Installation procedure
+
+1. **Register an agent** at [https://uphive.xyz/agent/register](https://uphive.xyz/agent/register) and obtain an **API key** from the Hive dashboard (see [Hive docs](https://uphive.xyz/docs)).
+2. **On the VPS**, add **`HIVE_API_KEY`** (and optionally **`HIVE_API_BASE_URL`**) to **`backend/.env`**. Example:
+
+   ```env
+   HIVE_API_KEY=your_key_here
+   # HIVE_API_BASE_URL=https://uphive.xyz
+   ```
+
+3. **Deploy the API**: from **`backend/`**, run **`npm install`**, **`npm run build`**, then restart the process (e.g. **`pm2 restart <app>`**).
+4. **CORS**: set **`CORS_ORIGIN`** on Express to include your production frontend origin (e.g. `https://your-site.dev`).
+5. **Vercel**: set **`AGENT_BACKEND_ORIGIN`** to the **HTTPS origin** of your Express API (no path). Redeploy the frontend after changing env vars.
+6. **Verify** on the VPS: `curl -sS http://127.0.0.1:3000/api/hive/status` → **`"configured": true`**. Then verify in the browser: `https://your-site.dev/api/hive/status`.
+
+The Dashboard **Hive** section repeats this checklist for operators; this document is the canonical reference.
+
+---
+
 ## What ships today
 
 - **Express routes** under **`/api/hive/*`** on the VPS (see table below).

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Briefcase, Flame, LayoutGrid, Settings2, RefreshCw } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
@@ -703,7 +704,7 @@ export default function Dashboard(): JSX.Element {
                           </h3>
                         </div>
                         <p className="text-sm leading-relaxed text-muted-foreground">
-                          Task marketplace and on-chain agent registry. Technical reference:{" "}
+                          Task marketplace and on-chain agent registry. Upstream:{" "}
                           <a
                             href="https://uphive.xyz/docs"
                             target="_blank"
@@ -714,24 +715,78 @@ export default function Dashboard(): JSX.Element {
                           </a>
                           .
                         </p>
-                        <div className="rounded-xl border border-border/40 bg-secondary/25 px-4 py-3.5 md:px-5">
-                          <p className="mb-2 text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground/75">
-                            Deployment note
+                        <div className="rounded-xl border border-border/40 bg-secondary/20 px-4 py-4 md:px-6 md:py-5">
+                          <p className="mb-3 text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground/75">
+                            Installation procedure (operators)
                           </p>
-                          <p className="text-xs leading-relaxed text-muted-foreground">
-                            Configure{" "}
-                            <span className="rounded-md bg-black/30 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
-                              HIVE_API_KEY
-                            </span>{" "}
-                            on the API server. Production SPA proxies{" "}
-                            <span className="rounded-md bg-black/30 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
-                              /api/hive/*
-                            </span>{" "}
-                            via{" "}
-                            <span className="rounded-md bg-black/30 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
-                              AGENT_BACKEND_ORIGIN
-                            </span>{" "}
-                            on Vercel.
+                          <ol className="list-decimal space-y-2.5 pl-5 text-xs leading-relaxed text-muted-foreground">
+                            <li>
+                              Register your agent at{" "}
+                              <a
+                                href="https://uphive.xyz/agent/register"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="font-medium text-signal underline-offset-4 hover:underline"
+                              >
+                                uphive.xyz
+                              </a>{" "}
+                              and copy the API key from the Hive dashboard.
+                            </li>
+                            <li>
+                              On the VPS, add{" "}
+                              <code className="rounded bg-black/35 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
+                                HIVE_API_KEY
+                              </code>{" "}
+                              to{" "}
+                              <code className="rounded bg-black/35 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
+                                backend/.env
+                              </code>
+                              , run{" "}
+                              <code className="rounded bg-black/35 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
+                                npm install
+                              </code>{" "}
+                              and{" "}
+                              <code className="rounded bg-black/35 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
+                                npm run build
+                              </code>{" "}
+                              in{" "}
+                              <code className="rounded bg-black/35 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
+                                backend/
+                              </code>
+                              , then restart the API process (e.g. PM2).
+                            </li>
+                            <li>
+                              Ensure{" "}
+                              <code className="rounded bg-black/35 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
+                                CORS_ORIGIN
+                              </code>{" "}
+                              on the VPS includes your production site origin.
+                            </li>
+                            <li>
+                              On Vercel, set{" "}
+                              <code className="rounded bg-black/35 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
+                                AGENT_BACKEND_ORIGIN
+                              </code>{" "}
+                              to your Express API origin (HTTPS, no path). Redeploy after changing env vars.
+                            </li>
+                            <li>
+                              Verify{" "}
+                              <code className="rounded bg-black/35 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
+                                GET /api/hive/status
+                              </code>{" "}
+                              returns{" "}
+                              <code className="rounded bg-black/35 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
+                                configured: true
+                              </code>
+                              .
+                            </li>
+                          </ol>
+                          <p className="mt-4 border-t border-border/35 pt-4 text-[11px] leading-relaxed text-muted-foreground/90">
+                            Full guide:{" "}
+                            <Link to="/docs/hive-integration" className="font-medium text-signal underline-offset-4 hover:underline">
+                              Hive integration (maintainer docs)
+                            </Link>
+                            .
                           </p>
                         </div>
                       </div>
