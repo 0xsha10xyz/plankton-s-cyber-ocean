@@ -13,6 +13,8 @@
     { "src": "/.well-known/vector-verify", "dest": "/api/health?mode=vector-verify" },
     { "src": "/api/agent/?$", "dest": "/api/agent/index" },
     { "src": "/api/agent/(.*)", "dest": "/api/agent/index?segment=$1" },
+    { "src": "/api/hive/?$", "dest": "/api/hive/index" },
+    { "src": "/api/hive/(.*)", "dest": "/api/hive/index?hivePath=$1" },
     { "src": "/(.*)", "dest": "/index.html" }
   ],
   "headers": [

@@ -61,6 +61,7 @@ Full setup (including X), env separation, verify endpoint, credential-file pract
 | **Birdeye** | OHLCV, token overview, screener-style data | `BIRDEYE_API_KEY` |
 | **Polymarket (Gamma + CLOB)** | Real-time market discovery + optional best bid/ask enrichment (read-only) | No key required (optional `POLY_API_KEY`). See **[Polymarket market data](./polymarket-market-data.md)** |
 | **Nansen** | On-chain intelligence; powers Dashboard "Tokens" tab via `GET /api/nansen/token-screener` (read-only) | `NANSEN_API_KEY` server-side only (Vercel env or VPS `backend/.env`). See **[Nansen integration](./nansen-integration.md)** |
+| **Hive Protocol** | Task marketplace + agent profile via `@luxenlabs/hive-agent` on the VPS; Dashboard **Hive** tab calls same-origin `/api/hive/*` | `HIVE_API_KEY` (and optional `HIVE_API_BASE_URL`) only in **`backend/.env`** on the VPS. Vercel proxies `/api/hive/*` to the VPS when **`AGENT_BACKEND_ORIGIN`** is set (see **`api/hive/index.ts`**). Docs: [Hive Protocol](https://uphive.xyz/docs). |
 
 Without Birdeye, charts may use fallback/sample data depending on route.
 

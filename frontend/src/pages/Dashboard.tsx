@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flame, LayoutGrid, Settings2, RefreshCw } from "lucide-react";
+import { Briefcase, Flame, LayoutGrid, Settings2, RefreshCw } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -42,6 +42,17 @@ type WalletRow = {
   meetsFollowCriteria: boolean;
 };
 
+type HiveStatus = { configured: boolean; baseUrl: string; docs: string };
+type HiveTaskRow = {
+  id: string;
+  title: string;
+  status: string;
+  category?: string;
+  budget?: string;
+  proposalsCount?: number;
+};
+type HiveTasksResponse = { tasks: HiveTaskRow[]; total: number; hasMore: boolean };
+
 type NansenTokenRow = {
   chain: string;
   token_address: string;
@@ -59,7 +70,7 @@ type NansenTokenRow = {
 };
 
 type SidebarItem = {
-  id: "overview" | "autopilot" | "screener";
+  id: "overview" | "autopilot" | "screener" | "hive";
   label: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
 };
@@ -68,6 +79,7 @@ const SIDEBAR: SidebarItem[] = [
   { id: "overview", label: "Overview", icon: LayoutGrid },
   { id: "autopilot", label: "Autopilot", icon: Settings2 },
   { id: "screener", label: "Screener", icon: Flame },
+  { id: "hive", label: "Hive", icon: Briefcase },
 ];
 
 function formatCompact(n: number): string {
@@ -134,6 +146,17 @@ export default function Dashboard(): JSX.Element {
       ),
     staleTime: 25_000,
   });
+  const hiveStatusQ = useQuery({
+    queryKey: ["dash", "hive", "status"],
+    queryFn: () => fetchJson<HiveStatus>(`${apiBase}/api/hive/status`),
+    staleTime: 60_000,
+  });
+  const hiveTasksQ = useQuery({
+    queryKey: ["dash", "hive", "tasks"],
+    queryFn: () => fetchJson<HiveTasksResponse>(`${apiBase}/api/hive/tasks?limit=25`),
+    staleTime: 30_000,
+    enabled: hiveStatusQ.data?.configured === true,
+  });
 
   return (
     <div className="relative min-h-screen">
@@ -155,6 +178,8 @@ export default function Dashboard(): JSX.Element {
                     marketsQ.refetch();
                     walletsQ.refetch();
                     nansenTokensQ.refetch();
+                    hiveStatusQ.refetch();
+                    hiveTasksQ.refetch();
                   }}
                   className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground border border-border/50 bg-background/20 hover:bg-secondary/30 transition-colors"
                   title="Refresh"
@@ -162,7 +187,13 @@ export default function Dashboard(): JSX.Element {
                   <RefreshCw
                     size={14}
                     className={
-                      marketsQ.isFetching || walletsQ.isFetching || nansenTokensQ.isFetching ? "animate-spin" : ""
+                      marketsQ.isFetching ||
+                      walletsQ.isFetching ||
+                      nansenTokensQ.isFetching ||
+                      hiveStatusQ.isFetching ||
+                      hiveTasksQ.isFetching
+                        ? "animate-spin"
+                        : ""
                     }
                   />
                   Refresh
@@ -326,6 +357,8 @@ export default function Dashboard(): JSX.Element {
                         marketsQ.refetch();
                         walletsQ.refetch();
                         nansenTokensQ.refetch();
+                        hiveStatusQ.refetch();
+                        hiveTasksQ.refetch();
                       }}
                       className="inline-flex items-center justify-center rounded-xl border border-border/55 bg-black/20 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors"
                       title="Refresh markets, tokens (Nansen), and wallets"
@@ -333,7 +366,13 @@ export default function Dashboard(): JSX.Element {
                       <RefreshCw
                         size={14}
                         className={
-                          marketsQ.isFetching || walletsQ.isFetching || nansenTokensQ.isFetching ? "animate-spin" : ""
+                          marketsQ.isFetching ||
+                          walletsQ.isFetching ||
+                          nansenTokensQ.isFetching ||
+                          hiveStatusQ.isFetching ||
+                          hiveTasksQ.isFetching
+                            ? "animate-spin"
+                            : ""
                         }
                       />
                     </button>
@@ -647,6 +686,113 @@ export default function Dashboard(): JSX.Element {
                     Same component as landing page, just “dashboard framed”.
                   </p>
                   <ScreenerTools />
+                </div>
+              </section>
+
+              <section id="hive" className="mt-8 scroll-mt-28">
+                <div className="glass-card rounded-2xl border border-border/40 shadow-surface p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Hive Protocol</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Task marketplace and agent registry (
+                        <a
+                          href="https://uphive.xyz/docs"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-signal hover:underline"
+                        >
+                          docs
+                        </a>
+                        ). Configure <span className="font-mono text-[11px]">HIVE_API_KEY</span> on your API server.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        hiveStatusQ.refetch();
+                        hiveTasksQ.refetch();
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl border border-border/55 bg-black/20 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors"
+                      title="Refresh Hive status and tasks"
+                    >
+                      <RefreshCw size={14} className={hiveStatusQ.isFetching || hiveTasksQ.isFetching ? "animate-spin" : ""} />
+                      Refresh
+                    </button>
+                  </div>
+
+                  {hiveStatusQ.isLoading ? (
+                    <div className="mt-4 space-y-2">
+                      <Skeleton className="h-4 w-full max-w-md bg-secondary/40" />
+                      <Skeleton className="h-4 w-full max-w-sm bg-secondary/40" />
+                    </div>
+                  ) : hiveStatusQ.data?.configured === false ? (
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      Hive is not wired yet. Add <span className="font-mono text-xs">HIVE_API_KEY</span> to{" "}
+                      <span className="font-mono text-xs">backend/.env</span> on the VPS, restart the API, and reload.
+                      On Vercel, ensure <span className="font-mono text-xs">AGENT_BACKEND_ORIGIN</span> points at that
+                      server so <span className="font-mono text-xs">/api/hive/*</span> proxies correctly.
+                    </p>
+                  ) : hiveTasksQ.isError ? (
+                    <div className="mt-4 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-muted-foreground">
+                      Could not load Hive tasks. Check upstream status at{" "}
+                      <span className="font-mono text-xs">{hiveStatusQ.data?.baseUrl ?? "uphive.xyz"}</span>.
+                    </div>
+                  ) : (
+                    <div className="mt-4 intel-surface overflow-hidden rounded-xl border border-border/35">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="hover:bg-transparent">
+                            <TableHead className="text-xs">Task</TableHead>
+                            <TableHead className="text-xs w-[100px]">Status</TableHead>
+                            <TableHead className="text-xs w-[120px]">Category</TableHead>
+                            <TableHead className="text-xs w-[90px] text-right">Bids</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(hiveTasksQ.isLoading ? Array.from({ length: 5 }) : hiveTasksQ.data?.tasks ?? []).map((row, idx) => {
+                            if (hiveTasksQ.isLoading) {
+                              return (
+                                <TableRow key={idx}>
+                                  <TableCell>
+                                    <Skeleton className="h-4 w-[280px] bg-secondary/40" />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Skeleton className="h-4 w-16 bg-secondary/40" />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Skeleton className="h-4 w-20 bg-secondary/40" />
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <Skeleton className="h-4 w-8 ml-auto bg-secondary/40" />
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            }
+                            const t = row as HiveTaskRow;
+                            return (
+                              <TableRow key={t.id}>
+                                <TableCell className="max-w-[min(520px,65vw)]">
+                                  <p className="text-sm font-medium text-foreground truncate" title={t.title}>
+                                    {t.title}
+                                  </p>
+                                  <p className="font-mono text-[10px] text-muted-foreground/80 truncate">{t.id}</p>
+                                </TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{t.status}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{t.category ?? "—"}</TableCell>
+                                <TableCell className="text-right font-mono text-xs text-muted-foreground">
+                                  {t.proposalsCount ?? "—"}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                      {!hiveTasksQ.isLoading && (hiveTasksQ.data?.tasks?.length ?? 0) === 0 ? (
+                        <p className="px-4 py-6 text-center text-sm text-muted-foreground">No open tasks returned.</p>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
               </section>
             </section>
