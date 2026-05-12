@@ -19,6 +19,7 @@ The **Plankton Agent** matches the user’s latest message language when possibl
 | [Deployment](./DEPLOYMENT.md) | Vercel SPA plus root `api/` (Root Directory **`.`**) vs optional VPS |
 | [Integrations](./INTEGRATIONS.md) | External APIs (Claude, Groq, Jupiter, Birdeye, Solana RPC, Redis, x402) |
 | [Polymarket market data](./polymarket-market-data.md) | Real-time Polymarket market discovery (Gamma) + best bid/ask (CLOB), read-only |
+| [Hive integration](./hive-integration.md) | Hive Protocol (UpHive) task marketplace + `/api/hive/*` on VPS; Vercel proxy via `AGENT_BACKEND_ORIGIN` and Hobby-safe `hive-proxy` |
 | [Nansen integration](./nansen-integration.md) | Server-side proxy for Nansen Token Screener (Dashboard "Tokens" tab); key never reaches the browser |
 | [Corbits integration](./corbits-integration.md) | Monetize endpoints via Corbits (x402), proxy setup, and testing |
 | [pay.sh CLI integration](./pay-sh.md) | `pay` CLI + `/api/paysh` adapter, security, OS setup (Windows/macOS/Linux), operator verification |
