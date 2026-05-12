@@ -2,10 +2,10 @@ import type { IncomingMessage, ServerResponse } from "http";
 
 export const config = { runtime: "nodejs", maxDuration: 60 };
 
-function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
+function sendJson(res: ServerResponse, statusCode: number, body: unknown, cache?: string): void {
   res.statusCode = statusCode;
   res.setHeader("Content-Type", "application/json");
-  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Cache-Control", cache ?? "private, no-store");
   res.end(JSON.stringify(body));
 }
 
@@ -25,12 +25,47 @@ function getOrigin(): string | null {
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if ((req.method || "GET").toUpperCase() !== "POST") {
+  const method = (req.method || "GET").toUpperCase();
+  const origin = getOrigin();
+
+  if (method === "GET") {
+    if (origin) {
+      try {
+        const upstream = await fetch(`${origin}/api/agent/chat`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        const text = await upstream.text();
+        res.statusCode = upstream.status;
+        const uct = upstream.headers.get("content-type");
+        if (uct) res.setHeader("Content-Type", uct);
+        res.setHeader("Cache-Control", "private, max-age=10");
+        res.end(text);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        sendJson(res, 502, { error: `Upstream agent unreachable: ${msg}`, code: "AGENT_PROXY_ERROR" });
+      }
+      return;
+    }
+    sendJson(
+      res,
+      200,
+      {
+        ok: true,
+        endpoint: "/api/agent/chat",
+        method: "POST",
+        note: "Configure AGENT_BACKEND_ORIGIN to proxy chat POST to your VPS.",
+      },
+      "private, max-age=10"
+    );
+    return;
+  }
+
+  if (method !== "POST") {
     sendJson(res, 405, { error: "Method not allowed" });
     return;
   }
 
-  const origin = getOrigin();
   if (!origin) {
     sendJson(res, 503, {
       error: "Agent backend not configured. Set AGENT_BACKEND_ORIGIN on Vercel (origin only, no path).",

@@ -387,6 +387,16 @@ function isTruthyEnv(name: string): boolean {
   return v === "1" || v === "true" || v === "yes";
 }
 
+/** GET /api/agent/chat: uptime / Provider Hub probes often use GET; POST carries the real chat + x402 flow. */
+agentRouter.get("/chat", (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    endpoint: "/api/agent/chat",
+    method: "POST",
+    note: "Chat and x402 use POST with JSON (message, wallet, usageTs, usageSignature).",
+  });
+});
+
 /** POST /api/agent/chat: Anthropic, then Groq, then OpenAI (first success wins), unless AGENT_ANTHROPIC_ONLY is set. */
 agentRouter.post("/chat", async (req, res) => {
   const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();

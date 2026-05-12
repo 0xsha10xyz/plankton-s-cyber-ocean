@@ -5,7 +5,7 @@
  * Functions routing may not map them as dynamic routes outside Next.js.
  *
  * Routes handled:
- * - GET  /api/agent/logs | /api/agent/status | /api/agent/config
+ * - GET  /api/agent/logs | /api/agent/status | /api/agent/config | /api/agent/chat (probe; POST is real chat)
  * - POST /api/agent/chat
  * - POST /api/agent/info
  * - POST /api/agent/signal (Syraa proxy)
@@ -208,6 +208,39 @@ async function handleChatProxy(req: IncomingMessage, res: ServerResponse): Promi
   }
 }
 
+async function handleChatGetProbe(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const origin = getAgentBackendOrigin();
+  if (origin) {
+    try {
+      const upstream = await fetch(`${origin}/api/agent/chat`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      const text = await upstream.text();
+      res.statusCode = upstream.status;
+      const uct = upstream.headers.get("content-type");
+      if (uct) res.setHeader("Content-Type", uct);
+      res.setHeader("Cache-Control", "private, max-age=10");
+      res.end(text);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      sendJson(res, 502, { error: `Upstream agent unreachable: ${msg}`, code: "AGENT_PROXY_ERROR" }, "private, no-store");
+    }
+    return;
+  }
+  sendJson(
+    res,
+    200,
+    {
+      ok: true,
+      endpoint: "/api/agent/chat",
+      method: "POST",
+      note: "Set AGENT_BACKEND_ORIGIN to proxy chat; POST carries message + wallet signatures and x402.",
+    },
+    "private, max-age=10"
+  );
+}
+
 async function handleSignalProxy(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const origin = getAgentBackendOrigin();
   if (!origin) {
@@ -328,6 +361,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const segFromPath = parts[parts.length - 1] || "";
   const segment = normalizeSegment(segFromQuery || segFromPath);
 
+  if (segment === "chat" && method === "GET") {
+    await handleChatGetProbe(req, res);
+    return;
+  }
   if (segment === "chat" && method === "POST") {
     await handleChatProxy(req, res);
     return;
