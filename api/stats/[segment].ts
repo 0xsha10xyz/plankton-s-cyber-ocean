@@ -2,7 +2,7 @@
  * POST /api/stats/connect and GET /api/stats/users
  */
 import type { IncomingMessage, ServerResponse } from "http";
-import { statsConnect, getStatsUsers } from "../../server-lib/stats-handler.js";
+import { statsRecordConnect, getStatsUsers } from "../../server-lib/stats-handler.js";
 
 export const config = {
   runtime: "nodejs",
@@ -44,21 +44,22 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       sendJson(res, 405, { error: "Method not allowed" });
       return;
     }
-    let body: { wallet?: unknown };
+    let body: { wallet?: unknown; privyUserId?: unknown };
     try {
       const raw = await readBody(req);
-      body = JSON.parse(raw || "{}") as { wallet?: unknown };
+      body = JSON.parse(raw || "{}") as { wallet?: unknown; privyUserId?: unknown };
     } catch {
       sendJson(res, 400, { error: "Invalid JSON body" });
       return;
     }
     const wallet = typeof body.wallet === "string" ? body.wallet.trim() : "";
-    if (!wallet || wallet.length > 64) {
-      sendJson(res, 400, { error: "Invalid wallet address" });
+    const privyUserId = typeof body.privyUserId === "string" ? body.privyUserId.trim() : "";
+    if (!wallet && !privyUserId) {
+      sendJson(res, 400, { error: "Provide wallet and/or privyUserId" });
       return;
     }
     try {
-      const data = await statsConnect(wallet);
+      const data = await statsRecordConnect({ wallet: wallet || undefined, privyUserId: privyUserId || undefined });
       sendJson(res, 200, data);
     } catch {
       sendJson(res, 200, { count: 0, isNew: false });

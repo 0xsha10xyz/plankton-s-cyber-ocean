@@ -142,13 +142,13 @@ If you see `WALLET_SIGNATURE_INVALID`, generate a new signature for the correct 
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/stats/users` | Returns total unique wallets that have connected |
-| POST | `/api/stats/connect` | Registers a wallet (idempotent); call when user connects |
+| GET | `/api/stats/users` | Returns total unique accounts (Privy users + wallet-only) |
+| POST | `/api/stats/connect` | Registers an account (idempotent). Body: `{ "wallet"?: "<base58>", "privyUserId"?: "<Privy user id>" }` — at least one field; if both are sent, `privyUserId` is used for deduplication |
 
 **Example:** `GET /api/stats/users`  
 **Response:** `{ "count": 42 }`
 
-**Example:** `POST /api/stats/connect` with body `{ "wallet": "<base58-address>" }`  
+**Example:** `POST /api/stats/connect` with body `{ "wallet": "<base58-address>" }` or `{ "privyUserId": "<id from Privy>" }` or both (Privy wins for counting one person).  
 **Response:** `{ "count": 43, "isNew": true }` (or `isNew: false` if already registered)
 
 ---

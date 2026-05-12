@@ -7,12 +7,17 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePrivy } from "@privy-io/react-auth";
 import { useUnifiedSolanaWallet } from "@/hooks/useUnifiedSolanaWallet";
 import { getApiBase } from "@/lib/api";
 
+export type StatsRegisterBody = { wallet?: string; privyUserId?: string };
+
 type StatsContextValue = {
   userCount: number;
+  /** @deprecated use registerAccount */
   registerWallet: (wallet: string) => Promise<void>;
+  registerAccount: (body: StatsRegisterBody) => Promise<void>;
 };
 
 const StatsContext = createContext<StatsContextValue | null>(null);
@@ -67,16 +72,21 @@ export function StatsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const registerWallet = useCallback(async (wallet: string) => {
+  const registerAccount = useCallback(async (body: StatsRegisterBody) => {
     if (statsApiUnavailable.current) return;
-    if (!wallet.trim()) return;
+    const wallet = body.wallet?.trim() ?? "";
+    const privyUserId = body.privyUserId?.trim() ?? "";
+    if (!wallet && !privyUserId) return;
     try {
       const base = getApiBase();
       if (!base) return;
       const res = await fetch(`${base}/api/stats/connect`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wallet: wallet.trim() }),
+        body: JSON.stringify({
+          ...(wallet ? { wallet } : {}),
+          ...(privyUserId ? { privyUserId } : {}),
+        }),
       });
       if (!mounted.current) return;
       if (res.ok) {
@@ -92,6 +102,13 @@ export function StatsProvider({ children }: { children: ReactNode }) {
       // ignore
     }
   }, []);
+
+  const registerWallet = useCallback(
+    async (wallet: string) => {
+      await registerAccount({ wallet: wallet.trim() });
+    },
+    [registerAccount]
+  );
 
   useEffect(() => {
     let id: number | null = null;
@@ -116,7 +133,9 @@ export function StatsProvider({ children }: { children: ReactNode }) {
   }, [fetchCount]);
 
   return (
-    <StatsContext.Provider value={{ userCount, registerWallet }}>
+    <StatsContext.Provider value={{ userCount, registerWallet, registerAccount }}>
+      <StatsWalletTracker />
+      <StatsPrivyTracker />
       {children}
     </StatsContext.Provider>
   );
@@ -128,9 +147,36 @@ export function useStats(): StatsContextValue {
   return ctx;
 }
 
-/** Registers the current wallet with the stats API when connected. Render once inside StatsProvider + WalletProvider. */
-export function StatsWalletTracker() {
-  const { registerWallet } = useStats();
+const hasPrivyAppId = () => Boolean(import.meta.env.VITE_PRIVY_APP_ID?.trim());
+
+/** Privy sign-in (email, X, GitHub, etc.) without requiring a Solana wallet yet. */
+function StatsPrivyTracker() {
+  if (!hasPrivyAppId()) return null;
+  return <StatsPrivyTrackerInner />;
+}
+
+function StatsPrivyTrackerInner() {
+  const { registerAccount } = useStats();
+  const { authenticated, ready, user } = usePrivy();
+  const registered = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!ready || !authenticated || !user?.id) return;
+    if (registered.current === user.id) return;
+    registered.current = user.id;
+    void registerAccount({ privyUserId: user.id });
+  }, [ready, authenticated, user?.id, registerAccount]);
+
+  return null;
+}
+
+function StatsWalletTracker() {
+  if (!hasPrivyAppId()) return <StatsWalletTrackerWalletOnly />;
+  return <StatsWalletTrackerWithPrivy />;
+}
+
+function StatsWalletTrackerWalletOnly() {
+  const { registerAccount } = useStats();
   const { connected, publicKey } = useUnifiedSolanaWallet();
   const registered = useRef<string | null>(null);
 
@@ -139,8 +185,26 @@ export function StatsWalletTracker() {
     const addr = publicKey.toBase58();
     if (registered.current === addr) return;
     registered.current = addr;
-    registerWallet(addr);
-  }, [connected, publicKey, registerWallet]);
+    void registerAccount({ wallet: addr });
+  }, [connected, publicKey, registerAccount]);
+
+  return null;
+}
+
+function StatsWalletTrackerWithPrivy() {
+  const { registerAccount } = useStats();
+  const { connected, publicKey } = useUnifiedSolanaWallet();
+  const { authenticated, user } = usePrivy();
+  const registered = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!connected || !publicKey) return;
+    const addr = publicKey.toBase58();
+    if (registered.current === addr) return;
+    registered.current = addr;
+    const privyUserId = authenticated && user?.id ? user.id : undefined;
+    void registerAccount({ wallet: addr, ...(privyUserId ? { privyUserId } : {}) });
+  }, [connected, publicKey, authenticated, user?.id, registerAccount]);
 
   return null;
 }

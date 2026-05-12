@@ -8,7 +8,7 @@ import { ScrollToTop } from "@/components/ScrollToTop";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MotionConfig } from "framer-motion";
 import { SolanaWalletProviders } from "@/contexts/WalletContext";
-import { StatsProvider, StatsWalletTracker } from "@/contexts/StatsContext";
+import { StatsProvider } from "@/contexts/StatsContext";
 import { WalletModalProvider } from "@/contexts/WalletModalContext";
 import { AccountProvider } from "@/contexts/AccountContext";
 import { WalletBalancesProvider } from "@/contexts/WalletBalancesContext";
@@ -49,7 +49,6 @@ const App = () => (
                 future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
               >
                 <ScrollToTop />
-                <StatsWalletTracker />
                 <Routes>
                   {/* Default: open on the landing page */}
                   <Route path="/" element={<Index />} />

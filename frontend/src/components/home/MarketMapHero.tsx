@@ -120,7 +120,7 @@ export function MarketMapHero({ className }: { className?: string }) {
                   {Math.max(0, userCount).toLocaleString()}
                 </p>
                 <p className="mt-1 text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground/75">
-                  Total Users
+                  Total accounts
                 </p>
               </div>
             </div>

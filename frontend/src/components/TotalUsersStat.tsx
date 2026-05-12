@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Users } from "lucide-react";
 import { useStats } from "@/contexts/StatsContext";
 
-/** Prominent "Total Users" stat for social proof. Hero and stats strip. */
+/** Prominent total sign-ups (Privy + wallet-only) for social proof. Hero and stats strip. */
 export function TotalUsersStat({
   variant = "default",
   className = "",
@@ -21,7 +21,7 @@ export function TotalUsersStat({
         className={`inline-flex flex-col items-center gap-1.5 rounded-2xl border border-primary/35 bg-gradient-to-b from-primary/[0.07] to-primary/[0.02] px-8 py-5 shadow-surface-sm ${className}`}
       >
         <span className="text-xs font-semibold uppercase tracking-wider text-primary/90">
-          Total Users
+          Total accounts
         </span>
         <span className="text-3xl md:text-4xl font-bold tabular-nums text-primary glow-text">
           {userCount.toLocaleString()}
@@ -38,7 +38,7 @@ export function TotalUsersStat({
         <Users size={20} className="text-primary shrink-0" />
         <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Total Users
+            Total accounts
           </span>
           <span className="text-lg font-bold tabular-nums text-foreground">
             {userCount.toLocaleString()}
@@ -53,7 +53,7 @@ export function TotalUsersStat({
     <div className={`flex items-center gap-2 ${className}`}>
       <Users size={18} className="text-primary/80 shrink-0" />
       <span className="text-sm text-muted-foreground">
-        <strong className="text-foreground font-semibold">Total Users:</strong>{" "}
+        <strong className="text-foreground font-semibold">Total accounts:</strong>{" "}
         {userCount.toLocaleString()}
       </span>
     </div>

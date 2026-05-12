@@ -11,7 +11,7 @@
 ## User & wallet data
 
 - **Connect wallet:** Happens only in the browser (Wallet Adapter). Private keys are **never** sent to the backend or stored on the server.
-- **Total Users:** The backend only stores **wallet addresses** (public) in `backend/data/connected-wallets.json` (local) or in memory (Vercel). That file/folder is **not** pushed to Git.
+- **Total Users:** Redis (or in-memory on Vercel without Redis) stores **unique account keys**: `p:<Privy user id>` for Privy sign-in (email, social, embedded wallet) and `w:<Solana address>` for wallet-only connections. Only **public** identifiers; no passwords or keys.
 - **Preferences (tier, profile):** Stored in the browser **localStorage** only; not sent to the repo.
 
 ## What **may** be in the repo

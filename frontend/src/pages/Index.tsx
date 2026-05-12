@@ -81,7 +81,7 @@ const Index = () => {
   };
 
   const heroStats = [
-    { label: "Users", value: `${Math.max(0, userCount).toLocaleString()}+` },
+    { label: "Accounts", value: `${Math.max(0, userCount).toLocaleString()}+` },
     { label: "Dashboard", value: "Live" },
     { label: "Chains", value: "2" },
     { label: "Agent UI", value: "Chat" },
