@@ -690,56 +690,89 @@ export default function Dashboard(): JSX.Element {
               </section>
 
               <section id="hive" className="mt-8 scroll-mt-28">
-                <div className="glass-card rounded-2xl border border-border/40 shadow-surface p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">Hive Protocol</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Task marketplace and agent registry (
-                        <a
-                          href="https://uphive.xyz/docs"
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-signal hover:underline"
-                        >
-                          docs
-                        </a>
-                        ). Configure <span className="font-mono text-[11px]">HIVE_API_KEY</span> on your API server.
-                      </p>
+                <div className="glass-card rounded-2xl border border-border/40 shadow-surface overflow-hidden">
+                  <div className="border-b border-border/35 bg-black/[0.12] px-5 py-6 md:px-8 md:py-7">
+                    <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
+                      <div className="min-w-0 max-w-3xl space-y-4">
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-mono uppercase tracking-[0.28em] text-muted-foreground/65">
+                            Integration
+                          </p>
+                          <h3 className="text-lg font-semibold tracking-tight text-foreground md:text-xl">
+                            Hive Protocol
+                          </h3>
+                        </div>
+                        <p className="text-sm leading-relaxed text-muted-foreground">
+                          Task marketplace and on-chain agent registry. Technical reference:{" "}
+                          <a
+                            href="https://uphive.xyz/docs"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-medium text-signal underline-offset-4 hover:underline"
+                          >
+                            Hive Protocol docs
+                          </a>
+                          .
+                        </p>
+                        <div className="rounded-xl border border-border/40 bg-secondary/25 px-4 py-3.5 md:px-5">
+                          <p className="mb-2 text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground/75">
+                            Deployment note
+                          </p>
+                          <p className="text-xs leading-relaxed text-muted-foreground">
+                            Configure{" "}
+                            <span className="rounded-md bg-black/30 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
+                              HIVE_API_KEY
+                            </span>{" "}
+                            on the API server. Production SPA proxies{" "}
+                            <span className="rounded-md bg-black/30 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
+                              /api/hive/*
+                            </span>{" "}
+                            via{" "}
+                            <span className="rounded-md bg-black/30 px-1.5 py-0.5 font-mono text-[11px] text-foreground/90">
+                              AGENT_BACKEND_ORIGIN
+                            </span>{" "}
+                            on Vercel.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          hiveStatusQ.refetch();
+                          hiveTasksQ.refetch();
+                        }}
+                        className="inline-flex shrink-0 items-center gap-2 self-start rounded-xl border border-border/50 bg-black/25 px-4 py-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-secondary/35 hover:text-foreground"
+                        title="Refresh Hive status and tasks"
+                      >
+                        <RefreshCw size={14} className={hiveStatusQ.isFetching || hiveTasksQ.isFetching ? "animate-spin" : ""} />
+                        Refresh
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        hiveStatusQ.refetch();
-                        hiveTasksQ.refetch();
-                      }}
-                      className="inline-flex items-center gap-2 rounded-xl border border-border/55 bg-black/20 px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/30 transition-colors"
-                      title="Refresh Hive status and tasks"
-                    >
-                      <RefreshCw size={14} className={hiveStatusQ.isFetching || hiveTasksQ.isFetching ? "animate-spin" : ""} />
-                      Refresh
-                    </button>
                   </div>
 
+                  <div className="px-5 py-6 md:px-8 md:py-7">
                   {hiveStatusQ.isLoading ? (
-                    <div className="mt-4 space-y-2">
+                    <div className="space-y-3">
+                      <Skeleton className="h-4 w-full max-w-lg bg-secondary/40" />
                       <Skeleton className="h-4 w-full max-w-md bg-secondary/40" />
-                      <Skeleton className="h-4 w-full max-w-sm bg-secondary/40" />
                     </div>
                   ) : hiveStatusQ.data?.configured === false ? (
-                    <p className="mt-4 text-sm text-muted-foreground">
-                      Hive is not wired yet. Add <span className="font-mono text-xs">HIVE_API_KEY</span> to{" "}
-                      <span className="font-mono text-xs">backend/.env</span> on the VPS, restart the API, and reload.
-                      On Vercel, ensure <span className="font-mono text-xs">AGENT_BACKEND_ORIGIN</span> points at that
-                      server so <span className="font-mono text-xs">/api/hive/*</span> proxies correctly.
-                    </p>
+                    <div className="rounded-xl border border-border/45 bg-secondary/20 px-4 py-4 md:px-5 md:py-5">
+                      <p className="text-sm leading-relaxed text-muted-foreground">
+                        Hive is not connected. Add <span className="font-mono text-xs text-foreground/85">HIVE_API_KEY</span>{" "}
+                        to <span className="font-mono text-xs text-foreground/85">backend/.env</span> on the VPS, restart the API,
+                        and reload. On Vercel, set{" "}
+                        <span className="font-mono text-xs text-foreground/85">AGENT_BACKEND_ORIGIN</span> to that API origin so{" "}
+                        <span className="font-mono text-xs text-foreground/85">/api/hive/*</span> proxies correctly.
+                      </p>
+                    </div>
                   ) : hiveTasksQ.isError ? (
-                    <div className="mt-4 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-muted-foreground">
+                    <div className="rounded-xl border border-destructive/35 bg-destructive/10 px-4 py-4 text-sm leading-relaxed text-muted-foreground md:px-5">
                       Could not load Hive tasks. Check upstream status at{" "}
-                      <span className="font-mono text-xs">{hiveStatusQ.data?.baseUrl ?? "uphive.xyz"}</span>.
+                      <span className="font-mono text-xs text-foreground/85">{hiveStatusQ.data?.baseUrl ?? "uphive.xyz"}</span>.
                     </div>
                   ) : (
-                    <div className="mt-4 intel-surface overflow-hidden rounded-xl border border-border/35">
+                    <div className="intel-surface overflow-hidden rounded-xl border border-border/35">
                       <Table>
                         <TableHeader>
                           <TableRow className="hover:bg-transparent">
@@ -793,6 +826,7 @@ export default function Dashboard(): JSX.Element {
                       ) : null}
                     </div>
                   )}
+                  </div>
                 </div>
               </section>
             </section>
