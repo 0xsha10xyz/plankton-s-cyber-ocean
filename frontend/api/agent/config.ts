@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "http";
+import { tryHiveProxyFromQuery } from "../../../server-lib/hive-proxy.js";
 
 export const config = { runtime: "nodejs", maxDuration: 60 };
 
@@ -56,6 +57,7 @@ function getOrigin(): string | null {
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
   if (respondVectorWellKnown(req, res)) return;
+  if (await tryHiveProxyFromQuery(req, res)) return;
 
   const origin = getOrigin();
   if (!origin) {

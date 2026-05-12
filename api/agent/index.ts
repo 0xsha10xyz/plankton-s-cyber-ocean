@@ -11,9 +11,11 @@
  * - POST /api/agent/signal (Syraa proxy)
  *
  * When `AGENT_BACKEND_ORIGIN` (or `VPS_AGENT_API_ORIGIN`) is set, chat/config/info are proxied to the VPS.
+ * Hive: `vercel.json` maps `/api/hive/*` here with `hiveProxyTail=` (see `tryHiveProxyFromQuery` in `server-lib/hive-proxy.ts`).
  */
 import type { IncomingMessage, ServerResponse } from "http";
 import { ZAUTH_PUBLIC_METADATA, isVectorVerifyTokenConfigured } from "../../server-lib/zauth-public-metadata.js";
+import { tryHiveProxyFromQuery } from "../../server-lib/hive-proxy.js";
 
 export const config = {
   runtime: "nodejs",
@@ -352,6 +354,8 @@ function normalizeSegment(raw: string): string {
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (await tryHiveProxyFromQuery(req, res)) return;
+
   const method = (req.method || "GET").toUpperCase();
   const q = getQuery(req.url);
   const segFromQuery = q.get("segment") || "";

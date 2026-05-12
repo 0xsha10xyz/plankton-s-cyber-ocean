@@ -61,7 +61,7 @@ Full setup (including X), env separation, verify endpoint, credential-file pract
 | **Birdeye** | OHLCV, token overview, screener-style data | `BIRDEYE_API_KEY` |
 | **Polymarket (Gamma + CLOB)** | Real-time market discovery + optional best bid/ask enrichment (read-only) | No key required (optional `POLY_API_KEY`). See **[Polymarket market data](./polymarket-market-data.md)** |
 | **Nansen** | On-chain intelligence; powers Dashboard "Tokens" tab via `GET /api/nansen/token-screener` (read-only) | `NANSEN_API_KEY` server-side only (Vercel env or VPS `backend/.env`). See **[Nansen integration](./nansen-integration.md)** |
-| **Hive Protocol** | Task marketplace + agent profile via `@luxenlabs/hive-agent` on the VPS; Dashboard **Hive** tab calls same-origin `/api/hive/*` | `HIVE_API_KEY` (and optional `HIVE_API_BASE_URL`) only in **`backend/.env`** on the VPS. On Vercel set **`AGENT_BACKEND_ORIGIN`** to that API origin; proxy handlers are **`api/hive/index.ts`** (repo root) or **`frontend/api/hive/index.ts`** when Root Directory is **`frontend`**. Docs: [Hive Protocol](https://uphive.xyz/docs). |
+| **Hive Protocol** | Task marketplace + agent profile via `@luxenlabs/hive-agent` on the VPS; Dashboard **Hive** tab calls same-origin `/api/hive/*` | `HIVE_API_KEY` (and optional `HIVE_API_BASE_URL`) only in **`backend/.env`** on the VPS. On Vercel set **`AGENT_BACKEND_ORIGIN`**; **`vercel.json`** rewrites `/api/hive/*` into **`api/agent/index`** (repo root) or **`frontend/api/agent/config`** (Root Directory **`frontend`**) — shared **`server-lib/hive-proxy.ts`** so Hobby stays within the **12 serverless function** limit. Docs: [Hive Protocol](https://uphive.xyz/docs). |
 
 Without Birdeye, charts may use fallback/sample data depending on route.
 

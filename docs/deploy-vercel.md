@@ -39,7 +39,7 @@ Leave **`VITE_API_URL` unset** and set **`VITE_AGENT_API_URL`**. Configure **`CO
 
 Same tunnel as agent chat: set **`AGENT_BACKEND_ORIGIN`** = your Express origin (e.g. `https://api.planktonomous.dev`) **with no path**. The serverless function **`api/hive/index.ts`** forwards **`/api/hive/*`** to the VPS, which must have **`HIVE_API_KEY`** in `backend/.env`. Do **not** put the Hive key in Vercel.
 
-After deploy, open **`https://<your-site>/api/hive/status`** in the browser; you should see **`"configured": true`**.
+After deploy, open **`https://<your-site>/api/hive/status`** in the browser; you should see **`"configured": true`**. The Hive URL is rewritten to the same serverless bundle as **`/api/agent/*`** (see **`server-lib/hive-proxy.ts`**) so the Hobby **12-function** cap is not exceeded.
 
 ---
 

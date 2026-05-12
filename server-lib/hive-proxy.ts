@@ -1,13 +1,7 @@
 /**
- * Proxies `/api/hive/*` to Express on the VPS (Hive Protocol SDK runs server-side only).
- * Requires AGENT_BACKEND_ORIGIN or VPS_AGENT_API_ORIGIN — same origin tunnel as agent routes.
+ * Shared Hive → VPS proxy for Vercel serverless (avoids a dedicated `/api/hive` function — Hobby 12-fn limit).
  */
 import type { IncomingMessage, ServerResponse } from "http";
-
-export const config = {
-  runtime: "nodejs",
-  maxDuration: 60,
-};
 
 function sendJson(res: ServerResponse, statusCode: number, body: unknown): void {
   res.statusCode = statusCode;
@@ -42,7 +36,14 @@ function getAgentBackendOrigin(): string | null {
   return raw.replace(/\/$/, "");
 }
 
-export default async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
+/**
+ * When `hiveProxyTail` is present in the query string (from vercel.json rewrite), forwards to VPS `/api/hive/*`.
+ * Returns true if the request was handled.
+ */
+export async function tryHiveProxyFromQuery(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+  const q = getQuery(req.url);
+  if (!q.has("hiveProxyTail")) return false;
+
   const origin = getAgentBackendOrigin();
   if (!origin) {
     sendJson(
@@ -53,7 +54,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
         code: "HIVE_BACKEND_NOT_CONFIGURED",
       }
     );
-    return;
+    return true;
   }
 
   const method = (req.method || "GET").toUpperCase();
@@ -62,13 +63,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept");
     res.end();
-    return;
+    return true;
   }
 
-  const q = getQuery(req.url);
-  const hivePath = (q.get("hivePath") || "").replace(/^\/+|\/+$/g, "");
+  const hivePath = (q.get("hiveProxyTail") || "").replace(/^\/+|\/+$/g, "");
   const forwardParams = new URLSearchParams(q);
-  forwardParams.delete("hivePath");
+  forwardParams.delete("hiveProxyTail");
   const qs = forwardParams.toString();
   const upstreamPath = `/api/hive/${hivePath}${qs ? `?${qs}` : ""}`;
   const upstreamUrl = `${origin}${upstreamPath}`;
@@ -94,4 +94,5 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     const msg = e instanceof Error ? e.message : String(e);
     sendJson(res, 502, { error: `Hive upstream unreachable: ${msg}`, code: "HIVE_PROXY_ERROR" });
   }
+  return true;
 }
