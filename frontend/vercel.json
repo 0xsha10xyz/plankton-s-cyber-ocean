@@ -4,6 +4,8 @@
   "routes": [
     { "handle": "filesystem" },
     { "src": "/.well-known/vector-verify", "dest": "/api/agent/config?__zauth_vector_verify=1" },
+    { "src": "/api/hive/?$", "dest": "/api/hive/index" },
+    { "src": "/api/hive/(.*)", "dest": "/api/hive/index?hivePath=$1" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }

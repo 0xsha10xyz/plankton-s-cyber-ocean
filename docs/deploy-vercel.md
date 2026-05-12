@@ -35,6 +35,12 @@ Set **`VITE_API_URL`** = `https://api.example.com` (no trailing slash).
 
 Leave **`VITE_API_URL` unset** and set **`VITE_AGENT_API_URL`**. Configure **`CORS_ORIGIN`** on the VPS.
 
+### Hive Protocol (Dashboard → Hive tab)
+
+Same tunnel as agent chat: set **`AGENT_BACKEND_ORIGIN`** = your Express origin (e.g. `https://api.planktonomous.dev`) **with no path**. The serverless function **`api/hive/index.ts`** forwards **`/api/hive/*`** to the VPS, which must have **`HIVE_API_KEY`** in `backend/.env`. Do **not** put the Hive key in Vercel.
+
+After deploy, open **`https://<your-site>/api/hive/status`** in the browser; you should see **`"configured": true`**.
+
 ---
 
 ## 4. After deploy
@@ -51,3 +57,4 @@ Leave **`VITE_API_URL` unset** and set **`VITE_AGENT_API_URL`**. Configure **`CO
 | **404 on `token-info` or `rpc`** | Set **Root Directory** to repo root (`.`). Redeploy. |
 | **500 on `rpc`** | Set **`SOLANA_RPC_URL`** on Vercel; check function logs. |
 | **Invalid mint when pasting CA** | Use a full Solana mint (32–44 base58 characters). |
+| **`503` on `/api/hive/status`** (`HIVE_BACKEND_NOT_CONFIGURED`) | Set **`AGENT_BACKEND_ORIGIN`** on Vercel to your VPS API origin; redeploy. |

@@ -48,8 +48,9 @@ The **`api/`** folder must live at the **repository root** relative to your Verc
 ## Mode C: Hybrid (Vercel market + VPS agent only)
 
 1. Leave **`VITE_API_URL` unset** (same-origin for Swap/market).  
-2. Set **`VITE_AGENT_API_URL`** = VPS origin for **`POST /api/agent/chat`**.  
-3. On the VPS, set **`CORS_ORIGIN`** to your Vercel frontend origin.
+2. On **Vercel**, set **`AGENT_BACKEND_ORIGIN`** = your Express API origin (HTTPS, no path). This proxies **`/api/agent/*`** and **`/api/hive/*`** to the VPS.  
+3. **Optional:** set **`VITE_AGENT_API_URL`** only if you intentionally force agent routes cross-origin (see **[CONFIGURATION.md](./CONFIGURATION.md)**); normally same-origin + **`AGENT_BACKEND_ORIGIN`** is enough.  
+4. On the VPS, set **`CORS_ORIGIN`** to include your Vercel site origin.
 
 ---
 
