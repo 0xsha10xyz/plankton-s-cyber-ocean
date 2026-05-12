@@ -26,6 +26,11 @@ const INTEGRATIONS: Integration[] = [
     logoUrl: "/brand/hyre.png",
   },
   {
+    name: "Hive",
+    role: "Agent marketplace and task APIs via Hive Protocol (UpHive) on Solana.",
+    logoUrl: "/logos/hive.png",
+  },
+  {
     name: "Solana",
     role: "Base layer for all protocol activity, swaps, and agent execution.",
     logoUrl: "/logos/solana.png",

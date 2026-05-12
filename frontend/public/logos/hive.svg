@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="hive-face-a" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="hive-face-b" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="hive-face-c" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6ee7b7"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+  </defs>
+  <rect width="80" height="80" rx="18" fill="#0b1220"/>
+  <!-- Isometric cube cluster (Hive motif) -->
+  <path fill="url(#hive-face-a)" d="M40 14 L54 23 L54 39 L40 48 L26 39 L26 23 Z"/>
+  <path fill="url(#hive-face-b)" d="M40 34 L54 43 L54 59 L40 68 L26 59 L26 43 Z" opacity="0.92"/>
+  <path fill="url(#hive-face-c)" d="M54 23 L68 32 L68 48 L54 57 L54 41 Z" opacity="0.88"/>
+</svg>
