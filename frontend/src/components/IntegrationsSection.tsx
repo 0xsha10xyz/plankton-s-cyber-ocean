@@ -26,6 +26,11 @@ const INTEGRATIONS: Integration[] = [
     logoUrl: "/brand/hyre.png",
   },
   {
+    name: "Xona",
+    role: "Solana token market intelligence (Onchain OS) via x402 for Agent Chat enrichment.",
+    logoUrl: "/logos/xona.png",
+  },
+  {
     name: "Hive",
     role: "Agent marketplace and task APIs via Hive Protocol (UpHive) on Solana.",
     logoUrl: "/logos/hive.png",
