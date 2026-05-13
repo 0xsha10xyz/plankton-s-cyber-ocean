@@ -48,7 +48,12 @@ export function verifyUsageSignature(opts: {
   method: string;
   maxSkewMs?: number;
 }): boolean {
-  const maxSkewMs = opts.maxSkewMs ?? 5 * 60 * 1000; // 5 min
+  const envRaw = String(process.env.USAGE_SIGNATURE_MAX_SKEW_MS ?? "").trim();
+  const envSkew = /^\d+$/.test(envRaw) ? Math.trunc(Number(envRaw)) : NaN;
+  const defaultSkew = 5 * 60 * 1000; // 5 min
+  const maxSkewMs =
+    opts.maxSkewMs ??
+    (Number.isFinite(envSkew) && envSkew >= 60_000 && envSkew <= 24 * 60 * 60 * 1000 ? envSkew : defaultSkew);
   if (!opts.wallet?.trim()) return false;
   if (!Number.isFinite(opts.ts) || opts.ts <= 0) return false;
   if (!opts.signatureB64?.trim()) return false;

@@ -15,6 +15,11 @@ import {
   isHyreDefiChatEnabled,
 } from "../lib/hyreDefi.js";
 import {
+  fetchXonaSolanaMarketSupplement,
+  isXonaSolanaMarketChatEnabled,
+  isXonaSolanaMarketConfigured,
+} from "../lib/xonaSolanaMarket.js";
+import {
   ZAUTH_PUBLIC_METADATA,
   isVectorVerifyTokenConfigured,
   isZauthProviderSdkEnabled,
@@ -50,6 +55,7 @@ MARKET / MACRO / ON-CHAIN QUESTIONS — ANALYTICAL MANDATE:
 
 DATA & LIVE FEEDS (non-negotiable):
 - You do **not** have a Bloomberg terminal or live API in this chat. Do **not** invent prices, volumes, on-chain metrics, or "verified" balances.
+- If the user turn includes a block beginning with \`[XONA SOLANA MARKET\`, treat structured fields and numbers inside that block as **Confirmed** upstream Solana market data **for that mint only**; do not claim data outside that block. You may still label gaps as Unknown.
 - If user context (e.g. tokenMint, timeframe) or the user message supplies numbers, you may interpret them; otherwise state what is missing and name **categories** of sources (e.g. exchange tape, index provider, on-chain analytics) without pretending you just pulled them.
 - Prefer pointing to Plankton **Research / Swap / Command Center** (or generic reputable source types) for verification.
 
@@ -71,33 +77,107 @@ function clampChatLength(s: string, max: number): string {
   return t.slice(0, max);
 }
 
+/** Brace-balanced `{ ... }` from `start`, ignoring `{`/`}` inside JSON strings. */
+function sliceBalancedJsonObject(text: string, start: number): string | null {
+  if (start < 0 || start >= text.length || text[start] !== "{") return null;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (inString) {
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (c === "\\") {
+        escape = true;
+        continue;
+      }
+      if (c === '"') {
+        inString = false;
+        continue;
+      }
+      continue;
+    }
+    if (c === '"') {
+      inString = true;
+      continue;
+    }
+    if (c === "{") depth++;
+    else if (c === "}") {
+      depth--;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+/** Brace-balanced slice from first `{` before `"insight"` through matching `}` (string-aware). */
+function tryExtractInsightJsonObject(text: string): string | null {
+  const keyIdx = text.indexOf('"insight"');
+  if (keyIdx < 0) return null;
+  const start = text.lastIndexOf("{", keyIdx);
+  if (start < 0) return null;
+  return sliceBalancedJsonObject(text, start);
+}
+
 function parseAgentChatPayload(raw: string): AgentChatJson | null {
   let text = raw.trim();
-  const fence = text.match(/^```(?:json)?\s*([\s\S]*?)```$/m);
-  if (fence) text = fence[1].trim();
-  try {
-    const o = JSON.parse(text) as Record<string, unknown>;
-    const insight = typeof o.insight === "string" ? o.insight : "";
-    const additional = typeof o.additional_insight === "string" ? o.additional_insight : "";
-    const actionsRaw = o.actions;
-    const actions = Array.isArray(actionsRaw) ? actionsRaw.map((a) => String(a)).filter(Boolean) : [];
-    if (!insight) return null;
-    return {
-      insight: clampChatLength(insight, 4000),
-      additional_insight: clampChatLength(additional, 4000),
-      actions: actions.slice(0, 6),
-    };
-  } catch {
-    const m = text.match(/\{[\s\S]*"insight"\s*:[\s\S]*\}/);
-    if (m) {
-      try {
-        return parseAgentChatPayload(m[0]);
-      } catch {
-        return null;
-      }
-    }
-    return null;
+  const fenceAnywhere = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceAnywhere) text = fenceAnywhere[1].trim();
+  else {
+    const fence = text.match(/^```(?:json)?\s*([\s\S]*?)```$/m);
+    if (fence) text = fence[1].trim();
   }
+
+  const tryParse = (s: string): AgentChatJson | null => {
+    try {
+      let parsed: unknown = JSON.parse(s);
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0] !== null && typeof parsed[0] === "object") {
+        parsed = parsed[0];
+      }
+      const o = parsed as Record<string, unknown>;
+      const insightRaw = o.insight;
+      const insight =
+        typeof insightRaw === "string"
+          ? insightRaw
+          : insightRaw != null && (typeof insightRaw === "number" || typeof insightRaw === "boolean")
+            ? String(insightRaw)
+            : "";
+      const additional = typeof o.additional_insight === "string" ? o.additional_insight : "";
+      const actionsRaw = o.actions;
+      const actions = Array.isArray(actionsRaw) ? actionsRaw.map((a) => String(a)).filter(Boolean) : [];
+      if (!insight) return null;
+      return {
+        insight: clampChatLength(insight, 4000),
+        additional_insight: clampChatLength(additional, 4000),
+        actions: actions.slice(0, 6),
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const direct = tryParse(text);
+  if (direct) return direct;
+
+  const balanced = tryExtractInsightJsonObject(text);
+  if (balanced) {
+    const p = tryParse(balanced);
+    if (p) return p;
+  }
+
+  const m = text.match(/\{[\s\S]*?"insight"\s*:/);
+  if (m && m.index !== undefined) {
+    const from = m.index;
+    const tail = sliceBalancedJsonObject(text, from);
+    if (tail) {
+      const p = tryParse(tail);
+      if (p) return p;
+    }
+  }
+  return null;
 }
 
 type LogLine = { id: string; time: string; message: string; type?: string };
@@ -223,6 +303,10 @@ agentRouter.get("/config", (req, res) => {
           blockSize: 5,
         }
       : { enabled: false },
+    xonaSolanaMarket: {
+      configured: isXonaSolanaMarketConfigured(),
+      enabled: isXonaSolanaMarketChatEnabled(),
+    },
     ...(x402Enabled
       ? {
           x402Discovery: {
@@ -270,7 +354,7 @@ async function chatAnthropic(
     },
     body: JSON.stringify({
       model,
-      max_tokens: 1024,
+      max_tokens: 4096,
       temperature: 0.6,
       system,
       messages,
@@ -318,7 +402,7 @@ async function chatOpenAI(
     body: JSON.stringify({
       model,
       temperature: 0.6,
-      max_tokens: 900,
+      max_tokens: 2048,
       response_format: { type: "json_object" },
       messages: openaiMessages,
     }),
@@ -365,7 +449,7 @@ async function chatGroq(
     body: JSON.stringify({
       model,
       temperature: 0.6,
-      max_tokens: 1024,
+      max_tokens: 2048,
       response_format: { type: "json_object" },
       messages,
     }),
@@ -515,18 +599,31 @@ agentRouter.post("/chat", async (req, res) => {
         }))
     : [];
 
-  let hyreSupplement = "";
-  if (isHyreDefiChatEnabled()) {
+  const hyreP = (async (): Promise<string> => {
+    if (!isHyreDefiChatEnabled()) return "";
     const hyreIntent = decideHyreDefiIntent(message);
-    if (hyreIntent) {
-      try {
-        const snap = await fetchHyreDefiSnapshot(hyreIntent);
-        if (snap) hyreSupplement = `\n\n${snap}`;
-      } catch (e) {
-        console.warn("[HYRE] optional enrichment failed:", e instanceof Error ? e.message : e);
-      }
+    if (!hyreIntent) return "";
+    try {
+      const snap = await fetchHyreDefiSnapshot(hyreIntent);
+      return snap ? `\n\n${snap}` : "";
+    } catch (e) {
+      console.warn("[HYRE] optional enrichment failed:", e instanceof Error ? e.message : e);
+      return "";
     }
-  }
+  })();
+
+  const xonaP = (async (): Promise<string> => {
+    if (!isXonaSolanaMarketChatEnabled()) return "";
+    try {
+      const snap = await fetchXonaSolanaMarketSupplement(message, body.context);
+      return snap ? `\n\n${snap}` : "";
+    } catch (e) {
+      console.warn("[XONA] optional enrichment failed:", e instanceof Error ? e.message : e);
+      return "";
+    }
+  })();
+
+  const [hyreSupplement, xonaSupplement] = await Promise.all([hyreP, xonaP]);
 
   const ctxParts: string[] = [];
   if (body.context?.tokenMint) ctxParts.push(`Context tokenMint: ${body.context.tokenMint}`);
@@ -534,7 +631,7 @@ agentRouter.post("/chat", async (req, res) => {
   if (body.context?.timeframe) ctxParts.push(`Context timeframe: ${body.context.timeframe}`);
   if (body.wallet) ctxParts.push(`Connected wallet: ${body.wallet}`);
   const contextBlock = ctxParts.length ? `\n\n${ctxParts.join("\n")}` : "";
-  const userBlock = clampChatLength(message + hyreSupplement + contextBlock + LANGUAGE_LOCK_FOOTER, 9500);
+  const userBlock = clampChatLength(message + hyreSupplement + xonaSupplement + contextBlock + LANGUAGE_LOCK_FOOTER, 9500);
 
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), 55_000);
@@ -569,6 +666,10 @@ agentRouter.post("/chat", async (req, res) => {
 
     const parsed = parseAgentChatPayload(raw);
     if (!parsed) {
+      console.warn(
+        "[agent/chat] PARSE_ERROR — model output was not valid insight JSON. Snippet:",
+        raw.slice(0, 500).replace(/\s+/g, " ")
+      );
       res.status(502).json({ error: "Invalid model output (expected JSON with insight/actions)", code: "PARSE_ERROR" });
       return;
     }

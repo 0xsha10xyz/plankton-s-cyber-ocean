@@ -151,6 +151,7 @@ async function handleConfigProxy(_req: IncomingMessage, res: ServerResponse): Pr
   if (!origin) {
     sendJson(res, 200, {
       x402AgentChat: { enabled: false },
+      xonaSolanaMarket: { configured: false, enabled: false },
       zauth: {
         ...ZAUTH_PUBLIC_METADATA,
         vectorVerifyConfigured: isVectorVerifyTokenConfigured(),

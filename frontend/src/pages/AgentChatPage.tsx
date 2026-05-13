@@ -1110,6 +1110,9 @@ export default function AgentChatPage() {
                 } satisfies AgentJsonResponse);
               }
             } else {
+              if (retry.status === 401 || retry.status === 403) {
+                usageSigRef.current = null;
+              }
               toastIfAgentChatFailed(retry);
               reply = JSON.stringify({
                 insight: "Chat request failed.",
@@ -1126,6 +1129,9 @@ export default function AgentChatPage() {
           }
         } else {
           toastIfAgentChatFailed(res);
+          if (res.status === 401 || res.status === 403) {
+            usageSigRef.current = null;
+          }
           const errBody: unknown = await res.json().catch(() => null);
           const errText =
             errBody && typeof errBody === "object" && "error" in errBody
