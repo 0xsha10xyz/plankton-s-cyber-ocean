@@ -288,6 +288,13 @@ export default function DocsHome() {
                   proxy, Solana first x402, troubleshooting. <DocLink file="docs/syraa-signal-agent.md" />
                 </span>
               </li>
+              <li className="flex gap-3">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                <span>
+                  <strong className="text-foreground/95">Xona Solana Market</strong>: live Solana token snapshots merged into
+                  Agent Chat (server-paid x402 on the VPS). <DocLink file="docs/xona-solana-market.md" />
+                </span>
+              </li>
             </ul>
           </HoloCard>
           <HoloCard className="p-6 md:p-8">

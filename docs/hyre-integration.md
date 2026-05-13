@@ -97,5 +97,6 @@ You should see either an **upstream OK** info line or a **warning** explaining H
 | [Configuration](./CONFIGURATION.md) | VPS agent chat and env layout |
 | [x402 payments](./x402-payments.md) | Plankton per-message unlock (separate from HYRE upstream spend) |
 | [Syraa Signal Agent](./syraa-signal-agent.md) | Similar server-paid x402 pattern |
+| [Xona Solana Market](./xona-solana-market.md) | Solana token market enrichment (parallel with HYRE in chat) |
 
 Implementation files: `backend/src/lib/hyreDefi.ts`, `backend/src/routes/agent.ts`.

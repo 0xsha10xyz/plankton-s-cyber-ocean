@@ -124,6 +124,16 @@ Configuration is documented in **[Syraa Signal Agent](./syraa-signal-agent.md)**
 
 ---
 
+## Xona Solana Market (Agent Chat enrichment)
+
+**Xona** supplies optional **Solana token market intelligence** (overview, risk, holders, candles, whale trades, cluster checks) for Agent Chat on the **VPS**. The backend pays Xona upstream via **x402 on Solana** using **`XONA_SOLANA_PRIVATE_KEY`**; snapshots merge into LLM context when the user message includes a **token mint** and passes intent guards.
+
+- No Xona secrets belong on Vercel or in the browser bundle.
+- `GET /api/agent/config` exposes **`xonaSolanaMarket.configured`** / **`enabled`** for operators.
+- Full setup, upstream actions, cost model, and verification: **[Xona Solana Market](./xona-solana-market.md)**.
+
+---
+
 ## Deployment platforms
 
 | Platform | What it hosts |
@@ -146,3 +156,4 @@ Environment files: **`frontend/.env.example`**, **`backend/.env.example`**, **`a
 | [API recommendations](./api-recommendations.md) | Broader ecosystem suggestions for future features |
 | [Privy integration](./privy-integration.md) | Auth, embedded wallets, unified Solana wallet, verify route, secret handling |
 | [HYRE integration](./hyre-integration.md) | DeFi TVL/yields enrichment for Agent Chat (server-paid x402, VPS-only secrets) |
+| [Xona Solana Market](./xona-solana-market.md) | Solana token market snapshots for Agent Chat (server-paid x402, VPS-only secrets) |

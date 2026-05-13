@@ -14,6 +14,7 @@ import {
   Shield,
   ShieldCheck,
   TrendingUp,
+  LineChart,
   Briefcase,
   Zap,
   ChevronRight,
@@ -44,6 +45,7 @@ const sidebarSections = [
   { id: "zauth-integration", label: "zauth integration", icon: ShieldCheck, path: "/docs/zauth-integration" as const },
   { id: "syraa-signal-agent", label: "Syraa signal agent", icon: Signal, path: "/docs/syraa-signal-agent" as const },
   { id: "hyre-integration", label: "HYRE DeFi integration", icon: TrendingUp, path: "/docs/hyre-integration" as const },
+  { id: "xona-solana-market", label: "Xona Solana Market", icon: LineChart, path: "/docs/xona-solana-market" as const },
   { id: "hive-integration", label: "Hive integration", icon: Briefcase, path: "/docs/hive-integration" as const },
 ] as const;
 

@@ -28,6 +28,8 @@ The **Plankton Agent** matches the user’s latest message language when possibl
 | [x402 payments (Solana)](./x402-payments.md) | HTTP 402 + USDC on Solana: Agent Chat, Vercel proxy, VPS verification, env reference |
 | [zauth integration](./zauth-integration.md) | Vector domain verification, Provider Hub SDK on the VPS, Vercel well-known routing, env and troubleshooting |
 | [Syraa Signal Agent](./syraa-signal-agent.md) | “signal …” agent choice (Plankton vs Syraa), Vercel to VPS proxy, Solana first x402, security checklist |
+| [Xona Solana Market](./xona-solana-market.md) | Solana token market enrichment for Agent Chat (Xona x402 upstream, VPS-only secrets) |
+| [HYRE integration](./hyre-integration.md) | DeFi TVL/yields enrichment for Agent Chat (server-paid x402) |
 | [Language & localization](./language-and-localization.md) | UI copy & maintainer docs vs agent reply language |
 | [Frontend](./frontend.md) | App features, wallet, Account, AI chat, navigation |
 | [Backend API](./backend-api.md) | API reference, endpoints, and environment variables |
