@@ -74,7 +74,7 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/agent/status` | Agent status (active, riskLevel, profit24h, totalPnL, message) |
-| GET | `/api/agent/config` | Agent config (riskLevels, defaultRisk, x402AgentChat, **xonaSolanaMarket**, zauth, …) |
+| GET | `/api/agent/config` | Agent config (riskLevels, defaultRisk, x402AgentChat, **xonaSolanaMarket**, **oobe**, zauth, …) |
 | POST | `/api/agent/chat` | **Plankton Agent** LLM chat (JSON body). Requires at least one of `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, or `OPENAI_API_KEY` on the server. |
 | POST | `/api/agent/signal` | **Syraa Signal** fetch (server-to-server, x402 paid upstream). Requires Syraa env vars on the VPS (`SYRAA_*`). |
 
@@ -85,6 +85,18 @@ The Plankton backend is an Express + TypeScript server that provides REST endpoi
 **Response:** `{ "riskLevels": ["conservative", "mid", "aggressive"], "defaultRisk": "mid", "xonaSolanaMarket": { "configured": true, "enabled": true }, ... }`
 
 When **`XONA_SOLANA_PRIVATE_KEY`** is set on the VPS, eligible chat turns may merge **[Xona Solana Market](./xona-solana-market.md)** snapshots into the LLM context before the model replies. See also **[HYRE integration](./hyre-integration.md)** for DeFi enrichment on the same route.
+
+When **`OOBE_MEMORY_ENABLED=1`**, successful chat responses also queue **[OOBE Protocol](./oobe-integration.md)** on-chain memory (async; does not block the HTTP response). Config exposes **`oobe.memory`** on this route.
+
+### OOBE Protocol (on-chain memory)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/oobe/status` | OOBE configuration + `memory` (enabled, coreReady, lastInscription) |
+| GET | `/api/oobe/probe` | Status plus RPC balance probe for the agent wallet |
+| POST | `/api/oobe/memory` | Manual test inscription (requires `OOBE_MEMORY_ENABLED=1`; costs SOL) |
+
+VPS-only. Full setup, env table, UI behavior, and verification: **[OOBE integration](./oobe-integration.md)**.
 
 #### `POST /api/agent/chat`
 
