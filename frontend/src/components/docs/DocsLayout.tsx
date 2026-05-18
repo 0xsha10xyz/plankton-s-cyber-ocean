@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   Book,
@@ -22,34 +23,78 @@ import {
   Menu,
   X,
   Users,
+  Wallet,
+  Bot,
 } from "lucide-react";
 import ParticleBackground from "@/components/ParticleBackground";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 
-const sidebarSections = [
-  { id: "overview", label: "Overview", icon: Book },
-  { id: "adoption", label: "Adoption & setup", icon: Users },
-  { id: "protocol", label: "The Protocol", icon: Zap },
-  { id: "tokenomics", label: "Tokenomics", icon: Coins },
-  { id: "autonomous", label: "Autonomous Agent", icon: Rocket },
-  { id: "security", label: "Security", icon: Shield },
-  { id: "polymarket-market-data", label: "Polymarket market data", icon: Signal, path: "/docs/polymarket-market-data" as const },
-  { id: "nansen-integration", label: "Nansen integration", icon: Activity, path: "/docs/nansen-integration" as const },
-  { id: "privy-integration", label: "Privy integration", icon: KeyRound, path: "/docs/privy-integration" as const },
-  { id: "llm-providers", label: "LLM providers", icon: Cpu, path: "/docs/llm-providers" as const },
-  { id: "corbits-integration", label: "Corbits integration", icon: Zap, path: "/docs/corbits-integration" as const },
-  { id: "pay-sh", label: "pay.sh", icon: Zap, path: "/docs/pay-sh" as const },
-  { id: "x402-payments", label: "x402 payments", icon: Landmark, path: "/docs/x402-payments" as const },
-  { id: "x402scan-integration", label: "x402scan listing", icon: Globe, path: "/docs/x402scan-integration" as const },
-  { id: "zauth-integration", label: "zauth integration", icon: ShieldCheck, path: "/docs/zauth-integration" as const },
-  { id: "syraa-signal-agent", label: "Syraa signal agent", icon: Signal, path: "/docs/syraa-signal-agent" as const },
-  { id: "hyre-integration", label: "HYRE DeFi integration", icon: TrendingUp, path: "/docs/hyre-integration" as const },
-  { id: "xona-solana-market", label: "Xona Solana Market", icon: LineChart, path: "/docs/xona-solana-market" as const },
-  { id: "oobe-integration", label: "OOBE integration", icon: Database, path: "/docs/oobe-integration" as const },
-  { id: "hive-integration", label: "Hive integration", icon: Briefcase, path: "/docs/hive-integration" as const },
-] as const;
+type DocNavItem = {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  path?: `/docs/${string}`;
+};
+
+type DocNavGroup = {
+  title: string;
+  items: DocNavItem[];
+};
+
+const docNavGroups: DocNavGroup[] = [
+  {
+    title: "Start here",
+    items: [
+      { id: "overview", label: "Overview", icon: Book },
+      { id: "adoption", label: "Adoption & setup", icon: Users },
+    ],
+  },
+  {
+    title: "Protocol",
+    items: [
+      { id: "protocol", label: "The Protocol", icon: Zap },
+      { id: "tokenomics", label: "Tokenomics", icon: Coins },
+      { id: "autonomous", label: "Autonomous Agent", icon: Rocket },
+      { id: "security", label: "Security", icon: Shield },
+    ],
+  },
+  {
+    title: "Market data",
+    items: [
+      { id: "polymarket-market-data", label: "Polymarket", icon: Signal, path: "/docs/polymarket-market-data" },
+      { id: "nansen-integration", label: "Nansen", icon: Activity, path: "/docs/nansen-integration" },
+      { id: "xona-solana-market", label: "Xona Solana Market", icon: LineChart, path: "/docs/xona-solana-market" },
+      { id: "hyre-integration", label: "HYRE DeFi", icon: TrendingUp, path: "/docs/hyre-integration" },
+    ],
+  },
+  {
+    title: "Agent stack",
+    items: [
+      { id: "llm-providers", label: "LLM providers", icon: Cpu, path: "/docs/llm-providers" },
+      { id: "oobe-integration", label: "OOBE on-chain memory", icon: Database, path: "/docs/oobe-integration" },
+      { id: "syraa-signal-agent", label: "Syraa Signal", icon: Signal, path: "/docs/syraa-signal-agent" },
+      { id: "hive-integration", label: "Hive Protocol", icon: Briefcase, path: "/docs/hive-integration" },
+    ],
+  },
+  {
+    title: "Payments & trust",
+    items: [
+      { id: "corbits-integration", label: "Corbits", icon: Zap, path: "/docs/corbits-integration" },
+      { id: "pay-sh", label: "pay.sh", icon: Wallet, path: "/docs/pay-sh" },
+      { id: "x402-payments", label: "x402 payments", icon: Landmark, path: "/docs/x402-payments" },
+      { id: "x402scan-integration", label: "x402scan listing", icon: Globe, path: "/docs/x402scan-integration" },
+      { id: "zauth-integration", label: "zauth", icon: ShieldCheck, path: "/docs/zauth-integration" },
+    ],
+  },
+  {
+    title: "Identity",
+    items: [{ id: "privy-integration", label: "Privy", icon: KeyRound, path: "/docs/privy-integration" }],
+  },
+];
+
+const allDocNavItems = docNavGroups.flatMap((g) => g.items);
 
 export default function DocsLayout() {
   const [activeSection, setActiveSection] = useState("overview");
@@ -58,23 +103,22 @@ export default function DocsLayout() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    const match = sidebarSections.find((s) => "path" in s && s.path && pathname === s.path);
+    const match = allDocNavItems.find((s) => s.path && pathname === s.path);
     if (match) setActiveSection(match.id);
   }, [pathname]);
 
-  const scrollToSection = (section: (typeof sidebarSections)[number]) => {
+  const scrollToSection = (section: DocNavItem) => {
     setActiveSection(section.id);
     setSidebarOpen(false);
-    if ("path" in section && section.path) {
+    if (section.path) {
       navigate(section.path);
       return;
     }
-    const { id } = section;
     if (pathname !== "/docs") {
-      navigate(`/docs#${id}`);
+      navigate(`/docs#${section.id}`);
       return;
     }
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById(section.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
@@ -106,31 +150,49 @@ export default function DocsLayout() {
               backdropFilter: "blur(24px)",
             }}
           >
-            <nav className="p-4 pt-14 lg:pt-8 space-y-1">
-              <div className="px-3 mb-6 pb-4 border-b border-border/40">
+            <nav className="p-4 pt-14 lg:pt-8 pb-8">
+              <div className="px-3 mb-5 pb-4 border-b border-border/40">
                 <p className="text-[10px] font-mono uppercase tracking-[0.28em] text-muted-foreground/50 mb-1">Reference</p>
-                <p className="text-sm font-semibold text-foreground tracking-tight">Documentation</p>
+                <p className="text-sm font-semibold text-foreground tracking-tight flex items-center gap-2">
+                  <Bot size={15} className="text-signal shrink-0" aria-hidden />
+                  Documentation
+                </p>
                 <p className="text-[10px] text-muted-foreground/60 mt-1 font-mono">Plankton Protocol</p>
               </div>
-              {sidebarSections.map((section) => (
-                <button
-                  key={section.id}
-                  type="button"
-                  onClick={() => scrollToSection(section)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 text-left",
-                    activeSection === section.id
-                      ? "bg-signal/[0.12] text-signal border border-signal/25 shadow-[0_0_20px_hsl(var(--signal)/0.12)]"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/30 border border-transparent",
-                  )}
-                >
-                  <section.icon
-                    size={16}
-                    className={activeSection === section.id ? "text-signal" : "text-muted-foreground/55"}
-                  />
-                  <span className="font-medium">{section.label}</span>
-                  {activeSection === section.id ? <ChevronRight size={14} className="ml-auto text-signal shrink-0" /> : null}
-                </button>
+
+              {docNavGroups.map((group, groupIdx) => (
+                <div key={group.title} className={cn(groupIdx > 0 && "mt-5")}>
+                  <p className="px-3 mb-1.5 text-[10px] font-mono uppercase tracking-[0.24em] text-muted-foreground/45">
+                    {group.title}
+                  </p>
+                  <ul className="space-y-0.5" role="list">
+                    {group.items.map((section) => {
+                      const active = activeSection === section.id;
+                      return (
+                        <li key={section.id}>
+                          <button
+                            type="button"
+                            onClick={() => scrollToSection(section)}
+                            className={cn(
+                              "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] transition-all duration-200 text-left",
+                              active
+                                ? "bg-signal/[0.12] text-signal border border-signal/25 shadow-[0_0_16px_hsl(var(--signal)/0.1)]"
+                                : "text-muted-foreground hover:text-foreground hover:bg-secondary/30 border border-transparent",
+                            )}
+                          >
+                            <section.icon
+                              size={15}
+                              className={cn("shrink-0", active ? "text-signal" : "text-muted-foreground/55")}
+                              aria-hidden
+                            />
+                            <span className="font-medium leading-snug">{section.label}</span>
+                            {active ? <ChevronRight size={13} className="ml-auto text-signal shrink-0" /> : null}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               ))}
             </nav>
           </motion.aside>
