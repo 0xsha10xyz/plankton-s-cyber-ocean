@@ -12,6 +12,7 @@ export type OobeConfigStatus = {
   keys: {
     agentWallet: boolean;
     openAi: boolean;
+    llm: boolean;
     oobeKey: boolean;
     merkleDbSeed: boolean;
     merkleRootSeed: boolean;
@@ -25,6 +26,15 @@ function agentPrivateKeyRaw(): string | undefined {
 
 function openAiKeyRaw(): string | undefined {
   return process.env.OOBE_OPENAI_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim();
+}
+
+/** Phase 1 readiness: any LLM key Plankton already uses (OpenAI only required later for OobeCore). */
+function llmKeyForPhase1Raw(): string | undefined {
+  return (
+    openAiKeyRaw() ||
+    process.env.ANTHROPIC_API_KEY?.trim() ||
+    process.env.GROQ_API_KEY?.trim()
+  );
 }
 
 /** Parse Solana secret from JSON byte array or base58 (never log the raw value). */
@@ -56,6 +66,7 @@ export function resolveOobeAgentPubkey(): string | null {
 export function getOobeConfigStatus(): OobeConfigStatus {
   const agentWallet = Boolean(agentPrivateKeyRaw());
   const openAi = Boolean(openAiKeyRaw());
+  const llm = Boolean(llmKeyForPhase1Raw());
   const oobeKey = Boolean(process.env.OOBE_KEY?.trim());
   const merkleDbSeed = Boolean(process.env.OOBE_MERKLE_DB_SEED?.trim());
   const merkleRootSeed = Boolean(process.env.OOBE_MERKLE_ROOT_SEED?.trim());
@@ -63,7 +74,9 @@ export function getOobeConfigStatus(): OobeConfigStatus {
 
   const missing: string[] = [];
   if (!agentWallet) missing.push("OOBE_AGENT_PRIVATE_KEY");
-  if (!openAi) missing.push("OOBE_OPENAI_API_KEY or OPENAI_API_KEY");
+  if (!llm) {
+    missing.push("OOBE_OPENAI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or GROQ_API_KEY");
+  }
   if (!rpcConfigured) missing.push("SOLANA_RPC_URL");
 
   const configured = missing.length === 0;
@@ -77,7 +90,10 @@ export function getOobeConfigStatus(): OobeConfigStatus {
     rpc: { configured: rpcConfigured },
     keys: {
       agentWallet,
+      /** OpenAI-only (for future OobeCore). */
       openAi,
+      /** Any LLM key accepted for phase-1 status/probe. */
+      llm,
       oobeKey,
       merkleDbSeed,
       merkleRootSeed,
