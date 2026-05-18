@@ -102,16 +102,49 @@ export function getOobeConfigStatus(): OobeConfigStatus {
   };
 }
 
+function solanaRpcUrls(): string[] {
+  return [
+    process.env.SOLANA_RPC_URL?.trim(),
+    "https://rpc.ankr.com/solana",
+    "https://solana.publicnode.com",
+    "https://api.mainnet-beta.solana.com",
+  ].filter((u): u is string => Boolean(u));
+}
+
 async function rpcCall<T>(rpcUrl: string, method: string, params: unknown[]): Promise<T> {
   const r = await fetch(rpcUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
   });
-  const j = (await r.json()) as { result?: T; error?: { message?: string } };
+  const j = (await r.json().catch(() => null)) as { result?: T; error?: { message?: string } } | null;
+  if (!r.ok || !j) throw new Error(`RPC HTTP ${r.status}`);
   if (j.error?.message) throw new Error(j.error.message);
-  if (j.result === undefined) throw new Error("RPC returned no result");
+  if (j.result === undefined || j.result === null) throw new Error("RPC returned no result");
   return j.result;
+}
+
+function parseBalanceLamports(result: unknown): number {
+  if (typeof result === "number" && Number.isFinite(result)) return result;
+  if (result && typeof result === "object" && "value" in result) {
+    const v = (result as { value: unknown }).value;
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+  }
+  throw new Error("Unexpected getBalance RPC shape");
+}
+
+function parseSlot(result: unknown): number {
+  if (typeof result === "number" && Number.isFinite(result)) return result;
+  throw new Error("Unexpected getSlot RPC shape");
+}
+
+async function probeViaRpc(rpcUrl: string, agentPubkey: string): Promise<{ lamports: number; slot: number }> {
+  const balanceParams = [agentPubkey, { commitment: "confirmed" }];
+  const [balanceRaw, slotRaw] = await Promise.all([
+    rpcCall<unknown>(rpcUrl, "getBalance", balanceParams),
+    rpcCall<unknown>(rpcUrl, "getSlot", [{ commitment: "confirmed" }]),
+  ]);
+  return { lamports: parseBalanceLamports(balanceRaw), slot: parseSlot(slotRaw) };
 }
 
 export type OobeProbeResult = {
@@ -136,15 +169,15 @@ export async function probeOobeAgent(): Promise<OobeProbeResult> {
     };
   }
 
-  const rpcUrl = process.env.SOLANA_RPC_URL!.trim();
-  try {
-    const [lamports, slot] = await Promise.all([
-      rpcCall<number>(rpcUrl, "getBalance", [agentPubkey]),
-      rpcCall<number>(rpcUrl, "getSlot", []),
-    ]);
-    return { ok: true, agentPubkey, lamports, slot };
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return { ok: false, agentPubkey, lamports: null, slot: null, error: msg };
+  const urls = [...new Set(solanaRpcUrls())];
+  let lastErr = "No RPC URLs configured";
+  for (const rpcUrl of urls) {
+    try {
+      const { lamports, slot } = await probeViaRpc(rpcUrl, agentPubkey);
+      return { ok: true, agentPubkey, lamports, slot };
+    } catch (e) {
+      lastErr = e instanceof Error ? e.message : String(e);
+    }
   }
+  return { ok: false, agentPubkey, lamports: null, slot: null, error: lastErr };
 }
