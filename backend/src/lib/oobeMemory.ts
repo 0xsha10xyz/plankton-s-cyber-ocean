@@ -1,5 +1,27 @@
+import { createRequire } from "node:module";
 import { base58 } from "@scure/base";
 import { agentPrivateKeyRaw, keypairFromSecretInput, openAiKeyRaw } from "./oobe.js";
+
+/** Load CJS `oobe-protocol` from this ESM backend (`type: module`). */
+const require = createRequire(import.meta.url);
+
+type OobeSdkModule = {
+  ConfigManager: new () => {
+    createEndpointsConfig: (rpc: string) => { official: { rpc: string }; unOfficial: unknown[] };
+    createDefaultConfig: (...args: unknown[]) => unknown;
+  };
+  OobeCore: new (config: unknown) => {
+    start: () => Promise<void>;
+    getAgent: () => {
+      merkleValidate: (input: unknown, result: unknown) => { merkleRoot?: string | null };
+      merkle: { onChainMerkleInscription: (data: unknown) => Promise<Record<string, unknown> | undefined> };
+    };
+  };
+};
+
+function loadOobeSdk(): OobeSdkModule {
+  return require("oobe-protocol") as OobeSdkModule;
+}
 
 function isOobeEnvConfigured(): boolean {
   return Boolean(agentPrivateKeyRaw() && process.env.SOLANA_RPC_URL?.trim() && openAiKeyRaw());
@@ -40,8 +62,7 @@ function buildOobeConfiguration() {
     throw new Error("OpenAI API key required for OOBE Core (OPENAI_API_KEY or OOBE_OPENAI_API_KEY)");
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { ConfigManager } = require("oobe-protocol") as any;
+  const { ConfigManager } = loadOobeSdk();
   const configManager = new ConfigManager();
   const endpoints = configManager.createEndpointsConfig(rpc);
   return configManager.createDefaultConfig(
@@ -71,9 +92,7 @@ async function getOobeCoreInstance(): Promise<unknown | null> {
   if (!coreInitPromise) {
     coreInitPromise = (async () => {
       try {
-        // Dynamic require: heavy SDK; load only when memory is enabled.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { OobeCore } = require("oobe-protocol") as any;
+        const { OobeCore } = loadOobeSdk();
         const config = buildOobeConfiguration();
         const core = new OobeCore(config);
         await core.start();
@@ -117,8 +136,7 @@ export async function inscribePlanktonChatMemory(payload: {
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const agent = (core as any).getAgent();
+    const agent = (core as InstanceType<OobeSdkModule["OobeCore"]>).getAgent();
     const input = {
       type: "plankton_agent_chat",
       ts: at,
