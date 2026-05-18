@@ -7,7 +7,10 @@ const require = createRequire(import.meta.url);
 
 type OobeSdkModule = {
   ConfigManager: new () => {
-    createEndpointsConfig: (rpc: string) => { official: { rpc: string }; unOfficial: unknown[] };
+    createEndpointsConfig: (
+      rpc: string,
+      unofficial?: unknown[]
+    ) => { official: { rpc: string }; unOfficial: unknown[] };
     createDefaultConfig: (...args: unknown[]) => unknown;
   };
   OobeCore: new (config: unknown) => {
@@ -55,7 +58,7 @@ function agentPrivateKeyBase58ForOobe(): string {
   return base58.encode(keypairFromSecretInput(trimmed).secretKey);
 }
 
-function buildOobeConfiguration() {
+function buildOobeConfiguration(): Record<string, unknown> {
   const rpc = process.env.SOLANA_RPC_URL?.trim() || "https://api.mainnet-beta.solana.com";
   const openAi = openAiKeyRaw();
   if (!openAi) {
@@ -64,8 +67,9 @@ function buildOobeConfiguration() {
 
   const { ConfigManager } = loadOobeSdk();
   const configManager = new ConfigManager();
-  const endpoints = configManager.createEndpointsConfig(rpc);
-  return configManager.createDefaultConfig(
+  /** Use only your RPC for reads + writes; default unofficial fallbacks often 403 on sendTransaction. */
+  const endpoints = configManager.createEndpointsConfig(rpc, []);
+  const config = configManager.createDefaultConfig(
     agentPrivateKeyBase58ForOobe(),
     openAi,
     process.env.OOBE_KEY?.trim() || "",
@@ -76,13 +80,24 @@ function buildOobeConfiguration() {
     process.env.OOBE_MERKLE_ROOT_SEED?.trim() || "oobedbroot!",
     process.env.OOBE_STRATEGY_KEY?.trim() || "",
     [rpc],
-    process.env.OOBE_PRISMA_DB_URL?.trim(),
+    undefined,
     {
       enabled: true,
-      storageType: "file",
-      filePath: process.env.OOBE_MEMORY_FILE_PATH?.trim() || "./data/oobe-memory.sqlite",
+      storageType: "memory",
     }
-  );
+  ) as Record<string, unknown>;
+
+  // Plankton phase 2: on-chain Merkle inscriptions only. OOBE SDK defaults to Prisma (file:./oobe.db)
+  // which fails on many VPS images — disable unless explicitly opted in.
+  const prismaUrl = process.env.OOBE_PRISMA_DB_URL?.trim();
+  if (prismaUrl) {
+    config.url_prisma_db = prismaUrl;
+  } else {
+    delete config.url_prisma_db;
+    delete config.dbConfig;
+  }
+
+  return config;
 }
 
 async function getOobeCoreInstance(): Promise<unknown | null> {
