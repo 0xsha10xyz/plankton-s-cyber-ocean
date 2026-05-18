@@ -25,6 +25,7 @@ import {
   isZauthProviderSdkEnabled,
 } from "../lib/zauthPublic.js";
 import { getOobeConfigStatus } from "../lib/oobe.js";
+import { getOobeMemoryStatus, queuePlanktonChatMemoryInscription } from "../lib/oobeMemory.js";
 
 export const agentRouter = Router();
 
@@ -267,7 +268,7 @@ agentRouter.get("/logs", async (req, res) => {
   res.json({ lines: lines.slice(0, limit), source: "rpc" });
 });
 
-agentRouter.get("/config", (req, res) => {
+agentRouter.get("/config", async (req, res) => {
   // Advertise x402 config for the current "block unlock" mode:
   // - 0.1 USDC unlocks 5 messages
   // Frontend uses this only to decide whether to use x402 client and to show UI copy.
@@ -308,7 +309,7 @@ agentRouter.get("/config", (req, res) => {
       configured: isXonaSolanaMarketConfigured(),
       enabled: isXonaSolanaMarketChatEnabled(),
     },
-    oobe: getOobeConfigStatus(),
+    oobe: { ...getOobeConfigStatus(), memory: await getOobeMemoryStatus() },
     ...(x402Enabled
       ? {
           x402Discovery: {
@@ -678,6 +679,12 @@ agentRouter.post("/chat", async (req, res) => {
 
     res.setHeader("Cache-Control", "private, no-store");
     res.json(parsed);
+
+    queuePlanktonChatMemoryInscription({
+      userMessage: message,
+      agentInsight: parsed.insight,
+      wallet: typeof body.wallet === "string" ? body.wallet.trim() : undefined,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     res.status(504).json({ error: msg, code: "LLM_TIMEOUT_OR_NETWORK" });

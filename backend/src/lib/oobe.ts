@@ -20,11 +20,11 @@ export type OobeConfigStatus = {
   missing: string[];
 };
 
-function agentPrivateKeyRaw(): string | undefined {
+export function agentPrivateKeyRaw(): string | undefined {
   return process.env.OOBE_AGENT_PRIVATE_KEY?.trim() || process.env.OOBE_PRIVATE_KEY?.trim();
 }
 
-function openAiKeyRaw(): string | undefined {
+export function openAiKeyRaw(): string | undefined {
   return process.env.OOBE_OPENAI_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim();
 }
 
