@@ -23,6 +23,7 @@ import { polymarketWalletsRouter } from "./routes/polymarketWallets.js";
 import { autopilotRouter, postAnalyzeAutopilot } from "./routes/autopilot.js";
 import { nansenRouter } from "./routes/nansen.js";
 import { hiveRouter } from "./routes/hive.js";
+import { oobeRouter } from "./routes/oobe.js";
 import { gatewayRouter } from "./gateway/router.js";
 import { getPgPool } from "./db/pool.js";
 import { runMigrations } from "./db/migrate.js";
@@ -134,6 +135,7 @@ app.use("/api/wallets", polymarketWalletsRouter);
 app.use("/api/autopilot", autopilotRouter);
 app.use("/api/nansen", nansenRouter);
 app.use("/api/hive", hiveRouter);
+app.use("/api/oobe", oobeRouter);
 app.post("/api/agent/analyze", (req, res, next) => {
   postAnalyzeAutopilot(req, res).catch(next);
 });

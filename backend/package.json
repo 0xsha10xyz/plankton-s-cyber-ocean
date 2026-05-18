@@ -32,6 +32,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
+    "oobe-protocol": "^2.0.3",
     "pg": "^8.20.0",
     "redis": "^4.6.0",
     "tweetnacl": "^1.0.3",

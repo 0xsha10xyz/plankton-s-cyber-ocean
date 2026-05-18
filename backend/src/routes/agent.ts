@@ -24,6 +24,7 @@ import {
   isVectorVerifyTokenConfigured,
   isZauthProviderSdkEnabled,
 } from "../lib/zauthPublic.js";
+import { getOobeConfigStatus } from "../lib/oobe.js";
 
 export const agentRouter = Router();
 
@@ -307,6 +308,7 @@ agentRouter.get("/config", (req, res) => {
       configured: isXonaSolanaMarketConfigured(),
       enabled: isXonaSolanaMarketChatEnabled(),
     },
+    oobe: getOobeConfigStatus(),
     ...(x402Enabled
       ? {
           x402Discovery: {
