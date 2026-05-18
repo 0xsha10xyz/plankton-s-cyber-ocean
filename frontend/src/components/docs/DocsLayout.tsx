@@ -16,6 +16,7 @@ import {
   TrendingUp,
   LineChart,
   Briefcase,
+  Database,
   Zap,
   ChevronRight,
   Menu,
@@ -46,6 +47,7 @@ const sidebarSections = [
   { id: "syraa-signal-agent", label: "Syraa signal agent", icon: Signal, path: "/docs/syraa-signal-agent" as const },
   { id: "hyre-integration", label: "HYRE DeFi integration", icon: TrendingUp, path: "/docs/hyre-integration" as const },
   { id: "xona-solana-market", label: "Xona Solana Market", icon: LineChart, path: "/docs/xona-solana-market" as const },
+  { id: "oobe-integration", label: "OOBE integration", icon: Database, path: "/docs/oobe-integration" as const },
   { id: "hive-integration", label: "Hive integration", icon: Briefcase, path: "/docs/hive-integration" as const },
 ] as const;
 

@@ -295,6 +295,13 @@ export default function DocsHome() {
                   Agent Chat (server-paid x402 on the VPS). <DocLink file="docs/xona-solana-market.md" />
                 </span>
               </li>
+              <li className="flex gap-3">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                <span>
+                  <strong className="text-foreground/95">OOBE Protocol</strong>: on-chain agent memory after chat (VPS, Solana
+                  inscriptions, UI banner on <DocsCmd>/agent-chat</DocsCmd>). <DocLink file="docs/oobe-integration.md" />
+                </span>
+              </li>
             </ul>
           </HoloCard>
           <HoloCard className="p-6 md:p-8">
