@@ -36,6 +36,11 @@ const INTEGRATIONS: Integration[] = [
     logoUrl: "/logos/hive.png",
   },
   {
+    name: "OOBE",
+    role: "On-chain agent memory: verifiable Solana inscriptions after each Agent Chat reply.",
+    logoUrl: "/logos/oobe.png",
+  },
+  {
     name: "Solana",
     role: "Base layer for all protocol activity, swaps, and agent execution.",
     logoUrl: "/logos/solana.png",
