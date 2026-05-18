@@ -26,6 +26,8 @@ import { parseSendBalanceTransferInput } from "@/lib/parseSendBalanceTransfer";
 import { getFallbackRpcs, sendRawTransactionWithFallback } from "@/lib/solana-rpc";
 import { Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
 import { toast } from "sonner";
+import { OobeMemoryPanel } from "@/components/agent/OobeMemoryPanel";
+import { useOobeMemory } from "@/hooks/useOobeMemory";
 
 type ChatMessage = {
   id: string;
@@ -387,6 +389,7 @@ export default function AgentChatPage() {
   const messagesRef = useRef<ChatMessage[]>(messages);
   const usageSigRef = useRef<{ wallet: string; ts: number; sig: string } | null>(null);
   const lastUserTextRef = useRef<string>("");
+  const { oobeInfo, track, trackAfterChat, refreshOobe } = useOobeMemory();
 
   const walletLabel = connected && publicKey ? shortenAddress(publicKey.toBase58()) : undefined;
 
@@ -999,6 +1002,7 @@ export default function AgentChatPage() {
 
     void (async () => {
       let reply = JSON.stringify(buildAgentResponse(trimmed, nextContext));
+      let oobeInsight: string | null = null;
       const priorForHistory = messagesRef.current.filter((m) => m.id !== "welcome");
       const history = chatMessagesToHistory(priorForHistory);
       try {
@@ -1067,6 +1071,7 @@ export default function AgentChatPage() {
             Array.isArray((data as { actions?: unknown }).actions)
           ) {
             const o = data as { insight: string; additional_insight?: unknown; actions: unknown[] };
+            oobeInsight = o.insight;
             reply = JSON.stringify({
               insight: o.insight,
               additional_insight: typeof o.additional_insight === "string" ? o.additional_insight : "",
@@ -1097,6 +1102,7 @@ export default function AgentChatPage() {
                 Array.isArray((r2 as { actions?: unknown }).actions)
               ) {
                 const o2 = r2 as { insight: string; additional_insight?: unknown; actions: unknown[] };
+                oobeInsight = o2.insight;
                 reply = JSON.stringify({
                   insight: o2.insight,
                   additional_insight: typeof o2.additional_insight === "string" ? o2.additional_insight : "",
@@ -1169,6 +1175,10 @@ export default function AgentChatPage() {
       } finally {
         // Ensure UI does not get stuck on "Generating..." if we returned early above.
         setSending(false);
+      }
+
+      if (oobeInsight) {
+        trackAfterChat(trimmed, oobeInsight);
       }
 
       const agentMsg: ChatMessage = {
@@ -1423,6 +1433,8 @@ export default function AgentChatPage() {
           )}
         </div>
       </header>
+
+      <OobeMemoryPanel oobeInfo={oobeInfo} track={track} onRefresh={() => void refreshOobe()} />
 
       <div className="flex flex-1 min-h-0">
         {sidebarOpen ? (

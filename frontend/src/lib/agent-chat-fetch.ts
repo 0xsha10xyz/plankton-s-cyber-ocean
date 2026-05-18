@@ -4,6 +4,7 @@ import type { WalletContextState } from "@solana/wallet-adapter-react";
 import { toast } from "sonner";
 import { getX402RpcEndpoint, withX402RpcFallback } from "@/lib/solana-rpc";
 import { normalizeAgentX402UsdcMint } from "@/lib/x402UsdcMint";
+import { parseOobeFromAgentConfig, type OobeClientInfo } from "@/lib/oobe-client";
 
 export type AgentChatX402Info = {
   enabled: boolean;
@@ -98,18 +99,20 @@ export async function fetchAgentConfig(agentOrigin: string): Promise<{
   x402: AgentChatX402Info | null;
   discovery: X402DiscoveryLinks | null;
   zauth: ZauthPublicInfo | null;
+  oobe: OobeClientInfo | null;
 }> {
   try {
     const r = await fetch(`${agentOrigin}/api/agent/config`);
-    if (!r.ok) return { x402: null, discovery: null, zauth: null };
+    if (!r.ok) return { x402: null, discovery: null, zauth: null, oobe: null };
     const data = await r.json();
     return {
       x402: parseAgentConfigX402(data),
       discovery: parseX402Discovery(data),
       zauth: parseZauth(data),
+      oobe: parseOobeFromAgentConfig(data),
     };
   } catch {
-    return { x402: null, discovery: null, zauth: null };
+    return { x402: null, discovery: null, zauth: null, oobe: null };
   }
 }
 
